@@ -1,0 +1,33 @@
+services:
+  presenzio:
+    build:
+      context: .
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+    ports:
+      - "5500:80"
+    depends_on:
+      - presenzio-api
+    restart: unless-stopped
+
+  presenzio-api:
+    build:
+      context: .
+      dockerfile: api.Dockerfile
+    environment:
+      SUPABASE_URL: ${VITE_SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+      SQL_SERVER: ${SQL_SERVER:-host.docker.internal}
+      SQL_PORT: ${SQL_PORT:-1433}
+      SQL_DATABASE: ${SQL_DATABASE:-Presenzio}
+      SQL_USER: ${SQL_USER:-presenzio_app}
+      SQL_PASSWORD: ${SQL_PASSWORD:?SQL_PASSWORD must be set in .env.local}
+    volumes:
+      - presenzio-data:/data
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+volumes:
+  presenzio-data:
