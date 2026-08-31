@@ -164,7 +164,12 @@ function fillAttendance(workbook, students, attendanceSessions) {
   students.forEach((student, studentIndex) => {
     const row = 6 + studentIndex;
     setCell(sheet, row, 0, student.ctrlNo ?? studentIndex + 1);
-    setCell(sheet, row, 1, student.gender === "—" ? "" : student.gender);
+    setCell(
+      sheet,
+      row,
+      1,
+      student.gender === "M" || student.gender === "F" ? student.gender : "",
+    );
     setCell(sheet, row, 2, student.name);
     let attended = 0;
     sessions.forEach((session, sessionIndex) => {
@@ -196,9 +201,9 @@ function fillPeriodSheet(workbook, periodCode, students, assessmentScores, atten
   );
   const definitions = Object.entries(categoryColumns);
 
-  clearExisting(sheet, 8, 999, 0, 40);
-  setCell(sheet, 8, 0, "No.");
-  setCell(sheet, 8, 1, "Student's Name");
+  // Excel row 9 (zero-based row 8) is the hidden HPS definition row. Keep
+  // the template labels on row 8 and place real students on Excel row 10.
+  clearExisting(sheet, 9, 999, 0, 40);
   definitions.forEach(([category, columns]) => {
     const categoryRows = rows.filter((row) => row.category === category);
     categoryRows.forEach((row) => {
@@ -207,6 +212,8 @@ function fillPeriodSheet(workbook, periodCode, students, assessmentScores, atten
       setCell(sheet, 8, columns.score[itemIndex], Number(row.max_score));
     });
   });
+
+  setCell(sheet, 8, 31, periodSessions.length);
 
   students.forEach((student, studentIndex) => {
     const rowNumber = 9 + studentIndex;
@@ -296,15 +303,17 @@ function fillSummary(workbook, students) {
     setCell(sheet, row, 3, grades.midterm);
     setCell(sheet, row, 4, grades.semifinal);
     setCell(sheet, row, 5, grades.final);
-    const finalGrade = grades.final ?? grades.semifinal ?? grades.midterm ?? grades.prelim;
+    // Summary remarks are based only on the final cumulative grade. Earlier
+    // period grades must not be treated as a final result.
+    const finalGrade = grades.final;
     setCell(
       sheet,
       row,
       6,
       Number.isFinite(Number(finalGrade))
         ? Number(finalGrade) <= 3.05
-          ? "Passed"
-          : "Needs review"
+          ? "PASSED"
+          : "FAILED"
         : "",
     );
   });

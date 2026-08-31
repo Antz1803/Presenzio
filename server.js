@@ -16,6 +16,7 @@ const sqlDatabase = process.env.SQL_DATABASE || "";
 const sqlUser = process.env.SQL_USER || "";
 const sqlPassword = process.env.SQL_PASSWORD || "";
 const sqlEnabled = Boolean(sqlServer && sqlDatabase && sqlUser && sqlPassword);
+let sqlStorageAvailable = sqlEnabled;
 const sqlConfig = {
   server: sqlServer,
   port: sqlPort,
@@ -42,7 +43,7 @@ let catalogSyncPromise = null;
 let pendingSyncPromise = null;
 
 function getSqlPool() {
-  if (!sqlEnabled) throw new Error("SQL Server storage is not configured.");
+  if (!sqlStorageAvailable) throw new Error("SQL Server storage is unavailable.");
   if (!sqlPoolPromise) {
     sqlPoolPromise = sql.connect(sqlConfig).catch((error) => {
       sqlPoolPromise = null;
@@ -53,29 +54,34 @@ function getSqlPool() {
 }
 
 async function loadStore() {
-  if (sqlEnabled) {
-    const pool = await getSqlPool();
-    const stateResult = await pool
-      .request()
-      .input("stateKey", sql.NVarChar(50), "catalog")
-      .query("SELECT payload FROM dbo.lan_state WHERE state_key = @stateKey");
-    const submissionResult = await pool
-      .request()
-      .query("SELECT attempt_id, payload, created_at, synced_at, last_error FROM dbo.lan_submissions ORDER BY created_at");
-    if (stateResult.recordset[0]?.payload) {
-      const catalog = JSON.parse(stateResult.recordset[0].payload);
-      store.catalog = {
-        ...catalog,
-        attemptGrants: catalog.attemptGrants ?? [],
-        violations: catalog.violations ?? [],
-      };
+  if (sqlStorageAvailable) {
+    try {
+      const pool = await getSqlPool();
+      const stateResult = await pool
+        .request()
+        .input("stateKey", sql.NVarChar(50), "catalog")
+        .query("SELECT payload FROM dbo.lan_state WHERE state_key = @stateKey");
+      const submissionResult = await pool
+        .request()
+        .query("SELECT attempt_id, payload, created_at, synced_at, last_error FROM dbo.lan_submissions ORDER BY created_at");
+      if (stateResult.recordset[0]?.payload) {
+        const catalog = JSON.parse(stateResult.recordset[0].payload);
+        store.catalog = {
+          ...catalog,
+          attemptGrants: catalog.attemptGrants ?? [],
+          violations: catalog.violations ?? [],
+        };
+      }
+      store.submissions = submissionResult.recordset.map((row) => ({
+        ...JSON.parse(row.payload),
+        syncedAt: row.synced_at?.toISOString?.() || row.synced_at || null,
+        lastError: row.last_error || null,
+      }));
+      return;
+    } catch (error) {
+      sqlStorageAvailable = false;
+      console.warn("SQL Server unavailable; using JSON fallback:", error.message);
     }
-    store.submissions = submissionResult.recordset.map((row) => ({
-      ...JSON.parse(row.payload),
-      syncedAt: row.synced_at?.toISOString?.() || row.synced_at || null,
-      lastError: row.last_error || null,
-    }));
-    return;
   }
 
   try {
@@ -122,15 +128,7 @@ async function persistSqlStore(snapshot) {
   }
 }
 
-function persistStore() {
-  const snapshot = JSON.parse(JSON.stringify(store));
-  if (sqlEnabled) {
-    persistenceQueue = persistenceQueue
-      .catch(() => {})
-      .then(() => persistSqlStore(snapshot));
-    return persistenceQueue;
-  }
-
+function persistJsonStore(snapshot) {
   const serializedSnapshot = JSON.stringify(snapshot, null, 2);
   const temporaryFile = `${dataFile}.tmp`;
   persistenceQueue = persistenceQueue
@@ -141,6 +139,22 @@ function persistStore() {
       await rename(temporaryFile, dataFile);
     });
   return persistenceQueue;
+}
+
+function persistStore() {
+  const snapshot = JSON.parse(JSON.stringify(store));
+  if (sqlStorageAvailable) {
+    persistenceQueue = persistenceQueue
+      .catch(() => {})
+      .then(() => persistSqlStore(snapshot))
+      .catch((error) => {
+        sqlStorageAvailable = false;
+        console.warn("SQL Server became unavailable; using JSON fallback:", error.message);
+        return persistJsonStore(snapshot);
+      });
+    return persistenceQueue;
+  }
+  return persistJsonStore(snapshot);
 }
 
 function jsonResponse(response, status, body) {
@@ -569,7 +583,7 @@ async function handleRequest(request, response) {
   if (request.method === "GET" && requestUrl.pathname === "/api/health") {
     return jsonResponse(response, 200, {
       ok: true,
-      storage: sqlEnabled ? "sqlserver" : "json-fallback",
+      storage: sqlStorageAvailable ? "sqlserver" : "json-fallback",
       pending: store.submissions.filter((item) => !item.syncedAt).length,
       lastCatalogSync: store.lastCatalogSync,
     });

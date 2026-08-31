@@ -43,14 +43,18 @@ const gradingWeights = {
   quiz: 0.2,
   assignment: 0.1,
   activity: 0.3,
+  // The workbook has a sixth spacer component (AD/AE) with a blank/zero
+  // weight. Keep it in the model so the calculation mirrors the sheet's
+  // six-term SUM(PRODUCT(...)) expression without affecting the result.
+  spacer: 0,
   attendance: 0.05,
   exam: 0.35,
 };
 
 const assessmentItemLimits = {
   quiz: 4,
-  assignment: 2,
-  activity: 2,
+  assignment: 4,
+  activity: 4,
   exam: 1,
 };
 
@@ -91,7 +95,8 @@ const transmutationBreakpoints = [
 
 function transmutePercentage(value) {
   if (!Number.isFinite(Number(value))) return null;
-  const percentage = Math.max(0, Math.min(100, Math.floor(Number(value))));
+  // Match Excel's approximate VLOOKUP against the transmutation table.
+  const percentage = Math.max(0, Math.min(100, Number(value)));
   let gradePoint = transmutationBreakpoints[0][1];
   transmutationBreakpoints.forEach(([breakpoint, grade]) => {
     if (percentage >= breakpoint) gradePoint = grade;
@@ -161,9 +166,12 @@ function isNetworkError(error) {
 
 async function callLanApi(path, options = {}) {
   let response;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2000);
   try {
     response = await fetch(path, {
       ...options,
+      signal: options.signal ?? controller.signal,
       headers: {
         ...(options.body ? { "Content-Type": "application/json" } : {}),
         ...(options.headers || {}),
@@ -171,6 +179,8 @@ async function callLanApi(path, options = {}) {
     });
   } catch {
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 
   const contentType = response.headers.get("content-type") || "";
@@ -486,17 +496,16 @@ export function useDashboardViewModel() {
       attemptRows = mergeById(attemptRows, lanManagement?.attempts ?? []);
       grantRows = mergeById(grantRows, lanManagement?.attemptGrants ?? []);
       violationRows = mergeById(violationRows, lanManagement?.violations ?? []);
+      const liveAssessmentDefinitions = assessmentRows.map((assessment) => ({
+        ...assessment,
+        attempts: attemptRows.filter((attempt) => attempt.assessment_id === assessment.id),
+        attemptGrants: grantRows.filter((grant) => grant.assessment_id === assessment.id),
+        violations: violationRows.filter((violation) => violation.assessment_id === assessment.id),
+      }));
       setAssessmentAttempts(attemptRows);
       setAssessmentAttemptGrants(grantRows);
       setAssessmentViolations(violationRows);
-      setAssessmentDefinitions(
-        assessmentRows.map((assessment) => ({
-          ...assessment,
-          attempts: attemptRows.filter((attempt) => attempt.assessment_id === assessment.id),
-          attemptGrants: grantRows.filter((grant) => grant.assessment_id === assessment.id),
-          violations: violationRows.filter((violation) => violation.assessment_id === assessment.id),
-        })),
-      );
+      setAssessmentDefinitions(liveAssessmentDefinitions);
 
       const { data: classSessions, error: sessionError } = await supabase
         .from("class_sessions")
@@ -512,6 +521,7 @@ export function useDashboardViewModel() {
       const gradeData = periodGrades ?? [];
       const gradePeriodCodes = ["prelim", "midterm", "semifinal", "final"];
       const gradeByEnrollment = new Map();
+      const gradeDetailsByEnrollment = new Map();
       gradeData.forEach((item) => {
         const periodCode =
           item.period?.code ??
@@ -534,6 +544,12 @@ export function useDashboardViewModel() {
           grades[periodCode] = grade;
         }
         gradeByEnrollment.set(item.enrollment_id, grades);
+        const details = gradeDetailsByEnrollment.get(item.enrollment_id) ?? {};
+        details[periodCode] = {
+          own: item.own_period_grade,
+          cumulative: item.cumulative_grade,
+        };
+        gradeDetailsByEnrollment.set(item.enrollment_id, details);
       });
       const attendanceByEnrollment = new Map();
 
@@ -558,6 +574,7 @@ export function useDashboardViewModel() {
           : 0;
         const fullName = student?.full_name ?? "Unnamed student";
         const grades = gradeByEnrollment.get(enrollment.id) ?? {};
+        const gradeDetails = gradeDetailsByEnrollment.get(enrollment.id) ?? {};
         return {
           id: enrollment.id,
           studentId: student?.id,
@@ -577,6 +594,7 @@ export function useDashboardViewModel() {
           gender: student?.gender ?? "—",
           attendance: attendanceRate,
           grades,
+          gradeDetails,
           grade: grades.prelim ?? 0,
           status:
             enrollment.status === "active"
@@ -642,25 +660,24 @@ export function useDashboardViewModel() {
       setGradeRows(toGradeRows(liveRoster));
       setGradingPeriods(periods ?? []);
       setAssessmentScores(combinedAssessmentScoreData);
-      setAttendanceSessions(
-        [...sessionsData]
-          .sort((first, second) => first.session_date.localeCompare(second.session_date))
-          .map((session) => ({
-            id: session.id,
-            date: formatShortDate(session.session_date),
-            sessionDate: session.session_date,
-            sessionTime: session.session_time,
-            periodCode:
-              periods?.find((periodItem) => periodItem.id === session.period_id)
-                ?.code ?? "",
-            statuses: Object.fromEntries(
-              (session.attendance_records ?? []).map((record) => [
-                record.enrollment_id,
-                record.status,
-              ]),
-            ),
-          })),
-      );
+      const liveAttendanceSessions = [...sessionsData]
+        .sort((first, second) => first.session_date.localeCompare(second.session_date))
+        .map((session) => ({
+          id: session.id,
+          date: formatShortDate(session.session_date),
+          sessionDate: session.session_date,
+          sessionTime: session.session_time,
+          periodCode:
+            periods?.find((periodItem) => periodItem.id === session.period_id)
+              ?.code ?? "",
+          statuses: Object.fromEntries(
+            (session.attendance_records ?? []).map((record) => [
+              record.enrollment_id,
+              record.status,
+            ]),
+          ),
+        }));
+      setAttendanceSessions(liveAttendanceSessions);
       setSessions(
         sessionsData.map((session) => {
           const records = session.attendance_records ?? [];
@@ -731,9 +748,14 @@ export function useDashboardViewModel() {
       );
       void callLanApi("/api/sync", { method: "POST" }).catch(() => {});
       return {
+        live: true,
         sectionId: sectionData.id,
+        section: sectionData,
         students: liveRoster,
         periods: periods ?? [],
+        assessmentScores: combinedAssessmentScoreData,
+        assessmentDefinitions: liveAssessmentDefinitions,
+        attendanceSessions: liveAttendanceSessions,
       };
     } catch (error) {
       if (isNetworkError(error)) {
@@ -899,6 +921,36 @@ export function useDashboardViewModel() {
         .from("grading_periods")
         .upsert(rows, { onConflict: "code" });
       if (error) throw error;
+
+      // Keep existing attendance sessions aligned with the date ranges. This
+      // repairs sessions that were previously assigned from the selected tab
+      // instead of from their actual date.
+      const { data: existingSessions, error: existingSessionsError } =
+        await supabase
+          .from("class_sessions")
+          .select("id, session_date")
+          .eq("section_id", currentSectionId);
+      if (existingSessionsError) throw existingSessionsError;
+      for (const session of existingSessions ?? []) {
+        const matchingPeriod = rows
+          .filter((row) => row.start_date && row.end_date)
+          .sort((first, second) => first.sort_order - second.sort_order)
+          .find(
+            (row) =>
+              session.session_date >= row.start_date &&
+              session.session_date <= row.end_date,
+          );
+        if (!matchingPeriod) continue;
+        const periodId = gradingPeriods.find(
+          (periodItem) => periodItem.code === matchingPeriod.code,
+        )?.id;
+        if (!periodId) continue;
+        const { error: sessionUpdateError } = await supabase
+          .from("class_sessions")
+          .update({ period_id: periodId })
+          .eq("id", session.id);
+        if (sessionUpdateError) throw sessionUpdateError;
+      }
       await loadLiveData(currentSectionId);
     },
     [currentSectionId, gradingPeriods, loadLiveData, queueOfflineChange],
@@ -941,19 +993,33 @@ export function useDashboardViewModel() {
 
   const syncToExcel = useCallback(async () => {
     if (!section?.id) throw new Error("No active class is selected.");
+    if (browserIsOffline() || !supabase) {
+      throw new Error(
+        "Excel sync requires a live database connection so every record can be included.",
+      );
+    }
+    const fresh = await loadLiveData(section.id);
+    if (!fresh?.live || fresh.sectionId !== section.id) {
+      throw new Error("The latest class records could not be loaded for Excel sync.");
+    }
     await syncGradeSheetToExcel({
-      section,
-      students,
-      assessmentScores,
-      assessmentDefinitions,
-      attendanceSessions,
+      section: fresh.section,
+      students: fresh.students,
+      assessmentScores: fresh.assessmentScores,
+      assessmentDefinitions: fresh.assessmentDefinitions,
+      attendanceSessions: fresh.attendanceSessions,
+      gradingPeriods: fresh.periods,
     });
-  }, [section, students, assessmentScores, assessmentDefinitions, attendanceSessions]);
+   }, [section, loadLiveData]);
 
   const recalculatePeriodGrades = useCallback(
-    async (periodId, sectionId = currentSectionId, roster = students) => {
+    async (periodId, sectionId = currentSectionId, roster = students, gradeOverrides = {}) => {
       if (!periodId) return;
-      const [{ data: assessmentRows, error: assessmentError }, { data: sessionRows, error: sessionError }, { data: periodRows, error: periodError }] =
+      const [
+        { data: assessmentRows, error: assessmentError },
+        { data: sessionRows, error: sessionError },
+        { data: periodRows, error: periodError },
+      ] =
         await Promise.all([
           supabase
             .from("assessment_scores")
@@ -970,8 +1036,8 @@ export function useDashboardViewModel() {
         ]);
       if (assessmentError) throw assessmentError;
       if (sessionError) throw sessionError;
-
       if (periodError) throw periodError;
+
       const periods = (periodRows ?? []).sort(
         (first, second) => first.sort_order - second.sort_order,
       );
@@ -985,13 +1051,16 @@ export function useDashboardViewModel() {
           const categoryGrades = {};
           Object.keys(gradingWeights).forEach((categoryKey) => {
             if (categoryKey === "attendance") return;
+            // Excel's point cells are blank for blank raw-score cells, and
+            // its category average uses COUNT/AVERAGE. Use only recorded
+            // numeric score rows here; an explicit zero is still included.
             const itemGrades = (assessmentRows ?? [])
               .filter(
                 (row) =>
                   row.period_id === period.id &&
                   row.enrollment_id === student.id &&
                   row.category === categoryKey &&
-                  row.score !== null &&
+                  Number.isFinite(Number(row.score)) &&
                   Number(row.max_score) > 0,
               )
               .map((row) =>
@@ -1020,12 +1089,20 @@ export function useDashboardViewModel() {
           const contributingGrades = Object.entries(gradingWeights).filter(
             ([categoryKey]) => categoryGrades[categoryKey] != null,
           );
-          if (!contributingGrades.length) return;
-          const gradePoint = contributingGrades.reduce(
-            (total, [categoryKey, weight]) =>
-              total + categoryGrades[categoryKey] * weight,
-            0,
-          );
+
+          let gradePoint = null;
+          if (contributingGrades.length) {
+            gradePoint = contributingGrades.reduce(
+              (total, [categoryKey, weight]) =>
+                total + categoryGrades[categoryKey] * weight,
+              0,
+            );
+          } else {
+            const overrideOwn = gradeOverrides?.[period.code]?.[student.id]?.own;
+            if (Number.isFinite(Number(overrideOwn))) gradePoint = Number(overrideOwn);
+          }
+
+          if (gradePoint == null) return;
           periodStudentGrades.set(student.id, gradePoint);
         });
         ownGrades.set(period.code, periodStudentGrades);
@@ -1034,47 +1111,44 @@ export function useDashboardViewModel() {
       const averageDefined = (values) => {
         const validValues = values.filter((value) => value != null);
         return validValues.length
-          ? validValues.reduce((total, value) => total + value, 0) /
-              validValues.length
+          ? validValues.reduce((total, value) => total + value, 0) / validValues.length
           : null;
       };
       const periodGradeRows = [];
       roster.forEach((student) => {
+        const overrideFor = (code) => gradeOverrides?.[code]?.[student.id]?.cumulative ?? null;
         const prelim = ownGrades.get("prelim")?.get(student.id) ?? null;
         const midterm = ownGrades.get("midterm")?.get(student.id) ?? null;
         const semifinal = ownGrades.get("semifinal")?.get(student.id) ?? null;
         const final = ownGrades.get("final")?.get(student.id) ?? null;
-        const cumulative = {
-          prelim,
-          midterm:
-            prelim != null && midterm != null
-              ? midterm * 0.7 + prelim * 0.3
-              : null,
-        };
+
+        const cumulative = { prelim };
+        cumulative.midterm =
+          prelim != null && midterm != null
+            ? midterm * 0.7 + prelim * 0.3
+            : overrideFor("midterm");
         cumulative.semifinal =
           semifinal != null
             ? averageDefined([prelim, cumulative.midterm, semifinal])
-            : null;
+            : overrideFor("semifinal");
         cumulative.final =
           final != null
             ? averageDefined([
                 averageDefined([prelim, cumulative.midterm]),
                 averageDefined([cumulative.semifinal, final]),
               ])
-            : null;
+            : overrideFor("final");
 
         periods.forEach((period) => {
           const own = ownGrades.get(period.code)?.get(student.id) ?? null;
-          if (own == null) return;
+          const cumulativeValue = cumulative[period.code] ?? null;
+          if (own == null && cumulativeValue == null) return;
           periodGradeRows.push({
             section_id: sectionId,
             period_id: period.id,
             enrollment_id: student.id,
-            own_period_grade: Number(own.toFixed(2)),
-            cumulative_grade:
-              cumulative[period.code] == null
-                ? null
-                : Number(cumulative[period.code].toFixed(2)),
+            own_period_grade: own,
+            cumulative_grade: cumulativeValue,
           });
         });
       });
@@ -1096,6 +1170,29 @@ export function useDashboardViewModel() {
     [currentSectionId, students],
   );
 
+  const refreshGrades = useCallback(async (sectionId = currentSectionId) => {
+    if (!sectionId || !supabase || browserIsOffline()) return;
+    const loaded = await loadLiveData(sectionId);
+    if (!loaded?.students?.length || !loaded.periods?.length) return;
+    const gradeOverrides = {};
+    loaded.students.forEach((student) => {
+      Object.entries(student.gradeDetails ?? {}).forEach(([periodCode, details]) => {
+        if (details?.own == null && details?.cumulative == null) return;
+        gradeOverrides[periodCode] ??= {};
+        gradeOverrides[periodCode][student.id] = details;
+      });
+    });
+    for (const periodRow of loaded.periods) {
+      await recalculatePeriodGrades(
+        periodRow.id,
+        sectionId,
+        loaded.students,
+        gradeOverrides,
+      );
+    }
+    await loadLiveData(sectionId);
+  }, [currentSectionId, loadLiveData, recalculatePeriodGrades]);
+
   const importGradeSheet = useCallback(
     async (file) => {
       setGradeSheetImportState({
@@ -1113,7 +1210,7 @@ export function useDashboardViewModel() {
         }
         const result = await importGradeSheetFile({ file, supabase });
         for (const periodId of result.periodIds) {
-          await recalculatePeriodGrades(periodId, result.sectionId, result.students);
+          await recalculatePeriodGrades(periodId, result.sectionId, result.students,result.gradeOverrides);
         }
         await loadLiveData(result.sectionId);
         setGradeSheetImportState({
@@ -1146,7 +1243,15 @@ export function useDashboardViewModel() {
     async ({ date, sessionTime, statuses }) => {
       if (!currentSectionId)
         throw new Error("No active Supabase section.");
-      const periodCode = period.toLowerCase();
+      const selectedPeriodCode = period.toLowerCase();
+      const datePeriodCode = gradingPeriods
+        .filter((periodItem) => periodItem.start_date && periodItem.end_date)
+        .sort((first, second) => first.sort_order - second.sort_order)
+        .find(
+          (periodItem) =>
+            date >= periodItem.start_date && date <= periodItem.end_date,
+        )?.code;
+      const periodCode = datePeriodCode ?? selectedPeriodCode;
       if (browserIsOffline() || !supabase) {
         const existingSession = attendanceSessions.find(
           (session) =>
@@ -1216,7 +1321,7 @@ export function useDashboardViewModel() {
         if (result.error) throw result.error;
         session = result.data;
       }
-      if (!session.period_id) {
+      if (session.period_id !== periodRow.id) {
         const { error } = await supabase
           .from("class_sessions")
           .update({ period_id: periodRow.id })
@@ -1243,6 +1348,7 @@ export function useDashboardViewModel() {
       currentSectionId,
       loadLiveData,
       period,
+      gradingPeriods,
       attendanceSessions,
       queueOfflineChange,
       recalculatePeriodGrades,
@@ -2417,6 +2523,7 @@ export function useDashboardViewModel() {
     submitAssessment,
     addStudent,
     deleteSection,
+    refreshGrades,
     refresh: loadLiveData,
   };
 }

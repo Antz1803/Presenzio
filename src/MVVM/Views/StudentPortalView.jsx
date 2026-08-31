@@ -310,7 +310,15 @@ function StudentPortalView() {
                 Student ID number
                 <input required value={studentNumber} placeholder="Enter your student ID" onChange={(event) => setStudentNumber(event.target.value)} />
               </label>
-              <p className="student-access-instructions"><strong>Important instruction</strong>Do not leave this assessment, open another tab, copy/paste, or press Escape. Any violation is recorded for your teacher; pressing Escape submits your answers automatically.</p>
+              <p className="student-access-instructions"><strong>Important instruction</strong>
+              <p>🚫 Exam Rules — Read Before Starting</p>
+               <p>📵 No switching tabs or apps during the exam</p>
+                <p>🔙 No using the Back button or minimizing the browser</p>
+                 <p>❌ No closing or refreshing this page</p>
+                  <p>📸 No screenshots or screen recording</p>
+                  <p>🤝 No sharing answers or communicating with others</p>
+                  <p>⚠️ Violations are automatically detected and reported to your teacher. Your exam will be immediately submitted.</p>
+              </p>
               {message.text && <p className={`record-save-message ${message.status}`} role="alert">{message.text}</p>}
               <button className="primary-button" disabled={submitting}>{submitting ? "Opening assessment…" : "Open assessment"}</button>
             </form>

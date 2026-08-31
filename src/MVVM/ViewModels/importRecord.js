@@ -21,6 +21,25 @@ const attendanceLayout = {
   final: { startColumn: 58, endColumn: 73 },
 };
 
+// Prelim has no cumulative column — it *is* the cumulative value.
+const gradeColumns = {
+  prelim:    { own: 35 },
+  midterm:   { own: 35, cumulative: 37 },
+  semifinal: { own: 35, cumulative: 38 },
+  final:     { own: 35, cumulative: 39 },
+};
+
+// The period sheets have two distinct row roles. Excel row 9 is the hidden,
+// class-wide HPS definition row; student records begin on Excel row 10.
+const gradeSheetRows = {
+  hps: 8,
+  firstStudent: 9,
+};
+
+const attendanceRows = {
+  firstStudent: 6,
+};
+
 function numeric(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
@@ -102,14 +121,14 @@ function collectGradeSheetRoster(workbook) {
     const sheet = workbook.Sheets[sheetName];
     if (!sheet) return;
     XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" })
-      .slice(9)
+      .slice(gradeSheetRows.firstStudent)
       .forEach((row) => addCandidate(row?.[1], row?.[0], null));
   });
 
   const attendanceSheet = workbook.Sheets.Attendance;
   if (attendanceSheet) {
     XLSX.utils.sheet_to_json(attendanceSheet, { header: 1, defval: "" })
-      .slice(6)
+      .slice(attendanceRows.firstStudent)
       .forEach((row) => addCandidate(row?.[2], row?.[0], genderValue(row?.[1])));
   }
 
@@ -277,7 +296,7 @@ async function resolveGradeSheetClass({ workbook, supabase }) {
 
   let { data: enrollments, error: enrollmentError } = await supabase
     .from("enrollments")
-    .select("id, student_id, ctrl_no, student:students(id, full_name, student_no)")
+    .select("id, student_id, ctrl_no, student:students(id, full_name, gender, student_no)")
     .eq("section_id", section.id)
     .order("ctrl_no");
   if (enrollmentError) throw enrollmentError;
@@ -289,11 +308,11 @@ async function resolveGradeSheetClass({ workbook, supabase }) {
     enrollments,
   });
   if (rosterChanges.createdEnrollments.length) {
-    const refreshed = await supabase
-      .from("enrollments")
-      .select("id, student_id, ctrl_no, student:students(id, full_name, student_no)")
-      .eq("section_id", section.id)
-      .order("ctrl_no");
+      const refreshed = await supabase
+        .from("enrollments")
+        .select("id, student_id, ctrl_no, student:students(id, full_name, gender, student_no)")
+        .eq("section_id", section.id)
+        .order("ctrl_no");
     if (refreshed.error) throw refreshed.error;
     enrollments = refreshed.data;
   }
@@ -335,6 +354,7 @@ async function importRecordWorkbook({
   const byName = new Map(students.map((student) => [normalizeName(student.name), student]));
   const periodByCode = new Map(gradingPeriods.map((period) => [period.code, period]));
   const scoreRows = new Map();
+  const gradeOverrides = {}; // { [periodCode]: { [enrollmentId]: { own, cumulative } } }
   const importedPeriods = new Set();
   const matchedStudents = new Set();
   const unmatchedRows = new Set();
@@ -344,8 +364,9 @@ async function importRecordWorkbook({
     const period = periodByCode.get(periodCode);
     if (!sheet || !period) return;
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-    const maximumRow = rows[8] ?? [];
-    const dataRows = rows.slice(9);
+    const maximumRow = rows[gradeSheetRows.hps] ?? [];
+    const dataRows = rows.slice(gradeSheetRows.firstStudent);
+    const gradeCols = gradeColumns[periodCode];
 
     dataRows.forEach((row) => {
       if (!String(row?.[1] ?? "").trim()) return;
@@ -360,6 +381,9 @@ async function importRecordWorkbook({
           const maximum = numeric(maximumRow[scoreColumn]);
           if (maximum == null || maximum <= 0) return;
           const rawValue = row[scoreColumn];
+          // Excel leaves the transmuted point cell blank when the student's
+          // raw score is blank. COUNT/AVERAGE therefore ignores that item;
+          // only an explicit numeric 0 is a recorded zero score.
           if (rawValue == null || String(rawValue).trim() === "") return;
           const rawScore = numeric(rawValue);
           if (rawScore == null) return;
@@ -379,6 +403,23 @@ async function importRecordWorkbook({
           importedPeriods.add(period.id);
         });
       });
+
+      // A teacher may type a grade directly into the sheet instead of
+      // (or in addition to) itemized scores. Capture it so it survives
+      // the round trip even when no raw scores exist for this student.
+      if (gradeCols) {
+        const ownGrade = numeric(row[gradeCols.own]);
+        const cumulativeGrade =
+          gradeCols.cumulative != null ? numeric(row[gradeCols.cumulative]) : null;
+        if (ownGrade != null || cumulativeGrade != null) {
+          gradeOverrides[periodCode] ??= {};
+          gradeOverrides[periodCode][student.id] = {
+            own: ownGrade,
+            cumulative: cumulativeGrade,
+          };
+          importedPeriods.add(period.id);
+        }
+      }
     });
   });
 
@@ -434,7 +475,7 @@ async function importRecordWorkbook({
       sessions.set(`${date}:${period.id}`, { date, period, column, records: new Map() });
     });
 
-    rows.slice(6).forEach((row) => {
+    rows.slice(attendanceRows.firstStudent).forEach((row) => {
       if (!String(row?.[2] ?? "").trim()) return;
       const student = findStudent([row[0], row[2]], students, byControlNumber, byName);
       if (!student) {
@@ -490,8 +531,8 @@ async function importRecordWorkbook({
     }
   }
 
-  if (!scoreRows.size && !attendanceCount) {
-    throw new Error("No record scores or attendance values could be imported from this workbook.");
+  if (!scoreRows.size && !attendanceCount && !Object.keys(gradeOverrides).length) {
+    throw new Error("No record scores, grades, or attendance values could be imported from this workbook.");
   }
 
   return {
@@ -500,6 +541,7 @@ async function importRecordWorkbook({
     matchedStudents: matchedStudents.size,
     unmatchedStudents: unmatchedRows.size,
     periodIds: [...importedPeriods],
+    gradeOverrides,
   };
 }
 

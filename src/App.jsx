@@ -1,4 +1,4 @@
-﻿import DashboardView from './MVVM/Views/DashboardView'
+﻿import DashboardView from './MVVM/Views/DashboardShell'
 import StudentPortalView from './MVVM/Views/StudentPortalView'
 
 export default function App() {

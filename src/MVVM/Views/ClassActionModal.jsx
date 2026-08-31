@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const titles = {
   attendance: "Take Attendance",
@@ -20,12 +20,11 @@ const gradePeriods = [
 ];
 
 function getGradeRemark(student) {
-  const latestGrade = [...gradePeriods]
-    .reverse()
-    .map((period) => student.grades?.[period.key])
-    .find((grade) => grade != null && Number.isFinite(Number(grade)));
-  if (latestGrade == null) return "—";
-  return Number(latestGrade) > 0 && Number(latestGrade) <= 3.05
+  // The workbook's Summary remarks are based only on the Final grade. An
+  // earlier passing period must not make an unfinished Final appear passed.
+  const finalGrade = student.grades?.final;
+  if (finalGrade == null || !Number.isFinite(Number(finalGrade))) return "—";
+  return Number(finalGrade) <= 3.05
     ? "Passed"
     : "Failed";
 }
@@ -236,15 +235,15 @@ function AttendanceForm({
 
 const scoreCategories = [
   { key: "quiz", label: "Quiz", prefix: "Q", count: 4 },
-  { key: "assignment", label: "Assignment", prefix: "A", count: 2 },
-  { key: "activity", label: "Graded activity", prefix: "G", count: 2 },
+  { key: "assignment", label: "Assignment", prefix: "A", count: 4 },
+  { key: "activity", label: "Graded activity", prefix: "G", count: 4 },
   { key: "exam", label: "Exam", prefix: "E", count: 1 },
 ];
 
 const recordSummaryGroups = [
   { key: "quiz", label: "QUIZ", prefix: "Q", count: 4 },
-  { key: "assignment", label: "ASSIGNMENT", prefix: "A", count: 2 },
-  { key: "activity", label: "GRADED ACTIVITY", prefix: "GA", count: 2 },
+  { key: "assignment", label: "ASSIGNMENT", prefix: "A", count: 4 },
+  { key: "activity", label: "GRADED ACTIVITY", prefix: "GA", count: 4 },
   { key: "exam", label: "EXAM", prefix: "E", count: 1 },
 ];
 
@@ -259,7 +258,9 @@ const transmutationBreakpoints = [
 
 function transmuteScore(value) {
   if (!Number.isFinite(Number(value))) return null;
-  const percentage = Math.max(0, Math.min(100, Math.floor(Number(value))));
+  // Match the workbook's approximate VLOOKUP: use the greatest breakpoint
+  // less than or equal to the percentage, without rounding the input first.
+  const percentage = Math.max(0, Math.min(100, Number(value)));
   let gradePoint = 5;
   transmutationBreakpoints.forEach(([breakpoint, grade]) => {
     if (percentage >= breakpoint) gradePoint = grade;
@@ -378,6 +379,9 @@ function ScoreForm({
   const hasValidMaxScores = usedItemNumbers.every(
     (itemNo) => Number(activeMaxScores[String(itemNo)]) > 0,
   );
+  const hasConfiguredMaxScores = Object.values(activeMaxScores).some(
+    (value) => Number(value) > 0,
+  );
   const autoSaveCurrentCategory = async () => {
     if (!hasValidMaxScores) {
       setSaveMessage({
@@ -494,18 +498,23 @@ function ScoreForm({
   };
   const normalizedAverage = (student) => {
     if (!hasValidMaxScores) return 0;
-    const ratios = Array.from(
+    const gradePoints = Array.from(
       { length: activeCategory.count },
       (_, index) => {
         const rawScore = scores[category][student.id + ":" + (index + 1)];
         const max = Number(activeMaxScores[String(index + 1)]);
-        if (rawScore === "" || !Number.isFinite(max) || max <= 0) return null;
+        if (!Number.isFinite(max) || max <= 0) return null;
+        // Excel leaves a blank transmuted cell blank, so COUNT/AVERAGE
+        // excludes it. An explicit numeric 0 remains a real score.
+        if (rawScore === "") return null;
         const score = Number(rawScore);
-        return Number.isFinite(score) ? score / max : null;
+        return Number.isFinite(score)
+          ? transmuteScore((score / max) * 100)
+          : null;
       },
     ).filter((value) => value !== null);
-    return ratios.length
-      ? (ratios.reduce((sum, value) => sum + value, 0) / ratios.length) * 100
+    return gradePoints.length
+      ? gradePoints.reduce((sum, value) => sum + value, 0) / gradePoints.length
       : 0;
   };
   return (
@@ -596,8 +605,8 @@ function ScoreForm({
             {visibleStudents.map((student) => {
               const currentAverage = average(student);
               const gradePoint =
-                hasValidMaxScores && Number.isFinite(currentAverage)
-                  ? transmuteScore(normalizedAverage(student)).toFixed(2)
+                hasConfiguredMaxScores && hasValidMaxScores && Number.isFinite(currentAverage)
+                  ? normalizedAverage(student).toFixed(2)
                   : "—";
               return (
                 <tr key={student.id}>
@@ -1908,7 +1917,17 @@ export default function ClassActionModal({
   onSubmitAssessment,
   onSaveGradingPeriods,
   onAddStudent,
+  onRefreshGrades,
 }) {
+  const previousType = useRef(null);
+
+  useEffect(() => {
+    const wasShowingGrades = previousType.current === "show-grades";
+    previousType.current = type;
+    if (type !== "show-grades" || wasShowingGrades || !onRefreshGrades) return;
+    void onRefreshGrades().catch(() => {});
+  }, [onRefreshGrades, type]);
+
   if (loading)
     return (
       <ModalShell title={titles[type]} section={section} onClose={onClose}>

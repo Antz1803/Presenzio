@@ -74,11 +74,19 @@ create table if not exists period_grades (
   section_id uuid not null references sections(id) on delete cascade,
   period_id uuid not null references grading_periods(id),
   enrollment_id uuid not null references enrollments(id) on delete cascade,
-  own_period_grade numeric(4,2),
-  cumulative_grade numeric(4,2),
+  own_period_grade numeric,
+  cumulative_grade numeric,
   computed_at timestamptz not null default now(),
   unique (section_id, period_id, enrollment_id)
 );
+
+-- Existing projects may have created these columns with the old two-decimal
+-- definition. Preserve the workbook's fractional grade precision on upgrade.
+alter table if exists period_grades
+  alter column own_period_grade type numeric using own_period_grade::numeric;
+
+alter table if exists period_grades
+  alter column cumulative_grade type numeric using cumulative_grade::numeric;
 
 create table if not exists assessment_scores (
   id uuid primary key default gen_random_uuid(),
