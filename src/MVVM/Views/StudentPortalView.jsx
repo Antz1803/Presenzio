@@ -310,15 +310,53 @@ function StudentPortalView() {
                 Student ID number
                 <input required value={studentNumber} placeholder="Enter your student ID" onChange={(event) => setStudentNumber(event.target.value)} />
               </label>
-              <p className="student-access-instructions"><strong>Important instruction</strong>
-              <p>🚫 Exam Rules — Read Before Starting</p>
-               <p>📵 No switching tabs or apps during the exam</p>
-                <p>🔙 No using the Back button or minimizing the browser</p>
-                 <p>❌ No closing or refreshing this page</p>
-                  <p>📸 No screenshots or screen recording</p>
-                  <p>🤝 No sharing answers or communicating with others</p>
-                  <p>⚠️ Violations are automatically detected and reported to your teacher. Your exam will be immediately submitted.</p>
-              </p>
+          <div className="max-w-xl overflow-hidden rounded-xl border border-red-200 bg-white shadow-sm">
+                {/* Header Accent Bar */}
+                <div className="bg-red-500 px-5 py-3 text-white">
+                  <div className="flex items-center gap-2">
+                    <svg className="h-5 w-5 fill-current" viewBox="0 0 20 20">
+                      <path d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" />
+                    </svg>
+                    <h3 className="font-bold tracking-wide uppercase text-xs">
+                      Important Notice
+                    </h3>
+                  </div>
+                  <p className="mt-0.5 font-semibold text-lg">Read Before Starting</p>
+                </div>
+
+                <div className="p-5">
+                  {/* Rules List */}
+                  <ul className="space-y-2.5 text-sm font-medium text-slate-700">
+                    <li className="flex items-center gap-2.5">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-100 text-xs text-red-600">✕</span>
+                      <span>No switching tabs or apps during the exam</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-100 text-xs text-red-600">✕</span>
+                      <span>No using the Back button or minimizing the browser</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-100 text-xs text-red-600">✕</span>
+                      <span>No closing or refreshing this page</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-100 text-xs text-red-600">✕</span>
+                      <span>No screenshots or screen recording</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-100 text-xs text-red-600">✕</span>
+                      <span>No sharing answers or communicating with others</span>
+                    </li>
+                  </ul>
+
+                  {/* Violation Warning Box */}
+                  <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-3.5 text-xs text-red-800">
+                    <p className="font-semibold leading-relaxed">
+                      ⚠️ Violations are automatically detected and reported to your teacher. Your exam will be immediately submitted.
+                    </p>
+                  </div>
+                </div>
+              </div>
               {message.text && <p className={`record-save-message ${message.status}`} role="alert">{message.text}</p>}
               <button className="primary-button" disabled={submitting}>{submitting ? "Opening assessment…" : "Open assessment"}</button>
             </form>
@@ -353,12 +391,32 @@ function StudentPortalView() {
           </div>
           <span className="student-portal-lock">Student view</span>
         </div>
+          <div className="max-w-lg rounded-xl border-l-4 border-l-red-500 border-y border-r border-slate-200 bg-slate-50 p-5 text-slate-800 shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-700">
+                Mandatory
+              </span>
+              <h3 className="font-bold text-slate-900 text-base">
+                Exam Rules & Restrictions
+              </h3>
+            </div>
 
+            <ul className="mt-3 list-inside list-disc space-y-1.5 text-sm text-slate-600">
+              <li>No switching tabs or apps during the exam</li>
+              <li>No using the Back button or minimizing the browser</li>
+              <li>No closing or refreshing this page</li>
+              <li>No screenshots or screen recording</li>
+              <li>No sharing answers or communicating with others</li>
+            </ul>
+
+            <div className="mt-4 rounded-md bg-amber-100/80 p-3 text-xs font-medium text-amber-900 border border-amber-200">
+              <strong>Warning:</strong> Violations are automatically detected and reported to your teacher. Your exam will be immediately submitted.
+            </div>
+          </div>
         <section className="student-portal-card">
           <div className="student-portal-identity">
             <div><span>CLASS</span><strong>{section?.subject_code} · {section?.subject_title}</strong></div>
-            <div><span>STUDENT</span><strong>{selectedStudent?.name}</strong><small>{selectedStudent?.number}</small></div>
-            <button type="button" className="student-change-assessment" onClick={() => { setAccessState(null); setAnswers({}); setCurrentQuestionIndex(0); violationsRef.current = []; setViolations([]); setMessage({ status: "", text: "" }); }}>Use another key</button>
+            <div><span>STUDENT</span><strong>{selectedStudent?.name}</strong><small>{selectedStudent?.number}</small></div>     
           </div>
           {sections.length > 0 && <div className="student-portal-selects">
             <label>

@@ -195,6 +195,15 @@ export async function replayOfflineMutation({ supabase, mutation, importMasterLi
     return { sectionId: payload.enrollment.section_id };
   }
 
+  if (type === "update-section") {
+    const { error } = await supabase
+      .from("sections")
+      .update(payload.changes)
+      .eq("id", payload.sectionId);
+    if (error) throw error;
+    return { sectionId: payload.sectionId };
+  }
+
   if (type === "save-assessment") {
     const { error: assessmentError } = await supabase.from("assessments").upsert(
       payload.assessment,

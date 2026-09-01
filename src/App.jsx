@@ -2,8 +2,9 @@
 import StudentPortalView from './MVVM/Views/StudentPortalView'
 
 export default function App() {
+  const normalizedPathname = window.location.pathname.replace(/\/+$/, "") || "/"
   const isStudentView =
-    window.location.pathname === '/student' ||
+    normalizedPathname === '/student' ||
     new URLSearchParams(window.location.search).get('view') === 'student'
 
   return isStudentView ? <StudentPortalView /> : <DashboardView />

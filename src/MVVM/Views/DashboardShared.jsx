@@ -13,6 +13,7 @@ export function Icon({ name, size = 18 }) {
     arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
     alert: <><path d="M12 3 2 21h20L12 3z" /><path d="M12 9v5M12 18h.01" /></>,
     trash: <><path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6M10 11v6M14 11v6" /></>,
+    edit: <><path d="m4 16.5-.8 3.3 3.3-.8L19.8 5.7a2.3 2.3 0 0 0-3.3-3.3z" /><path d="m14.8 3.8 3.3 3.3" /></>,
   };
 
   return (

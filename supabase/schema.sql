@@ -23,6 +23,17 @@ create table if not exists sections (
   created_at timestamptz not null default now()
 );
 
+-- Keep existing Supabase projects compatible with the class editor. The
+-- CREATE TABLE above does not add columns when sections already exists.
+alter table if exists sections add column if not exists subject_title text;
+alter table if exists sections add column if not exists edp_code text;
+alter table if exists sections add column if not exists year_level text;
+alter table if exists sections add column if not exists section_no text;
+alter table if exists sections add column if not exists room text;
+alter table if exists sections add column if not exists days text;
+alter table if exists sections add column if not exists time_start time;
+alter table if exists sections add column if not exists time_end time;
+
 create table if not exists students (
   id uuid primary key default gen_random_uuid(),
   student_no text,

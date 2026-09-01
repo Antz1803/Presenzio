@@ -2357,6 +2357,51 @@ export function useDashboardViewModel() {
     [currentSectionId, loadLiveData, queueOfflineChange, students.length],
   );
 
+  const updateSection = useCallback(
+    async (sectionId, changes) => {
+      if (!sectionId) throw new Error("No class was selected for editing.");
+
+      const subjectCode = String(changes?.subject_code ?? "").trim();
+      if (!subjectCode) throw new Error("Subject code is required.");
+
+      const sectionChanges = {
+        days: String(changes?.days ?? "").trim() || null,
+        time_start: changes?.time_start || null,
+        time_end: changes?.time_end || null,
+        edp_code: String(changes?.edp_code ?? "").trim() || null,
+        subject_code: subjectCode,
+        subject_title: String(changes?.subject_title ?? "").trim() || null,
+        room: String(changes?.room ?? "").trim() || null,
+        year_level: String(changes?.year_level ?? "").trim() || null,
+        section_no: String(changes?.section_no ?? "").trim() || null,
+      };
+
+      if (browserIsOffline() || !supabase) {
+        await queueOfflineChange("update-section", {
+          sectionId,
+          changes: sectionChanges,
+        });
+        setSections((current) =>
+          current.map((item) =>
+            item.id === sectionId ? { ...item, ...sectionChanges } : item,
+          ),
+        );
+        setSection((current) =>
+          current?.id === sectionId ? { ...current, ...sectionChanges } : current,
+        );
+        return;
+      }
+
+      const { error } = await supabase
+        .from("sections")
+        .update(sectionChanges)
+        .eq("id", sectionId);
+      if (error) throw error;
+      await loadLiveData(sectionId);
+    },
+    [loadLiveData, queueOfflineChange],
+  );
+
   const deleteSection = useCallback(
     async (sectionId) => {
       if (!sectionId)
@@ -2522,6 +2567,7 @@ export function useDashboardViewModel() {
     loadStudentAssessment,
     submitAssessment,
     addStudent,
+    updateSection,
     deleteSection,
     refreshGrades,
     refresh: loadLiveData,
