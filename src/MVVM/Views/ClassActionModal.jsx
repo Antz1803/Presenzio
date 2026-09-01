@@ -1254,7 +1254,33 @@ function AssessmentManager({ section, assessments, students, onUpdate, onDelete,
         </aside>
         {draft && (
           <form className="assessment-manager-editor" onSubmit={save}>
-            <div className="assessment-manager-editor-heading"><div><span>EDIT ASSESSMENT</span><h3>{selectedAssessment?.title}</h3></div><code>{selectedAssessment?.access_key}</code></div>
+         <div className="assessment-manager-editor-heading">
+              <div>
+                <span>EDIT ASSESSMENT</span>
+                <h3>{selectedAssessment?.title}</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <code>{selectedAssessment?.access_key}</code>
+                {selectedAssessment?.access_key && (
+                  <button
+                    type="button"
+                    title="Copy key"
+                    aria-label="Copy key"
+                    className="rounded p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                    onClick={(e) => {
+                      navigator.clipboard.writeText(selectedAssessment.access_key);
+                      const btn = e.currentTarget;
+                      btn.classList.add("text-emerald-600");
+                      setTimeout(() => btn.classList.remove("text-emerald-600"), 1000);
+                    }}
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
             <div className="action-form-grid assessment-details-grid">
               <label>Assessment title<input required value={draft.title} onChange={(event) => updateDraft("title", event.target.value)} /></label>
               <label>Type<select value={draft.category} onChange={(event) => updateDraft("category", event.target.value)}>{assessmentCategories.map((item) => <option value={item.key} key={item.key}>{item.label}</option>)}</select></label>
@@ -1286,23 +1312,48 @@ function AssessmentManager({ section, assessments, students, onUpdate, onDelete,
               </div>
             </section>
             <section className="assessment-violation-panel">
-              <div>
-                <span>VIOLATION LIST</span>
-                <h4>Student security events</h4>
-                <p>These events are recorded with the student attempt. Pressing Escape automatically submits the attempt.</p>
-              </div>
-              <div className="assessment-violation-list">
-                {(selectedAssessment?.violations ?? []).length ? selectedAssessment.violations.map((violation) => {
-                  const student = students.find((item) => item.studentId === violation.student_id);
-                  return (
-                    <div className="assessment-violation-row" key={violation.id}>
-                      <div><strong>{student?.name ?? "Unknown student"}</strong><small>{student?.number ?? violation.student_id} · Attempt {violation.attempt_no}</small></div>
-                      <div><b>{String(violation.violation_type || "security event").replaceAll("_", " ")}</b><small>{violation.details || "Detected by student portal"} · {new Date(violation.occurred_at).toLocaleString()}</small></div>
-                    </div>
-                  );
-                }) : <p className="assessment-field-hint">No violations recorded for this assessment.</p>}
-              </div>
-            </section>
+                  <div>
+                    <span>VIOLATION LIST</span>
+                    <h4>Student security events</h4>
+                    <p>These events are recorded with the student attempt. Pressing Escape automatically submits the attempt.</p>
+                  </div>
+                  <div className="assessment-violation-list">
+                    {(() => {
+                      const violations = selectedAssessment?.violations ?? [];
+                      if (!violations.length) {
+                        return <p className="assessment-field-hint">No violations recorded for this assessment.</p>;
+                      }
+
+                      // Group violations by student_id
+                      const groupedViolations = violations.reduce((acc, violation) => {
+                        const id = violation.student_id;
+                        if (!acc[id]) acc[id] = [];
+                        acc[id].push(violation);
+                        return acc;
+                      }, {});
+
+                      return Object.entries(groupedViolations).map(([studentId, studentViolations]) => {
+                        const student = students.find((item) => item.studentId === studentId);
+                        return (
+                          <div className="assessment-violation-group" key={studentId}>
+                            <div className="assessment-violation-student-header">
+                              <strong>{student?.name ?? "Unknown student"}</strong>
+                              <small>{student?.number ?? studentId} · {studentViolations.length} total violation(s)</small>
+                            </div>
+                            <div className="assessment-violation-details-list">
+                              {studentViolations.map((violation) => (
+                                <div className="assessment-violation-row" key={violation.id}>
+                                  <b>{String(violation.violation_type || "security event").replaceAll("_", " ")}</b>
+                                  <small>Attempt {violation.attempt_no} · {violation.details || "Detected by student portal"} · {new Date(violation.occurred_at).toLocaleString()}</small>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </section>
             <div className="assessment-question-list">
               {draft.questions.map((question, index) => (
                 <article className="assessment-question-card" key={index}>

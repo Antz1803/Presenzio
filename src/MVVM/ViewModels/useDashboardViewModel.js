@@ -395,6 +395,23 @@ export function useDashboardViewModel() {
         .order("ctrl_no");
       if (enrollmentError) throw enrollmentError;
 
+      // The "Total students" stat card is meant to reflect every student
+      // in the system, not just the roster of the currently selected
+      // class — enrollments above are scoped to one section_id, so a
+      // separate, unfiltered query against the students table is needed
+      // for a true system-wide count and gender breakdown.
+      const { data: allStudentsData, error: allStudentsError } = await supabase
+        .from("students")
+        .select("id, gender");
+      if (allStudentsError) throw allStudentsError;
+      const totalStudentsAll = allStudentsData?.length ?? 0;
+      const maleAll = (allStudentsData ?? []).filter(
+        (studentRow) => studentRow.gender === "M",
+      ).length;
+      const femaleAll = (allStudentsData ?? []).filter(
+        (studentRow) => studentRow.gender === "F",
+      ).length;
+
       let { data: periods, error: periodError } = await supabase
         .from("grading_periods")
         .select("id, code, sort_order, start_date, end_date")
@@ -605,12 +622,6 @@ export function useDashboardViewModel() {
         };
       });
 
-      const male = liveRoster.filter(
-        (student) => student.gender === "M",
-      ).length;
-      const female = liveRoster.filter(
-        (student) => student.gender === "F",
-      ).length;
       const todayRecords = sessionsData[0]?.attendance_records ?? [];
       const todayPresent = todayRecords.filter(
         (record) => record.status === "present" || record.status === "late",
@@ -702,9 +713,11 @@ export function useDashboardViewModel() {
         }),
       );
       setStats({
-        totalStudents: liveRoster.length,
-        male,
-        female,
+        // These three now reflect every student in the system, not just
+        // this section's roster — see the unfiltered students query above.
+        totalStudents: totalStudentsAll,
+        male: maleAll,
+        female: femaleAll,
         todayAttendance: liveRoster.length
           ? ((todayPresent / liveRoster.length) * 100).toFixed(1) + "%"
           : "—",
