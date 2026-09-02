@@ -5,18 +5,44 @@ import ClassActionModal from "./ClassActionModal";
 import ClassesView from "./ClassesView";
 import OverviewView from "./OverviewView";
 import ReportsView from "./ReportsView";
+import PrintReportModal from "./PrintReportModal";
 import { Avatar, Icon } from "./DashboardShared";
 import logo from "../../assets/Logo.png";
 import "../../App.css";
+
+const printActions = [
+  ["prelim", "Print Prelim"],
+  ["midterm", "Print Midterm"],
+  ["semifinal", "Print Semi-Final"],
+  ["final", "Print Final"],
+  ["summary", "Print Summary"],
+  ["monthly-attendance", "Print Monthly Attendance"],
+];
 
 function ClassOptionsModal({
   section,
   onClose,
   onOpenAction,
+  onOpenPrint,
   onOpenStudentView,
   onSyncToExcel,
   syncReady,
 }) {
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncToExcel = async () => {
+    setSyncing(true);
+    try {
+      await onSyncToExcel();
+      onClose();
+    } catch (error) {
+      console.error("Excel sync failed:", error);
+      window.alert(error?.message || "Excel synchronization failed.");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const actions = [
     ["attendance", "Take Attendance"],
     ["attendance-list", "Attendance List"],
@@ -28,55 +54,72 @@ function ClassOptionsModal({
     ["grade-settings", "Grade Sheet Settings"],
   ];
 
+  const buttonClass =
+    "block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-50";
+
   return (
     <div
-      className="modal-backdrop class-options-backdrop"
-      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm print:hidden"
+      onMouseDown={(event) => event.target === event.currentTarget && !syncing && onClose()}
     >
       <section
-        className="class-options-modal"
+        className="max-h-[calc(100vh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="class-options-title"
       >
-        <div className="class-options-header">
-          <h2 id="class-options-title">CLASS OPTIONS</h2>
+        <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
+          <h2 id="class-options-title" className="text-sm font-extrabold uppercase tracking-wide text-slate-800">
+            Class Options
+          </h2>
           <button
-            className="modal-close class-options-close"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
             onClick={onClose}
+            disabled={syncing}
             aria-label="Close class options"
           >
             ×
           </button>
         </div>
 
-        <div className="class-options-body">
-          <div className="class-option-summary">
-            <div>
-              <h3>
-                {section?.subject_code || "Class"} - {section?.subject_title || "Class subject"}
-              </h3>
-              <p>
-                {section?.days || "Schedule not set"} · {section?.room || "Room not set"}
-              </p>
-            </div>
+        <div className="flex flex-col gap-2.5">
+          <div className="mb-1 rounded-2xl bg-slate-50 p-3.5">
+            <h3 className="text-sm font-bold text-slate-800">
+              {section?.subject_code || "Class"} - {section?.subject_title || "Class subject"}
+            </h3>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {section?.days || "Schedule not set"} · {section?.room || "Room not set"}
+            </p>
           </div>
 
           {actions.map(([type, label]) => (
             <button
-              className="class-option-button"
+              className={buttonClass}
               key={type}
-              onClick={() => {
-                onClose();
-                onOpenAction(type, section.id);
-              }}
+              disabled={syncing}
+              onClick={() => onOpenAction(type, section.id)}
+            >
+              {label}
+            </button>
+          ))}
+
+          <p className="mb-0.5 mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Print Records
+          </p>
+          {printActions.map(([type, label]) => (
+            <button
+              className={buttonClass}
+              key={type}
+              disabled={syncing}
+              onClick={() => onOpenPrint(type, section.id)}
             >
               {label}
             </button>
           ))}
 
           <button
-            className="class-option-button"
+            className={`${buttonClass} mt-1`}
+            disabled={syncing}
             onClick={() => {
               onClose();
               onOpenStudentView(section.id);
@@ -86,22 +129,17 @@ function ClassOptionsModal({
           </button>
 
           <button
-            className="class-option-button"
-            disabled={!syncReady}
-            onClick={() => {
-              onClose();
-              void onSyncToExcel();
-            }}
+            className="block w-full rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-2.5 text-left text-sm font-semibold text-white shadow-md shadow-indigo-500/20 transition hover:from-indigo-500 hover:to-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={!syncReady || syncing}
+            onClick={handleSyncToExcel}
           >
-            {syncReady ? "Sync to Excel" : "Loading class data..."}
+            {syncing ? "Syncing to Excel…" : syncReady ? "Sync to Excel" : "Loading class data..."}
           </button>
 
           <button
-            className="class-option-button"
-            onClick={() => {
-              onClose();
-              onOpenAction("add-student", section.id);
-            }}
+            className={buttonClass}
+            disabled={syncing}
+            onClick={() => onOpenAction("add-student", section.id)}
           >
             Add Student
           </button>
@@ -114,60 +152,66 @@ function ClassOptionsModal({
 function StudentModal({ section, students, onClose }) {
   return (
     <div
-      className="modal-backdrop"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm print:hidden"
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <section
-        className="student-modal"
+        className="max-h-[calc(100vh-2rem)] w-full max-w-3xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="student-modal-title"
       >
-        <div className="student-modal-header">
+        <div className="mb-5 flex items-start justify-between border-b border-slate-100 pb-4">
           <div>
-            <p className="eyebrow">CLASS ROSTER</p>
-            <h2 id="student-modal-title">{section?.subject_code || "Students"}</h2>
-            <p>{section?.subject_title || "Students enrolled in this class"}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Class Roster</p>
+            <h2 id="student-modal-title" className="mt-1 text-lg font-bold text-slate-900">
+              {section?.subject_code || "Students"}
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {section?.subject_title || "Students enrolled in this class"}
+            </p>
           </div>
-          <button className="modal-close" onClick={onClose} aria-label="Close students">
+          <button
+            className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            onClick={onClose}
+            aria-label="Close students"
+          >
             ×
           </button>
         </div>
 
-        <div className="table-wrap student-modal-table">
-          <table>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
             <thead>
-              <tr>
-                <th>#</th>
-                <th>STUDENT ID</th>
-                <th>NAME</th>
-                <th>GENDER</th>
-                <th>ATTENDANCE</th>
-                <th>GRADE</th>
+              <tr className="border-b border-slate-200 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                <th className="py-2 pr-3">#</th>
+                <th className="py-2 pr-3">Student ID</th>
+                <th className="py-2 pr-3">Name</th>
+                <th className="py-2 pr-3">Gender</th>
+                <th className="py-2 pr-3">Attendance</th>
+                <th className="py-2 pr-3">Grade</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {students.map((student, index) => (
                 <tr key={student.id}>
-                  <td>{index + 1}</td>
-                  <td>{student.number}</td>
-                  <td>{student.name}</td>
-                  <td>
-                    {student.gender === "F"
-                      ? "Female"
-                      : student.gender === "M"
-                      ? "Male"
-                      : "—"}
+                  <td className="py-2 pr-3 text-slate-500">{index + 1}</td>
+                  <td className="py-2 pr-3 text-slate-700">{student.number}</td>
+                  <td className="py-2 pr-3 font-medium text-slate-800">{student.name}</td>
+                  <td className="py-2 pr-3 text-slate-600">
+                    {student.gender === "F" ? "Female" : student.gender === "M" ? "Male" : "—"}
                   </td>
-                  <td>{student.attendance}%</td>
-                  <td>{Number(student.grade || 0).toFixed(2)}</td>
+                  <td className="py-2 pr-3 text-slate-600">{student.attendance}%</td>
+                  <td className="py-2 pr-3 text-slate-600">{Number(student.grade || 0).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
           {!students.length && (
-            <div className="empty-state">No students have been imported for this class.</div>
+            <div className="py-10 text-center text-sm text-slate-500">
+              No students have been imported for this class.
+            </div>
           )}
         </div>
       </section>
@@ -178,28 +222,40 @@ function StudentModal({ section, students, onClose }) {
 function DeleteClassModal({ section, deleting, error, onClose, onConfirm }) {
   return (
     <div
-      className="modal-backdrop delete-confirm-backdrop"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm print:hidden"
       onMouseDown={(event) => event.target === event.currentTarget && !deleting && onClose()}
     >
-      <section className="delete-confirm-modal" role="alertdialog" aria-modal="true">
-        <div className="delete-confirm-icon">
+      <section
+        className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-2xl"
+        role="alertdialog"
+        aria-modal="true"
+      >
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-50 text-rose-500">
           <Icon name="trash" size={22} />
         </div>
 
-        <p className="delete-confirm-kicker">PERMANENT ACTION</p>
-        <h2>Delete this class?</h2>
-        <p>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-rose-500">Permanent Action</p>
+        <h2 className="mt-1 text-lg font-bold text-slate-900">Delete this class?</h2>
+        <p className="mt-2 text-sm text-slate-500">
           This will delete <strong>{section?.subject_code || "this class"}</strong>, including
           its students, scores, grades, and attendance records.
         </p>
 
-        {error && <p className="delete-confirm-error">{error}</p>}
+        {error && <p className="mt-3 text-xs font-medium text-rose-600">{error}</p>}
 
-        <div className="delete-confirm-actions">
-          <button className="outline-button" onClick={onClose} disabled={deleting}>
+        <div className="mt-6 flex justify-center gap-3">
+          <button
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+            onClick={onClose}
+            disabled={deleting}
+          >
             Cancel
           </button>
-          <button className="danger-button" onClick={onConfirm} disabled={deleting}>
+          <button
+            className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-500 disabled:opacity-60"
+            onClick={onConfirm}
+            disabled={deleting}
+          >
             {deleting ? "Deleting…" : "Delete class"}
           </button>
         </div>
@@ -246,6 +302,7 @@ export default function DashboardShell() {
   const [classOptionsId, setClassOptionsId] = useState(null);
   const [studentModalId, setStudentModalId] = useState(null);
   const [actionModal, setActionModal] = useState(null);
+  const [printModal, setPrintModal] = useState(null);
   const [deleteClass, setDeleteClass] = useState(null);
   const [deleteError, setDeleteError] = useState("");
   const [deletingClass, setDeletingClass] = useState(false);
@@ -256,6 +313,8 @@ export default function DashboardShell() {
   const studentSection = viewModel.sections.find((item) => item.id === studentModalId);
   const actionSection = viewModel.sections.find((item) => item.id === actionModal?.sectionId);
   const actionReady = selectedSection?.id === actionModal?.sectionId;
+  const printSection = viewModel.sections.find((item) => item.id === printModal?.sectionId);
+  const printReady = selectedSection?.id === printModal?.sectionId;
 
   const selectSection = (sectionId) => viewModel.selectSection(sectionId);
 
@@ -267,6 +326,11 @@ export default function DashboardShell() {
   const openAction = (type, sectionId = selectedSection?.id) => {
     if (sectionId) selectSection(sectionId);
     setActionModal({ type, sectionId });
+  };
+
+  const openPrint = (type, sectionId = selectedSection?.id) => {
+    if (sectionId) selectSection(sectionId);
+    setPrintModal({ type, sectionId });
   };
 
   const openStudentView = (sectionId) =>
@@ -291,6 +355,7 @@ export default function DashboardShell() {
   };
 
   const closeAction = () => setActionModal(null);
+  const closePrint = () => setPrintModal(null);
 
   const page =
     viewModel.active === "classes" ? (
@@ -375,7 +440,7 @@ export default function DashboardShell() {
 
   return (
     <div className="app-shell">
-      <aside className={`sidebar ${viewModel.mobileNav ? "sidebar-open" : ""}`}>
+      <aside className={`sidebar print:hidden ${viewModel.mobileNav ? "sidebar-open" : ""}`}>
         <div className="brand">
           <img className="brand-logo" src={logo} alt="Presenzio" />
         </div>
@@ -415,7 +480,7 @@ export default function DashboardShell() {
         </div>
       </aside>
 
-      <main className="main-content">
+      <main className="main-content print:hidden">
         <header className="topbar">
           <button
             className="mobile-menu"
@@ -439,11 +504,12 @@ export default function DashboardShell() {
         <div className="content-wrap">{page}</div>
       </main>
 
-      {optionsSection && (
+      {optionsSection && !actionModal && !printModal && (
         <ClassOptionsModal
           section={optionsSection}
           onClose={() => setClassOptionsId(null)}
           onOpenAction={openAction}
+          onOpenPrint={openPrint}
           onOpenStudentView={openStudentView}
           onSyncToExcel={viewModel.syncToExcel}
           syncReady={selectedSection?.id === optionsSection.id}
@@ -468,7 +534,25 @@ export default function DashboardShell() {
         />
       )}
 
-      {actionModal && actionSection && <ClassActionModal {...actionProps} />}
+      {actionModal && actionSection && !printModal && <ClassActionModal {...actionProps} />}
+
+      {printModal && printSection && (
+        printReady ? (
+          <PrintReportModal
+            type={printModal.type}
+            section={printSection}
+            students={viewModel.students}
+            assessmentScores={viewModel.assessmentScores}
+            attendanceSessions={viewModel.attendanceSessions}
+            gradingPeriods={viewModel.gradingPeriods}
+            onClose={closePrint}
+          />
+        ) : (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-50 print:hidden">
+            <p className="text-sm text-slate-500">Loading class data…</p>
+          </div>
+        )
+      )}
     </div>
   );
 }

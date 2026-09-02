@@ -123,6 +123,17 @@ function formatShortDate(value) {
   const [year, month, day] = String(value).split("-");
   return `${month}-${day}-${String(year).slice(-2)}`;
 }
+function resolvePeriodCodeForSession({ sessionDate, periodId, periods }) {
+  const dateMatch = (periods ?? [])
+    .filter((periodItem) => periodItem.start_date && periodItem.end_date)
+    .sort((first, second) => first.sort_order - second.sort_order)
+    .find(
+      (periodItem) =>
+        sessionDate >= periodItem.start_date && sessionDate <= periodItem.end_date,
+    );
+  if (dateMatch) return dateMatch.code;
+  return (periods ?? []).find((periodItem) => periodItem.id === periodId)?.code ?? "";
+}
 function average(values) {
   const valid = values.filter((value) => Number.isFinite(value));
   return valid.length
@@ -395,22 +406,13 @@ export function useDashboardViewModel() {
         .order("ctrl_no");
       if (enrollmentError) throw enrollmentError;
 
-      // The "Total students" stat card is meant to reflect every student
-      // in the system, not just the roster of the currently selected
-      // class — enrollments above are scoped to one section_id, so a
-      // separate, unfiltered query against the students table is needed
-      // for a true system-wide count and gender breakdown.
+      // Every student saved in the database, independent of which section is
+      // currently selected. Used to power the "Total students" stat card so
+      // it reflects the whole roster rather than just the active class.
       const { data: allStudentsData, error: allStudentsError } = await supabase
         .from("students")
         .select("id, gender");
       if (allStudentsError) throw allStudentsError;
-      const totalStudentsAll = allStudentsData?.length ?? 0;
-      const maleAll = (allStudentsData ?? []).filter(
-        (studentRow) => studentRow.gender === "M",
-      ).length;
-      const femaleAll = (allStudentsData ?? []).filter(
-        (studentRow) => studentRow.gender === "F",
-      ).length;
 
       let { data: periods, error: periodError } = await supabase
         .from("grading_periods")
@@ -622,6 +624,17 @@ export function useDashboardViewModel() {
         };
       });
 
+      // Total headcount and gender breakdown reflect every student saved in
+      // the database, not just those enrolled in the currently selected
+      // class/section. Falls back to the current roster if the students
+      // table can't be read for some reason.
+      const totalStudentsCount = allStudentsData?.length ?? liveRoster.length;
+      const male = allStudentsData
+        ? allStudentsData.filter((student) => student.gender === "M").length
+        : liveRoster.filter((student) => student.gender === "M").length;
+      const female = allStudentsData
+        ? allStudentsData.filter((student) => student.gender === "F").length
+        : liveRoster.filter((student) => student.gender === "F").length;
       const todayRecords = sessionsData[0]?.attendance_records ?? [];
       const todayPresent = todayRecords.filter(
         (record) => record.status === "present" || record.status === "late",
@@ -672,22 +685,24 @@ export function useDashboardViewModel() {
       setGradingPeriods(periods ?? []);
       setAssessmentScores(combinedAssessmentScoreData);
       const liveAttendanceSessions = [...sessionsData]
-        .sort((first, second) => first.session_date.localeCompare(second.session_date))
-        .map((session) => ({
-          id: session.id,
-          date: formatShortDate(session.session_date),
+      .sort((first, second) => first.session_date.localeCompare(second.session_date))
+      .map((session) => ({
+        id: session.id,
+        date: formatShortDate(session.session_date),
+        sessionDate: session.session_date,
+        sessionTime: session.session_time,
+        periodCode: resolvePeriodCodeForSession({
           sessionDate: session.session_date,
-          sessionTime: session.session_time,
-          periodCode:
-            periods?.find((periodItem) => periodItem.id === session.period_id)
-              ?.code ?? "",
-          statuses: Object.fromEntries(
-            (session.attendance_records ?? []).map((record) => [
-              record.enrollment_id,
-              record.status,
-            ]),
-          ),
-        }));
+          periodId: session.period_id,
+          periods: periods ?? [],
+        }),
+        statuses: Object.fromEntries(
+          (session.attendance_records ?? []).map((record) => [
+            record.enrollment_id,
+            record.status,
+          ]),
+        ),
+      }));
       setAttendanceSessions(liveAttendanceSessions);
       setSessions(
         sessionsData.map((session) => {
@@ -713,11 +728,9 @@ export function useDashboardViewModel() {
         }),
       );
       setStats({
-        // These three now reflect every student in the system, not just
-        // this section's roster — see the unfiltered students query above.
-        totalStudents: totalStudentsAll,
-        male: maleAll,
-        female: femaleAll,
+        totalStudents: totalStudentsCount,
+        male,
+        female,
         todayAttendance: liveRoster.length
           ? ((todayPresent / liveRoster.length) * 100).toFixed(1) + "%"
           : "—",
@@ -992,7 +1005,13 @@ export function useDashboardViewModel() {
             result.count +
             " student records imported from " +
             result.sheetName +
-            ".",
+            "." +
+            (result.dedupSummary?.studentsMerged
+              ? ` ${result.dedupSummary.studentsMerged} duplicate student record(s) were merged.`
+              : "") +
+            (result.dedupSummary?.errors?.length
+              ? ` ${result.dedupSummary.errors.length} possible duplicate(s) could not be merged automatically.`
+              : ""),
         });
       } catch (error) {
         setImportState({
@@ -1240,6 +1259,12 @@ export function useDashboardViewModel() {
               : "") +
             (result.unmatchedStudents
               ? ` ${result.unmatchedStudents} student row(s) were not matched.`
+              : "") +
+            (result.dedupSummary?.studentsMerged
+              ? ` ${result.dedupSummary.studentsMerged} duplicate student record(s) were merged.`
+              : "") +
+            (result.dedupSummary?.errors?.length
+              ? ` ${result.dedupSummary.errors.length} possible duplicate(s) could not be merged automatically.`
               : ""),
         });
       } catch (error) {

@@ -1,4 +1,5 @@
 ﻿import * as XLSX from "xlsx";
+import { mergeDuplicateStudentRecords } from "./studentDedup";
 
 function cellText(row, index) {
   return String(row?.[index] ?? "").trim();
@@ -237,6 +238,13 @@ export async function importMasterListFile({ file, supabase }) {
     const { error } = await supabase.from("students").insert(inserts);
     if (error) throw error;
   }
+
+  // A student may already exist under a differently-formatted name (e.g.
+  // created earlier by a grade-sheet import that couldn't find an exact
+  // match). Now that the master list — the source of truth — has been
+  // written, fold any such duplicates into a single record.
+  const dedupSummary = await mergeDuplicateStudentRecords(supabase);
+
   const { data: importedStudents, error: importedStudentLookupError } =
     await supabase
       .from("students")
@@ -297,5 +305,6 @@ export async function importMasterListFile({ file, supabase }) {
     subjectCode: "all classes",
     edpCode: results.map((result) => result.edpCode).filter(Boolean),
     results,
+    dedupSummary,
   };
 }

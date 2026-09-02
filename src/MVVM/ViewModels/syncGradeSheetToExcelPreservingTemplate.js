@@ -29,14 +29,13 @@ const attendanceLayout = {
 // The template reserves fifteen date columns per grading period. The sixteenth
 // column is a spacer before the total column (E:S, W:AK, AO:BC, BG:BU).
 const maxAttendanceDatesPerPeriod = 15;
-// The reference workbook has 70 roster rows on Attendance and period sheets,
-// but only 60 rows on Summary. Keep one common limit so every sheet remains
+// The reference workbook was extended to 75 roster rows on Attendance,
+// period, and Summary sheets. Keep one common limit so every sheet stays
 // consistent and none of the footer/signature rows are overwritten.
-const maxStudents = 60;
-const attendanceRosterRows = 70;
-const periodRosterRows = 70;
-const summaryRosterRows = 60;
-
+const maxStudents = 75;
+const attendanceRosterRows = 75;
+const periodRosterRows = 75;
+const summaryRosterRows = 75;
 // The reference workbook repeats the monthly attendance report five times.
 // Values are zero-based worksheet rows; each block is 63 rows tall and has
 // thirty daily rows followed by a total/signature area.
@@ -56,6 +55,33 @@ const gradeColumns = {
   semifinal: { own: 35, cumulative: 38 },
   final: { own: 35, cumulative: 39 },
 };
+
+const summaryPeriodOrder = ["prelim", "midterm", "semifinal", "final"];
+
+function getActivePeriodCodes(gradingPeriods) {
+  const byCode = new Map((gradingPeriods ?? []).map((period) => [period.code, period]));
+  return summaryPeriodOrder.filter((code) => {
+    const period = byCode.get(code);
+    return Boolean(period?.start_date && period?.end_date);
+  });
+}
+
+function buildPeriodDateRanges(gradingPeriods) {
+  const ranges = new Map();
+  (gradingPeriods ?? []).forEach((period) => {
+    if (period?.code && period.start_date && period.end_date) {
+      ranges.set(period.code, { start: period.start_date, end: period.end_date });
+    }
+  });
+  return ranges;
+}
+
+function sessionWithinPeriodRange(session, periodDateRanges) {
+  const range = periodDateRanges.get(session.periodCode);
+  if (!range) return false;
+  const date = String(session.sessionDate);
+  return date >= range.start && date <= range.end;
+}
 
 function cellAddress(row, column) {
   return XLSX.utils.encode_cell({ r: row, c: column });
@@ -581,42 +607,58 @@ function fillPeriod(
   });
 }
 
-function fillSummary(patches, students) {
+function clearPeriodSheet(patches, periodCode) {
+  const sheetName = periodSheets[periodCode];
+  // No date range configured yet for this period — blank the whole sheet
+  // instead of leaving the template's original placeholder values (like a
+  // leftover default attendance total) showing through untouched.
+  clearRange(patches, sheetName, 9, periodRosterRows + 8, 0, 40);
+  patchCell(patches, sheetName, 8, 0, "");
+  patchCell(patches, sheetName, 8, 1, "");
+  Object.values(categoryColumns).forEach((columns) => {
+    columns.score.forEach((column) => patchCell(patches, sheetName, 8, column, ""));
+  });
+  patchCell(patches, sheetName, 8, 33, "");
+  patchCell(patches, sheetName, 8, 31, "");
+}
+
+function fillSummary(patches, students, gradingPeriods) {
   clearRange(patches, "Summary", 6, summaryRosterRows + 5, 0, 6);
   ["CtrlNo.", "Student's Name", "PG", "MG", "SF", "FG", "Remarks"].forEach((value, index) => patchCell(patches, "Summary", 5, index, value));
+
+  const activeSet = new Set(getActivePeriodCodes(gradingPeriods));
+  const summaryColumns = { prelim: 2, midterm: 3, semifinal: 4, final: 5 };
+  const summaryFormulas = {
+    prelim: (periodRow) => `IF(Prelim!AJ${periodRow}<>"",Prelim!AJ${periodRow},"")`,
+    midterm: (periodRow) => `IF(Midterm!AL${periodRow}<>"",Midterm!AL${periodRow},"")`,
+    semifinal: (periodRow) => `IF(SemiFinal!AM${periodRow}<>"",SemiFinal!AM${periodRow},"")`,
+    final: (periodRow) =>
+      `IF(Final!AN${periodRow}<>"",IF(Final!AN${periodRow}<=3.05,Final!AN${periodRow},5),"")`,
+  };
+
   students.forEach((student, index) => {
     const row = 6 + index;
+    const periodRow = row + 4;
     patchCell(patches, "Summary", row, 0, student.ctrlNo ?? index + 1);
     patchCell(patches, "Summary", row, 1, student.name);
-    const periodRow = row + 4;
-    patchFormula(
-      patches,
-      "Summary",
-      row,
-      2,
-      `IF(Prelim!AJ${periodRow}<>"",Prelim!AJ${periodRow},"")`,
-    );
-    patchFormula(
-      patches,
-      "Summary",
-      row,
-      3,
-      `IF(Midterm!AL${periodRow}<>"",Midterm!AL${periodRow},"")`,
-    );
-    patchFormula(
-      patches,
-      "Summary",
-      row,
-      4,
-      `IF(SemiFinal!AM${periodRow}<>"",SemiFinal!AM${periodRow},"")`,
-    );
-    patchFormula(
-      patches,
-      "Summary",
-      row,
-      5,
-      `IF(Final!AN${periodRow}<>"",IF(Final!AN${periodRow}<=3.05,Final!AN${periodRow},5),"")`,
-    );
+
+    // Carry the last active period's grade into every period after it that
+    // has no configured date range yet, so PG/MG/SFG/FG never go blank just
+    // because Semi-final or Final hasn't started.
+    let carriedGrade = null;
+    summaryPeriodOrder.forEach((code) => {
+      const column = summaryColumns[code];
+      if (activeSet.has(code)) {
+        patchFormula(patches, "Summary", row, column, summaryFormulas[code](periodRow));
+        const grade = Number(student.grades?.[code]);
+        if (Number.isFinite(grade)) carriedGrade = grade;
+      } else if (carriedGrade != null) {
+        patchLiteral(patches, "Summary", row, column, carriedGrade);
+      } else {
+        patchLiteral(patches, "Summary", row, column, "");
+      }
+    });
+
     patchFormula(
       patches,
       "Summary",
@@ -734,26 +776,55 @@ export async function syncGradeSheetToExcel({
     attendanceSessions,
     gradingPeriods,
   });
+
+  const activePeriodCodes = getActivePeriodCodes(gradingPeriods);
+  const activePeriodSet = new Set(activePeriodCodes);
+  const periodDateRanges = buildPeriodDateRanges(gradingPeriods);
+
+  // Only periods with a configured date range get their data (and their
+  // sheet) written at all. Periods that haven't started yet are left
+  // completely blank instead of showing empty/misleading records.
+  const filteredAssessmentScores = (assessmentScores ?? []).filter((row) =>
+    activePeriodSet.has(periodCodeForRow(row, periodsById)),
+  );
+  const filteredAssessmentDefinitions = (assessmentDefinitions ?? []).filter((item) =>
+    activePeriodSet.has(item.period?.code),
+  );
+  // A session only counts toward a period's total if it's tagged with that
+  // period AND its actual session date falls inside that period's current
+  // start/end range — so totals stay accurate even if a period's dates were
+  // adjusted after some sessions were already recorded under it, and a
+  // mistagged session can never leak into a period that isn't active yet.
+  const filteredAttendanceSessions = (attendanceSessions ?? []).filter(
+    (session) =>
+      activePeriodSet.has(session.periodCode) &&
+      sessionWithinPeriodRange(session, periodDateRanges),
+  );
+
   const response = await fetch("/grade-sheet-template.xlsm");
   if (!response.ok) throw new Error("The Excel grade-sheet template could not be loaded.");
   const bytes = new Uint8Array(await response.arrayBuffer());
   const cfb = CFB.read(bytes, { type: "array" });
   const patches = {};
   setMetadata(patches, section);
-  fillAttendance(patches, students, attendanceSessions);
-  Object.keys(periodSheets).forEach((periodCode) =>
+  fillAttendance(patches, students, filteredAttendanceSessions);
+  Object.keys(periodSheets).forEach((periodCode) => {
+    if (!activePeriodSet.has(periodCode)) {
+      clearPeriodSheet(patches, periodCode);
+      return;
+    }
     fillPeriod(
       patches,
       periodCode,
       students,
-      assessmentScores,
-      assessmentDefinitions,
-      attendanceSessions,
+      filteredAssessmentScores,
+      filteredAssessmentDefinitions,
+      filteredAttendanceSessions,
       periodsById,
-    ),
-  );
-  fillSummary(patches, students);
-  fillMonth(patches, section, students, attendanceSessions);
+    );
+  });
+  fillSummary(patches, students, gradingPeriods);
+  fillMonth(patches, section, students, filteredAttendanceSessions);
 
   Object.entries(patches).forEach(([sheetName, sheetPatches]) => {
     const file = getTemplateFile(cfb, `sheet${templateSheetNumbers[sheetName]}.xml`);

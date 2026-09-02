@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import { normalizeName, mergeDuplicateStudentRecords } from "./studentDedup";
 
 const periodSheets = {
   prelim: "Prelim",
@@ -43,14 +44,6 @@ const attendanceRows = {
 function numeric(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
-}
-
-function normalizeName(value) {
-  return String(value ?? "")
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
 }
 
 function normalizeControlNumber(value) {
@@ -155,6 +148,10 @@ async function ensureGradeSheetRoster({ workbook, supabase, section, enrollments
   const createdEnrollments = [];
 
   for (const candidate of collectGradeSheetRoster(workbook)) {
+    // Match against the roster purely by (normalized) name — this is the
+    // source of truth that ties a grade-sheet row back to the master-list
+    // student, regardless of formatting differences (spacing, punctuation,
+    // "Last, First" vs "First Last", suffixes, etc.).
     let student = studentsByName.get(normalizeName(candidate.name));
     if (!student) {
       const { data: createdStudent, error } = await supabase
@@ -246,6 +243,13 @@ async function resolveGradeSheetClass({ workbook, supabase }) {
   if (!workbook.Sheets.Settings) {
     throw new Error("The selected file is not a supported grade sheet.");
   }
+
+  // Consolidate any duplicate student records (e.g. left over from a name
+  // being formatted differently across imports) before matching this grade
+  // sheet's names against the roster, so matching happens against a clean,
+  // de-duplicated list of students.
+  const dedupSummary = await mergeDuplicateStudentRecords(supabase);
+
   const settingsRows = XLSX.utils.sheet_to_json(workbook.Sheets.Settings, {
     header: 1,
     defval: "",
@@ -338,6 +342,7 @@ async function resolveGradeSheetClass({ workbook, supabase }) {
     students,
     gradingPeriods: gradingPeriods ?? [],
     rosterChanges,
+    dedupSummary,
   };
 }
 
@@ -587,5 +592,6 @@ export async function importGradeSheetFile({ file, supabase }) {
     subjectCode: resolved.section.subject_code,
     students: resolved.students,
     rosterChanges: resolved.rosterChanges,
+    dedupSummary: resolved.dedupSummary,
   };
 }

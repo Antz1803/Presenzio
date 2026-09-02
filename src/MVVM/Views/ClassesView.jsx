@@ -69,11 +69,21 @@ function EditClassModal({ item, onClose, onSave }) {
   );
 }
 
-export default function ClassesView({
-  sections = [], section, importMasterList, importGradeSheet, importState,
-  gradeSheetImportState, connectionStatus = "connecting", pendingSyncCount = 0,
-  onOpenStudents, onOpenClassOptions, onDeleteClass, onUpdateClass,
-}) {
+    export default function ClassesView({
+      sections = [],
+      section,
+      importMasterList,
+      importGradeSheet,
+      importState,
+      gradeSheetImportState,
+      connectionStatus = "connecting",
+      pendingSyncCount = 0,
+      onOpenStudents,
+      onOpenClassOptions,
+      onDeleteClass,
+      onUpdateClass,
+    }) {
+
   const [searchTerm, setSearchTerm] = useState("");
   const [editingClass, setEditingClass] = useState(null);
   const filteredSections = useMemo(
@@ -168,7 +178,7 @@ export default function ClassesView({
                     <div className="mb-5 mt-4 flex flex-col gap-2 text-xs font-medium text-slate-500">
                       {(item.year_level || item.section_no) && (
                         <div className="flex items-center gap-2 font-semibold text-slate-700">
-                          {item.year_level && <span>Year {item.year_level}</span>}
+                          {item.year_level && <span>{item.year_level} Year</span>}
                           {item.year_level && item.section_no && <span className="text-slate-300">•</span>}
                           {item.section_no && <span>Section {item.section_no}</span>}
                         </div>
@@ -178,13 +188,24 @@ export default function ClassesView({
                       {item.room && <div className="flex items-center gap-2"><Icon name="location" size={14} /><span className="text-slate-700">Room {item.room}</span></div>}
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-2 border-t border-slate-200/50 pt-3.5">
-                    <button className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/80 bg-white/50 px-3 py-2 text-xs font-semibold text-slate-700 backdrop-blur-sm transition hover:bg-white active:scale-95" type="button" onClick={() => onOpenStudents(item.id)}>
-                      <Icon name="users" size={15} />Students
+                      
+                  <div className="grid grid-cols-3 gap-2 border-t border-slate-200/50 pt-3.5">
+                    <button
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/80 bg-white/50 px-3 py-2 text-xs font-semibold text-slate-700 backdrop-blur-sm transition hover:bg-white active:scale-95"
+                      type="button"
+                      onClick={() => onOpenStudents(item.id)}
+                    >
+                      <Icon name="users" size={15} />
+                      Students
                     </button>
-                    <button className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-indigo-200/60 bg-indigo-50/40 px-3 py-2 text-xs font-semibold text-indigo-600 backdrop-blur-sm transition hover:bg-indigo-100/60 active:scale-95" type="button" onClick={() => onOpenClassOptions(item.id)}>
-                      <Icon name="settings" size={15} />Manage
+
+                    <button
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-indigo-200/60 bg-indigo-50/40 px-3 py-2 text-xs font-semibold text-indigo-600 backdrop-blur-sm transition hover:bg-indigo-100/60 active:scale-95"
+                      type="button"
+                      onClick={() => onOpenClassOptions(item.id)}
+                    >
+                      <Icon name="settings" size={15} />
+                      Manage
                     </button>
                   </div>
                 </article>

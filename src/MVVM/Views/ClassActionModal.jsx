@@ -12,14 +12,15 @@ const titles = {
   "add-student": "Add Student",
 };
 
-const gradePeriods = [
+
+export const gradePeriods = [
   { key: "prelim", label: "Prelim" },
   { key: "midterm", label: "Midterm" },
   { key: "semifinal", label: "Semi-final" },
   { key: "final", label: "Final" },
 ];
 
-function getGradeRemark(student) {
+export function getGradeRemark(student) {
   // The workbook's Summary remarks are based only on the Final grade. An
   // earlier passing period must not make an unfinished Final appear passed.
   const finalGrade = student.grades?.final;
@@ -35,7 +36,7 @@ function formatRecordNumber(value) {
   return Number.isInteger(number) ? String(number) : number.toFixed(2);
 }
 
-function isDateInPeriodRange(dateValue, periodDates) {
+export function isDateInPeriodRange(dateValue, periodDates) {
   if (!periodDates?.start && !periodDates?.end) return true;
   const date = String(dateValue ?? "").slice(0, 10);
   if (!date) return false;
@@ -45,7 +46,7 @@ function isDateInPeriodRange(dateValue, periodDates) {
   );
 }
 
-function formatDisplayDate(dateValue) {
+export function formatDisplayDate(dateValue) {
   const date = new Date(`${String(dateValue).slice(0, 10)}T00:00:00`);
   if (Number.isNaN(date.getTime())) return dateValue;
   const months = [
@@ -65,7 +66,7 @@ function formatDisplayDate(dateValue) {
   return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
 }
 
-function getAssessmentItem(
+export function getAssessmentItem(
   studentId,
   category,
   itemNo,
@@ -87,7 +88,7 @@ function getAssessmentItem(
     : formatRecordNumber(score);
 }
 
-function getAttendanceTotal(studentId, period, attendanceSessions, periodDates) {
+export function getAttendanceTotal(studentId, period, attendanceSessions, periodDates) {
   const hasDateRange = Boolean(periodDates?.start || periodDates?.end);
   const periodSessions = attendanceSessions.filter(
     (session) =>
@@ -240,7 +241,7 @@ const scoreCategories = [
   { key: "exam", label: "Exam", prefix: "E", count: 1 },
 ];
 
-const recordSummaryGroups = [
+export const recordSummaryGroups = [
   { key: "quiz", label: "QUIZ", prefix: "Q", count: 4 },
   { key: "assignment", label: "ASSIGNMENT", prefix: "A", count: 4 },
   { key: "activity", label: "GRADED ACTIVITY", prefix: "GA", count: 4 },
@@ -2132,7 +2133,7 @@ export default function ClassActionModal({
                     const grade = student.grades?.[period.key];
                     return (
                       <td className="grade-period-cell" key={period.key}>
-                        {Number.isFinite(Number(grade)) ? Number(grade).toFixed(2) : "—"}
+                        {Number.isFinite(Number(grade)) ? Number(grade).toFixed(1) : "—"}
                       </td>
                     );
                   })}
