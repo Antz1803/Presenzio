@@ -219,9 +219,9 @@ function cellXml(address, value, original = "") {
   return `${opening.replace(/>$/, ' t="inlineStr">')}<is><t xml:space="preserve">${escapeXml(cellValue)}</t></is></c>`;
 }
 
-function applySheetPatches(xml, patches) {
+function applySheetPatches(xml, patches, sheetName) {
   const seen = new Set();
-  // FIX: the attribute-matching groups must be LAZY ([^>]*?), not greedy
+  // FIX #1: the attribute-matching groups must be LAZY ([^>]*?), not greedy
   // ([^>]*). A greedy match doesn't stop before the "/" of a self-closing
   // cell's "/>", so a blank/self-closing cell immediately followed by
   // another cell (extremely common: spacer columns, unused date/score
@@ -230,14 +230,23 @@ function applySheetPatches(xml, patches) {
   // match's text, never got marked "seen", and later got re-inserted as a
   // brand-new duplicate <c> node further down the row — leaving the
   // original, untouched (and often stale) cell still sitting there too.
-  // Over repeated syncs this produced duplicate cell references, and
-  // whichever duplicate a given reader honored decided whether you saw
-  // stale data or the field looked blank/missing entirely.
   const cellPattern = /<c\b[^>]*?\br="([A-Z]+\d+)"[^>]*?(?:\/>|>[\s\S]*?<\/c>)/g;
-  const rowPattern = /<row\b[^>]*\br="(\d+)"[^>]*>[\s\S]*?<\/row>/g;
+  // FIX #2: rows with no cell data (every unused/blank roster row past
+  // wherever the template's original sample data stopped) are serialized by
+  // Excel as SELF-CLOSING <row .../> tags, not <row ...>...</row>. The old
+  // pattern only matched the open/close form, so a patch targeting a
+  // self-closing row silently matched nothing — the row's cells were never
+  // written, with no error thrown. This is what was making students on
+  // later, previously-blank rows (e.g. row 60+) vanish from the export
+  // entirely with no error shown.
+  const rowPattern = /<row\b[^>]*\br="(\d+)"[^>]*?(?:\/>|>[\s\S]*?<\/row>)/g;
   const updated = xml.replace(rowPattern, (rowXml, rowNumber) => {
     const row = Number(rowNumber);
-    let nextRow = rowXml.replace(cellPattern, (original, address) => {
+    const isSelfClosing = /\/>\s*$/.test(rowXml);
+    // Normalize a self-closing row into an open/close pair first, so the
+    // insertion logic below always has a real "</row>" to anchor on.
+    let nextRow = isSelfClosing ? rowXml.replace(/\s*\/>\s*$/, "></row>") : rowXml;
+    nextRow = nextRow.replace(cellPattern, (original, address) => {
       if (!patches.has(address)) return original;
       seen.add(address);
       return cellXml(address, patches.get(address), original);
@@ -268,6 +277,17 @@ function applySheetPatches(xml, patches) {
     });
     return nextRow;
   });
+
+  // Diagnostic: if any patch still wasn't applied at this point, its target
+  // row doesn't exist in the template's XML at all (not even self-closing)
+  // — a different problem (the template's dimension/sheetData genuinely
+  // doesn't extend that far). Surface it instead of failing silently.
+  const unapplied = [...patches.keys()].filter((address) => !seen.has(address));
+  if (unapplied.length) {
+    console.warn(
+      `Excel sync: ${unapplied.length} cell(s) on "${sheetName}" have no matching row in the template and were not written: ${unapplied.slice(0, 8).join(", ")}${unapplied.length > 8 ? ", ..." : ""}`,
+    );
+  }
   return updated;
 }
 
@@ -463,7 +483,7 @@ function fillAttendance(patches, students, attendanceSessions) {
   });
   students.forEach((student, index) => {
     const row = 6 + index;
-    patchCell(patches, "Attendance", row, 0, student.ctrlNo ?? index + 1);
+    patchCell(patches, "Attendance", row, 0, index + 1);
     patchCell(
       patches,
       "Attendance",
@@ -552,7 +572,7 @@ function fillPeriod(
 
   students.forEach((student, studentIndex) => {
     const row = 9 + studentIndex;
-    patchCell(patches, sheetName, row, 0, student.ctrlNo ?? studentIndex + 1);
+    patchCell(patches, sheetName, row, 0, studentIndex + 1); 
     patchCell(patches, sheetName, row, 1, student.name);
     Object.entries(categoryColumns).forEach(([category, columns]) => {
       rows.filter((item) => item.category === category && item.enrollment_id === student.id).forEach((item) => {
@@ -639,7 +659,7 @@ function fillSummary(patches, students, gradingPeriods) {
   students.forEach((student, index) => {
     const row = 6 + index;
     const periodRow = row + 4;
-    patchCell(patches, "Summary", row, 0, student.ctrlNo ?? index + 1);
+    patchCell(patches, "Summary", row, 0, index + 1);
     patchCell(patches, "Summary", row, 1, student.name);
 
     // Carry the last active period's grade into every period after it that
@@ -777,6 +797,19 @@ export async function syncGradeSheetToExcel({
     gradingPeriods,
   });
 
+  // Names are stored "LASTNAME, FIRSTNAME M." (comma-separated), so a plain
+  // string sort already orders by last name. Sorting here — once, right
+  // before anything is written — is what keeps newly imported/added
+  // students from landing at the bottom of the roster instead of their
+  // correct alphabetical row on Attendance, the period sheets, Summary,
+  // and Month.
+  const sortedStudents = [...students].sort((a, b) =>
+    String(a.name || "").localeCompare(String(b.name || ""), undefined, {
+      sensitivity: "base",
+      numeric: true,
+    }),
+  );
+
   const activePeriodCodes = getActivePeriodCodes(gradingPeriods);
   const activePeriodSet = new Set(activePeriodCodes);
   const periodDateRanges = buildPeriodDateRanges(gradingPeriods);
@@ -807,7 +840,7 @@ export async function syncGradeSheetToExcel({
   const cfb = CFB.read(bytes, { type: "array" });
   const patches = {};
   setMetadata(patches, section);
-  fillAttendance(patches, students, filteredAttendanceSessions);
+  fillAttendance(patches, sortedStudents, filteredAttendanceSessions);
   Object.keys(periodSheets).forEach((periodCode) => {
     if (!activePeriodSet.has(periodCode)) {
       clearPeriodSheet(patches, periodCode);
@@ -816,21 +849,21 @@ export async function syncGradeSheetToExcel({
     fillPeriod(
       patches,
       periodCode,
-      students,
+      sortedStudents,
       filteredAssessmentScores,
       filteredAssessmentDefinitions,
       filteredAttendanceSessions,
       periodsById,
     );
   });
-  fillSummary(patches, students, gradingPeriods);
-  fillMonth(patches, section, students, filteredAttendanceSessions);
+  fillSummary(patches, sortedStudents, gradingPeriods);
+  fillMonth(patches, section, sortedStudents, filteredAttendanceSessions);
 
   Object.entries(patches).forEach(([sheetName, sheetPatches]) => {
     const file = getTemplateFile(cfb, `sheet${templateSheetNumbers[sheetName]}.xml`);
     const xml = new TextDecoder().decode(file.content);
     const unshared = unshareFormulas(xml);
-    file.content = new TextEncoder().encode(applySheetPatches(unshared, sheetPatches));
+    file.content = new TextEncoder().encode(applySheetPatches(unshared, sheetPatches, sheetName));
     file.size = file.content.length;
   });
 

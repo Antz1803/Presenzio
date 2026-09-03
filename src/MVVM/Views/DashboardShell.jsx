@@ -149,7 +149,19 @@ function ClassOptionsModal({
   );
 }
 
+import { useMemo } from "react";
+
 function StudentModal({ section, students, onClose }) {
+  const sortedStudents = useMemo(
+    () =>
+      [...students].sort((a, b) =>
+        (a.name || "").localeCompare(b.name || "", undefined, {
+          sensitivity: "base",
+        }),
+      ),
+    [students],
+  );
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm print:hidden"
@@ -163,7 +175,7 @@ function StudentModal({ section, students, onClose }) {
       >
         <div className="mb-5 flex items-start justify-between border-b border-slate-100 pb-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Class Roster</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Class Students</p>
             <h2 id="student-modal-title" className="mt-1 text-lg font-bold text-slate-900">
               {section?.subject_code || "Students"}
             </h2>
@@ -193,7 +205,7 @@ function StudentModal({ section, students, onClose }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {students.map((student, index) => (
+              {sortedStudents.map((student, index) => (
                 <tr key={student.id}>
                   <td className="py-2 pr-3 text-slate-500">{index + 1}</td>
                   <td className="py-2 pr-3 text-slate-700">{student.number}</td>
@@ -208,7 +220,7 @@ function StudentModal({ section, students, onClose }) {
             </tbody>
           </table>
 
-          {!students.length && (
+          {!sortedStudents.length && (
             <div className="py-10 text-center text-sm text-slate-500">
               No students have been imported for this class.
             </div>

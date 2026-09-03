@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { importMasterListFile } from "./importMasterList";
 import { importGradeSheetFile } from "./importRecord";
 import { syncGradeSheetToExcel } from "./syncGradeSheetToExcelPreservingTemplate";
@@ -298,13 +298,38 @@ export function useDashboardViewModel() {
   });
   const currentSectionId = section?.id;
 
+  // Every call to loadLiveData/loadOfflineData is tagged with a
+  // monotonically increasing request id. Supabase realtime subscriptions
+  // (below) call loadLiveData on every relevant table change, and a single
+  // grade-sheet import performs many sequential writes (per-period score
+  // cleanup, a bulk score upsert, per-session attendance upserts, and a
+  // period_grades recompute per grading period). Each of those writes fires
+  // its own postgres_changes event, so several *independent* loadLiveData
+  // calls can be in flight at once, and — because network timing is not
+  // guaranteed to match call order — an older call (kicked off by an early,
+  // partial write) can resolve *after* a newer call that already reflects
+  // every write the import made. Without a guard, that stale response
+  // clobbers the fresh one and the UI keeps showing pre-edit values even
+  // though the database was updated correctly. Only the result of the most
+  // recently *started* call is committed to state; anything older is
+  // discarded (its resolved data is still returned to its own caller, so
+  // callers that `await loadLiveData(...)` directly — like the importers —
+  // always get correct data regardless of this guard).
+  const loadRequestIdRef = useRef(0);
+
   const filteredStudents = useMemo(
-    () =>
-      students.filter((student) =>
+  () =>
+    students
+      .filter((student) =>
         student.name.toLowerCase().includes(query.toLowerCase()),
+      )
+      .sort((first, second) =>
+        first.name.localeCompare(second.name, undefined, {
+          sensitivity: "base",
+        }),
       ),
-    [query, students],
-  );
+  [query, students],
+);
 
   const clearLiveData = () => {
     setSection(null);
@@ -340,7 +365,7 @@ export function useDashboardViewModel() {
     return true;
   }, []);
 
-  const loadOfflineData = useCallback(async (preferredSectionId) => {
+  const loadOfflineData = useCallback(async (preferredSectionId, requestId) => {
     const sectionList = (await readOfflineSnapshot("sections")) ?? [];
     const selectedSectionId =
       sectionList.find((item) => item.id === preferredSectionId)?.id ??
@@ -348,6 +373,7 @@ export function useDashboardViewModel() {
     const snapshot = selectedSectionId
       ? await readOfflineSnapshot(`section:${selectedSectionId}`)
       : null;
+    if (requestId != null && loadRequestIdRef.current !== requestId) return snapshot;
     if (!applyOfflineSnapshot(snapshot, sectionList)) {
       clearLiveData();
       setSections(sectionList);
@@ -356,31 +382,38 @@ export function useDashboardViewModel() {
       const lanScores = await callLanApi(
         `/api/submissions?sectionId=${encodeURIComponent(selectedSectionId)}`,
       );
-      if (lanScores?.scores?.length) {
+      if (lanScores?.scores?.length && loadRequestIdRef.current === requestId) {
         setAssessmentScores((current) =>
           mergeAssessmentScores(current, lanScores.scores),
         );
       }
     }
-    setConnectionStatus("offline");
-    setConnectionMessage(
-      snapshot ? "Offline · saved locally" : "Offline · no cached class data",
-    );
-    setPendingSyncCount(await countOfflineMutations());
+    if (requestId == null || loadRequestIdRef.current === requestId) {
+      setConnectionStatus("offline");
+      setConnectionMessage(
+        snapshot ? "Offline · saved locally" : "Offline · no cached class data",
+      );
+      setPendingSyncCount(await countOfflineMutations());
+    }
     return snapshot;
   }, [applyOfflineSnapshot]);
 
   const loadLiveData = useCallback(async (preferredSectionId) => {
+    const requestId = ++loadRequestIdRef.current;
+    const isStale = () => loadRequestIdRef.current !== requestId;
+
     if (browserIsOffline()) {
-      return loadOfflineData(preferredSectionId);
+      return loadOfflineData(preferredSectionId, requestId);
     }
     if (!supabase) {
-      setConnectionStatus("not-configured");
-      setConnectionMessage("Configure Supabase to load records");
-      return loadOfflineData(preferredSectionId);
+      if (!isStale()) {
+        setConnectionStatus("not-configured");
+        setConnectionMessage("Configure Supabase to load records");
+      }
+      return loadOfflineData(preferredSectionId, requestId);
     }
 
-    setConnectionStatus("connecting");
+    if (!isStale()) setConnectionStatus("connecting");
     try {
       const { data: sectionList, error: sectionListError } = await supabase
         .from("sections")
@@ -391,9 +424,11 @@ export function useDashboardViewModel() {
         sectionList?.find((item) => item.id === preferredSectionId) ??
         sectionList?.[0];
       if (!sectionData) {
-        clearLiveData();
-        setConnectionStatus("live");
-        setConnectionMessage("Live · Supabase");
+        if (!isStale()) {
+          clearLiveData();
+          setConnectionStatus("live");
+          setConnectionMessage("Live · Supabase");
+        }
         return;
       }
 
@@ -521,10 +556,6 @@ export function useDashboardViewModel() {
         attemptGrants: grantRows.filter((grant) => grant.assessment_id === assessment.id),
         violations: violationRows.filter((violation) => violation.assessment_id === assessment.id),
       }));
-      setAssessmentAttempts(attemptRows);
-      setAssessmentAttemptGrants(grantRows);
-      setAssessmentViolations(violationRows);
-      setAssessmentDefinitions(liveAssessmentDefinitions);
 
       const { data: classSessions, error: sessionError } = await supabase
         .from("class_sessions")
@@ -678,56 +709,49 @@ export function useDashboardViewModel() {
         [...liveRoster].sort((a, b) => b.attendance - a.attendance)[0]?.name ??
         "—";
 
-      setSection(sectionData);
-      setSections(sectionList ?? []);
-      setStudents(liveRoster);
-      setGradeRows(toGradeRows(liveRoster));
-      setGradingPeriods(periods ?? []);
-      setAssessmentScores(combinedAssessmentScoreData);
       const liveAttendanceSessions = [...sessionsData]
-      .sort((first, second) => first.session_date.localeCompare(second.session_date))
-      .map((session) => ({
-        id: session.id,
-        date: formatShortDate(session.session_date),
-        sessionDate: session.session_date,
-        sessionTime: session.session_time,
-        periodCode: resolvePeriodCodeForSession({
+        .sort((first, second) => first.session_date.localeCompare(second.session_date))
+        .map((session) => ({
+          id: session.id,
+          date: formatShortDate(session.session_date),
           sessionDate: session.session_date,
-          periodId: session.period_id,
-          periods: periods ?? [],
-        }),
-        statuses: Object.fromEntries(
-          (session.attendance_records ?? []).map((record) => [
-            record.enrollment_id,
-            record.status,
-          ]),
-        ),
-      }));
-      setAttendanceSessions(liveAttendanceSessions);
-      setSessions(
-        sessionsData.map((session) => {
-          const records = session.attendance_records ?? [];
-          const present = records.filter(
-            (record) => record.status === "present",
-          ).length;
-          const absent = Math.max(liveRoster.length - records.length, 0);
-          const late = records.filter(
-            (record) => record.status === "late",
-          ).length;
-          const rate = liveRoster.length
-            ? ((present + late) / liveRoster.length) * 100
-            : 0;
-          return [
-            formatDate(session.session_date),
-            formatDay(session.session_date),
-            String(present),
-            String(absent),
-            String(late),
-            rate.toFixed(1) + "%",
-          ];
-        }),
-      );
-      setStats({
+          sessionTime: session.session_time,
+          periodCode: resolvePeriodCodeForSession({
+            sessionDate: session.session_date,
+            periodId: session.period_id,
+            periods: periods ?? [],
+          }),
+          statuses: Object.fromEntries(
+            (session.attendance_records ?? []).map((record) => [
+              record.enrollment_id,
+              record.status,
+            ]),
+          ),
+        }));
+
+      const liveSessions = sessionsData.map((session) => {
+        const records = session.attendance_records ?? [];
+        const present = records.filter(
+          (record) => record.status === "present",
+        ).length;
+        const absent = Math.max(liveRoster.length - records.length, 0);
+        const late = records.filter(
+          (record) => record.status === "late",
+        ).length;
+        const rate = liveRoster.length
+          ? ((present + late) / liveRoster.length) * 100
+          : 0;
+        return [
+          formatDate(session.session_date),
+          formatDay(session.session_date),
+          String(present),
+          String(absent),
+          String(late),
+          rate.toFixed(1) + "%",
+        ];
+      });
+
+      const liveStats = {
         totalStudents: totalStudentsCount,
         male,
         female,
@@ -767,11 +791,35 @@ export function useDashboardViewModel() {
               100
             ).toFixed(1) + "%"
           : "—",
-      });
-      setConnectionStatus("live");
-      setConnectionMessage(
-        "Live · " + (sectionData.subject_code ?? "Supabase"),
-      );
+      };
+
+      // Commit to React state only if this is still the most recently
+      // *initiated* loadLiveData call. See the loadRequestIdRef comment
+      // above for why this guard exists: without it, an older call that
+      // happens to resolve later (e.g. one triggered by a realtime event
+      // fired mid-way through a multi-step import) can overwrite the
+      // correct, fully up-to-date state that a newer call already
+      // committed — which is exactly what makes a re-imported grade sheet
+      // appear to keep showing old values.
+      if (!isStale()) {
+        setSection(sectionData);
+        setSections(sectionList ?? []);
+        setStudents(liveRoster);
+        setGradeRows(toGradeRows(liveRoster));
+        setGradingPeriods(periods ?? []);
+        setAssessmentScores(combinedAssessmentScoreData);
+        setAssessmentAttempts(attemptRows);
+        setAssessmentAttemptGrants(grantRows);
+        setAssessmentViolations(violationRows);
+        setAssessmentDefinitions(liveAssessmentDefinitions);
+        setAttendanceSessions(liveAttendanceSessions);
+        setSessions(liveSessions);
+        setStats(liveStats);
+        setConnectionStatus("live");
+        setConnectionMessage(
+          "Live · " + (sectionData.subject_code ?? "Supabase"),
+        );
+      }
       void callLanApi("/api/sync", { method: "POST" }).catch(() => {});
       return {
         live: true,
@@ -785,11 +833,13 @@ export function useDashboardViewModel() {
       };
     } catch (error) {
       if (isNetworkError(error)) {
-        return loadOfflineData(preferredSectionId);
+        return loadOfflineData(preferredSectionId, requestId);
       }
-      clearLiveData();
-      setConnectionStatus("error");
-      setConnectionMessage(error.message ?? "Supabase connection failed");
+      if (!isStale()) {
+        clearLiveData();
+        setConnectionStatus("error");
+        setConnectionMessage(error.message ?? "Supabase connection failed");
+      }
     }
   }, [loadOfflineData]);
 
@@ -1214,14 +1264,12 @@ export function useDashboardViewModel() {
         gradeOverrides[periodCode][student.id] = details;
       });
     });
-    for (const periodRow of loaded.periods) {
-      await recalculatePeriodGrades(
-        periodRow.id,
-        sectionId,
-        loaded.students,
-        gradeOverrides,
-      );
-    }
+    await recalculatePeriodGrades(
+      loaded.periods[0].id,
+      sectionId,
+      loaded.students,
+      gradeOverrides,
+    );
     await loadLiveData(sectionId);
   }, [currentSectionId, loadLiveData, recalculatePeriodGrades]);
 
@@ -1241,8 +1289,22 @@ export function useDashboardViewModel() {
           return;
         }
         const result = await importGradeSheetFile({ file, supabase });
-        for (const periodId of result.periodIds) {
-          await recalculatePeriodGrades(periodId, result.sectionId, result.students,result.gradeOverrides);
+        // recalculatePeriodGrades always recomputes every grading period for
+        // the section in one shot (it ignores which periodId it's passed
+        // beyond the empty check below) and replaces the whole
+        // period_grades table for this section each time it runs. Calling
+        // it once per touched period therefore did the same full
+        // delete-and-reinsert 2-4 times in a row for no benefit, and each
+        // of those extra writes fired its own realtime change event that
+        // could race with (and stale-overwrite) the final reload below.
+        // Run it once, right after the scores/attendance are written.
+        if (result.periodIds?.length) {
+          await recalculatePeriodGrades(
+            result.periodIds[0],
+            result.sectionId,
+            result.students,
+            result.gradeOverrides,
+          );
         }
         await loadLiveData(result.sectionId);
         setGradeSheetImportState({
@@ -2517,9 +2579,10 @@ export function useDashboardViewModel() {
       for (const sectionId of affectedSections) {
         const loaded = await loadLiveData(sectionId);
         if (loaded?.students?.length && loaded.periods?.length) {
-          for (const periodRow of loaded.periods) {
-            await recalculatePeriodGrades(periodRow.id, sectionId, loaded.students);
-          }
+          // See the comment in importGradeSheet: recalculatePeriodGrades
+          // recomputes every period for the section in one call, so looping
+          // over each period here just repeated the same full rewrite.
+          await recalculatePeriodGrades(loaded.periods[0].id, sectionId, loaded.students);
           await loadLiveData(sectionId);
         }
       }

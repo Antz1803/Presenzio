@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   gradePeriods,
@@ -27,6 +27,18 @@ if (typeof document !== "undefined" && !document.getElementById("print-page-styl
 const thClass = "border border-slate-300 bg-slate-100 px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-wide text-slate-600";
 const tdClass = "border border-slate-300 px-2 py-1.5 text-center text-xs text-slate-700";
 const nameCellClass = "border border-slate-300 px-2 py-1.5 text-left text-xs font-semibold text-slate-800";
+
+// Turns "Juan Dela Cruz" into "Cruz Juan Dela" so sorting compares last
+// names first. Note: for multi-word surnames (e.g. "Dela Cruz"), this only
+// uses the final token as the "last name" — it won't group "Dela Cruz" and
+// "Dela Torre" the way a true first/last-name split would.
+function lastNameSortKey(fullName) {
+  const parts = String(fullName || "").trim().split(/\s+/);
+  if (parts.length <= 1) return fullName || "";
+  const lastName = parts[parts.length - 1];
+  const rest = parts.slice(0, -1).join(" ");
+  return `${lastName} ${rest}`;
+}
 
 function monthKey(dateValue) {
   return String(dateValue ?? "").slice(0, 7); // YYYY-MM
@@ -206,30 +218,40 @@ export default function PrintReportModal({
   gradingPeriods,
   onClose,
 }) {
- useEffect(() => {
-  const previousTitle = document.title;
-  document.title = "Smart Student Attendance Monitoring System";
+  const sortedStudents = useMemo(
+    () =>
+      [...students].sort((a, b) =>
+        lastNameSortKey(a.name).localeCompare(lastNameSortKey(b.name), undefined, {
+          sensitivity: "base",
+        }),
+      ),
+    [students],
+  );
 
-  const timer = setTimeout(() => window.print(), 200);
-  const handleAfterPrint = () => {
-    document.title = previousTitle;
-    onClose();
-  };
-  window.addEventListener("afterprint", handleAfterPrint);
-  return () => {
-    clearTimeout(timer);
-    document.title = previousTitle;
-    window.removeEventListener("afterprint", handleAfterPrint);
-  };
-}, [onClose]);
-  
+  useEffect(() => {
+    const previousTitle = document.title;
+    document.title = "Smart Student Attendance Monitoring System";
+
+    const timer = setTimeout(() => window.print(), 200);
+    const handleAfterPrint = () => {
+      document.title = previousTitle;
+      onClose();
+    };
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => {
+      clearTimeout(timer);
+      document.title = previousTitle;
+      window.removeEventListener("afterprint", handleAfterPrint);
+    };
+  }, [onClose]);
+
   const isGradePeriod = ["prelim", "midterm", "semifinal", "final"].includes(type);
   const selectedPeriod = isGradePeriod ? gradingPeriods.find((item) => item.code === type) : null;
 
   return createPortal(
-  <div
-    id="print-report-portal"
-    className="fixed inset-0 z-[999] overflow-y-auto bg-slate-50 print:static print:inset-auto print:z-auto print:overflow-visible print:bg-white">
+    <div
+      id="print-report-portal"
+      className="fixed inset-0 z-[999] overflow-y-auto bg-slate-50 print:static print:inset-auto print:z-auto print:overflow-visible print:bg-white">
       <div className="print:hidden sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-6 py-4 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           {printTitles[type] ?? "Report"} preview
@@ -275,17 +297,17 @@ export default function PrintReportModal({
         {isGradePeriod && (
           <PeriodReportTable
             period={type}
-            students={students}
+            students={sortedStudents}
             assessmentScores={assessmentScores}
             attendanceSessions={attendanceSessions}
             gradingPeriods={gradingPeriods}
           />
         )}
-        {type === "summary" && <SummaryReportTable students={students} />}
+        {type === "summary" && <SummaryReportTable students={sortedStudents} />}
         {type === "monthly-attendance" && (
-          <MonthlyAttendanceTable students={students} attendanceSessions={attendanceSessions} />
+          <MonthlyAttendanceTable students={sortedStudents} attendanceSessions={attendanceSessions} />
         )}
-        {!students.length && (
+        {!sortedStudents.length && (
           <p className="py-12 text-center text-sm text-slate-500">
             No students are enrolled in this class.
           </p>
