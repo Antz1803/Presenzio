@@ -28,18 +28,6 @@ const thClass = "border border-slate-300 bg-slate-100 px-2 py-1.5 text-center te
 const tdClass = "border border-slate-300 px-2 py-1.5 text-center text-xs text-slate-700";
 const nameCellClass = "border border-slate-300 px-2 py-1.5 text-left text-xs font-semibold text-slate-800";
 
-// Turns "Juan Dela Cruz" into "Cruz Juan Dela" so sorting compares last
-// names first. Note: for multi-word surnames (e.g. "Dela Cruz"), this only
-// uses the final token as the "last name" — it won't group "Dela Cruz" and
-// "Dela Torre" the way a true first/last-name split would.
-function lastNameSortKey(fullName) {
-  const parts = String(fullName || "").trim().split(/\s+/);
-  if (parts.length <= 1) return fullName || "";
-  const lastName = parts[parts.length - 1];
-  const rest = parts.slice(0, -1).join(" ");
-  return `${lastName} ${rest}`;
-}
-
 function monthKey(dateValue) {
   return String(dateValue ?? "").slice(0, 7); // YYYY-MM
 }
@@ -221,7 +209,7 @@ export default function PrintReportModal({
   const sortedStudents = useMemo(
     () =>
       [...students].sort((a, b) =>
-        lastNameSortKey(a.name).localeCompare(lastNameSortKey(b.name), undefined, {
+        (a.name || "").localeCompare(b.name || "", undefined, {
           sensitivity: "base",
         }),
       ),
