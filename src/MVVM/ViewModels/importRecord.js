@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { normalizeName, mergeDuplicateStudentRecords } from "./studentDedup";
+import { normalizeName, mergeDuplicateStudentRecords } from "./Studentdedup";
 
 const periodSheets = {
   prelim: "Prelim",
@@ -239,7 +239,7 @@ function parseTimeStart(value) {
   return `${String(normalizedHour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
 }
 
-async function resolveGradeSheetClass({ workbook, supabase }) {
+async function resolveGradeSheetClass({ workbook, supabase, userId }) {
   if (!workbook.Sheets.Settings) {
     throw new Error("The selected file is not a supported grade sheet.");
   }
@@ -285,6 +285,7 @@ async function resolveGradeSheetClass({ workbook, supabase }) {
     throw new Error("The grade sheet does not contain class identification details.");
   }
   if (schoolYearId) sectionQuery = sectionQuery.eq("school_year_id", schoolYearId);
+  if (userId) sectionQuery = sectionQuery.eq("teacher_id", userId);
 
   const { data: matchingSections, error: sectionError } = await sectionQuery.limit(2);
   if (sectionError) throw sectionError;
@@ -570,7 +571,10 @@ export async function importRecordFile({
   });
 }
 
-export async function importGradeSheetFile({ file, supabase }) {
+export async function importGradeSheetFile({ file, supabase, userId }) {
+  if (!userId) {
+    throw new Error("Your account session is not ready. Please sign in again before importing.");
+  }
   const workbook = XLSX.read(await file.arrayBuffer(), {
     type: "array",
     cellDates: true,
@@ -580,7 +584,7 @@ export async function importGradeSheetFile({ file, supabase }) {
       "This is a master list. Use Import master list for this file.",
     );
   }
-  const resolved = await resolveGradeSheetClass({ workbook, supabase });
+  const resolved = await resolveGradeSheetClass({ workbook, supabase, userId });
   const result = await importRecordWorkbook({
     workbook,
     supabase,

@@ -33,6 +33,8 @@ alter table if exists sections add column if not exists room text;
 alter table if exists sections add column if not exists days text;
 alter table if exists sections add column if not exists time_start time;
 alter table if exists sections add column if not exists time_end time;
+alter table if exists sections add column if not exists teacher_id uuid;
+create index if not exists sections_teacher_id_idx on sections(teacher_id);
 
 create table if not exists students (
   id uuid primary key default gen_random_uuid(),

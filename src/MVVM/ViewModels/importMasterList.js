@@ -1,5 +1,5 @@
 ﻿import * as XLSX from "xlsx";
-import { mergeDuplicateStudentRecords } from "./studentDedup";
+import { mergeDuplicateStudentRecords } from "./Studentdedup";
 
 function cellText(row, index) {
   return String(row?.[index] ?? "").trim();
@@ -54,7 +54,7 @@ function parseSchedule(value) {
   };
 }
 
-async function getOrCreateSection({ rows, sheetName, supabase }) {
+async function getOrCreateSection({ rows, sheetName, supabase, userId }) {
   const academic = parseAcademicInfo(rows);
   const edpCode =
     metadataValue(rows, "EDP Code") || sheetName.split(",")[0].trim();
@@ -89,6 +89,7 @@ async function getOrCreateSection({ rows, sheetName, supabase }) {
     .from("sections")
     .select("id")
     .eq("school_year_id", schoolYearId);
+  if (userId) sectionQuery = sectionQuery.eq("teacher_id", userId);
   sectionQuery = edpCode
     ? sectionQuery.eq("edp_code", edpCode)
     : sectionQuery.eq("subject_code", subjectCode).eq("section_no", sectionNo);
@@ -98,6 +99,7 @@ async function getOrCreateSection({ rows, sheetName, supabase }) {
 
   const sectionPayload = {
     school_year_id: schoolYearId,
+    teacher_id: userId || null,
     subject_code: subjectCode,
     subject_title: subjectTitle,
     edp_code: edpCode || null,
@@ -158,7 +160,10 @@ function parseMasterListSheet({ workbook, sheetName }) {
   return { rows, sheetName, records };
 }
 
-export async function importMasterListFile({ file, supabase }) {
+export async function importMasterListFile({ file, supabase, userId }) {
+  if (!userId) {
+    throw new Error("Your account session is not ready. Please sign in again before importing.");
+  }
   const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
   if (workbook.Sheets.Settings) {
     throw new Error(
@@ -188,6 +193,7 @@ export async function importMasterListFile({ file, supabase }) {
         rows: sheet.rows,
         sheetName: sheet.sheetName,
         supabase,
+        userId,
       });
       sections.push({ ...sheet, section });
     } catch (error) {

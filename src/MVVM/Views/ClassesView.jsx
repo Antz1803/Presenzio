@@ -43,7 +43,7 @@ function EditClassModal({ item, onClose, onSave }) {
   const field = (key, label, type = "text", wide = false) => (
     <label className={(wide ? "col-span-2 " : "") + "flex flex-col gap-1.5 text-xs font-semibold text-slate-700"}>
       {label}
-      <input className="w-full rounded-xl border border-white/60 bg-white/50 px-3.5 py-2.5 text-sm font-normal text-slate-800 outline-none backdrop-blur-md shadow-inner transition duration-200 placeholder:text-slate-400 hover:bg-white/80 focus:border-indigo-500/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10" type={type} value={draft[key]} onChange={(event) => update(key, event.target.value)} />
+      <input name={key} className="w-full rounded-xl border border-white/60 bg-white/50 px-3.5 py-2.5 text-sm font-normal text-slate-800 outline-none backdrop-blur-md shadow-inner transition duration-200 placeholder:text-slate-400 hover:bg-white/80 focus:border-indigo-500/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10" type={type} value={draft[key]} onChange={(event) => update(key, event.target.value)} />
     </label>
   );
   return (
@@ -77,6 +77,7 @@ function EditClassModal({ item, onClose, onSave }) {
       importState,
       gradeSheetImportState,
       connectionStatus = "connecting",
+      connectionMessage = "Connecting to Supabase…",
       pendingSyncCount = 0,
       onOpenStudents,
       onOpenClassOptions,
@@ -92,6 +93,7 @@ function EditClassModal({ item, onClose, onSave }) {
   );
   const isOffline = connectionStatus === "offline";
   const isOnline = connectionStatus === "live" || connectionStatus === "online";
+  const isError = connectionStatus === "error";
   const upload = (event, handler) => { const file = event.target.files?.[0]; if (file) handler(file); event.target.value = ""; };
   const saveEdit = async (sectionId, draft) => {
     if (!onUpdateClass) throw new Error("Editing is not available.");
@@ -124,9 +126,9 @@ function EditClassModal({ item, onClose, onSave }) {
           </div>
 
           <div className="flex items-center gap-3 text-xs font-semibold max-md:w-full max-md:flex-wrap">
-            <div className={`flex items-center gap-2 rounded-full border px-4 py-2 shadow-sm backdrop-blur-md ${isOnline ? "border-emerald-200/80 bg-emerald-50/60 text-emerald-700" : isOffline ? "border-rose-200/80 bg-rose-50/60 text-rose-700" : "border-amber-200/80 bg-amber-50/60 text-amber-700"}`}>
-              <span className={`h-2 w-2 rounded-full ${isOnline ? "bg-emerald-500 animate-pulse" : isOffline ? "bg-rose-500" : "bg-amber-500"}`} />
-              {isOnline ? "Live Connected" : isOffline ? "Offline Mode" : "Syncing Status..."}
+            <div className={`flex items-center gap-2 rounded-full border px-4 py-2 shadow-sm backdrop-blur-md ${isOnline ? "border-emerald-200/80 bg-emerald-50/60 text-emerald-700" : isOffline || isError ? "border-rose-200/80 bg-rose-50/60 text-rose-700" : "border-amber-200/80 bg-amber-50/60 text-amber-700"}`} title={connectionMessage}>
+              <span className={`h-2 w-2 rounded-full ${isOnline ? "bg-emerald-500 animate-pulse" : isOffline || isError ? "bg-rose-500" : "bg-amber-500"}`} />
+              {isOnline ? "Live Connected" : isOffline ? "Offline Mode" : isError ? "Connection Error" : "Syncing Status..."}
             </div>
             {pendingSyncCount > 0 && (
               <div className="flex items-center gap-2 rounded-full border border-sky-200/80 bg-sky-50/60 px-4 py-2 text-sky-700 shadow-sm backdrop-blur-md">
@@ -144,7 +146,7 @@ function EditClassModal({ item, onClose, onSave }) {
           <div className="mb-6 flex gap-4">
             <label className="flex flex-1 items-center gap-3 rounded-2xl border border-white/80 bg-white/50 px-4 py-3 text-slate-400 shadow-[0_4px_20px_0_rgba(0,0,0,0.03)] backdrop-blur-md transition hover:border-white hover:bg-white/70 focus-within:border-indigo-500/50 focus-within:bg-white/90 focus-within:ring-4 focus-within:ring-indigo-500/10">
               <Icon name="search" size={18} />
-              <input className="w-full border-0 bg-transparent text-sm font-normal text-slate-800 outline-none placeholder:text-slate-400" placeholder="Search by course code, title, room, EDP, section..." value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
+              <input name="classSearch" className="w-full border-0 bg-transparent text-sm font-normal text-slate-800 outline-none placeholder:text-slate-400" placeholder="Search by course code, title, room, EDP, section..." value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
             </label>
           </div>
 
@@ -237,7 +239,7 @@ function EditClassModal({ item, onClose, onSave }) {
               <p className="mb-3.5 mt-1 text-[11px] text-slate-500">Batch create student IDs &amp; profiles.</p>
               <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-500/20 transition hover:from-indigo-500 hover:to-indigo-600 active:scale-95">
                 <Icon name="file" size={15} />Choose Master File
-                <input className="hidden" type="file" accept=".xlsx,.xls,.csv" onChange={(event) => upload(event, importMasterList)} />
+                <input name="masterListFile" className="hidden" type="file" accept=".xlsx,.xls,.csv" onChange={(event) => upload(event, importMasterList)} />
               </label>
             </div>
 
@@ -246,7 +248,7 @@ function EditClassModal({ item, onClose, onSave }) {
               <p className="mb-3.5 mt-1 text-[11px] text-slate-500">Upload computed assessment files.</p>
               <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-500/20 transition hover:from-indigo-500 hover:to-indigo-600 active:scale-95">
                 <Icon name="chart" size={15} />Choose Grade File
-                <input className="hidden" type="file" accept=".xlsx,.xls,.xlsm,.csv" disabled={gradeSheetImportState?.status === "working"} onChange={(event) => upload(event, importGradeSheet)} />
+                <input name="gradeSheetFile" className="hidden" type="file" accept=".xlsx,.xls,.xlsm,.csv" disabled={gradeSheetImportState?.status === "working"} onChange={(event) => upload(event, importGradeSheet)} />
               </label>
             </div>
 
