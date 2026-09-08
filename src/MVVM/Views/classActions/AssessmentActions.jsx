@@ -253,7 +253,7 @@ function AssessmentBuilder({ section, onSave, onClose }) {
       <form className="assessment-builder" onSubmit={save}>
         <div className="assessment-builder-intro">
           <div>
-            <span className="assessment-builder-icon">✦</span>
+            <span className="assessment-builder-icon">📝</span>
             <div>
               <h3>Build an assessment</h3>
               <p>Create questions for your class and grading period.</p>
