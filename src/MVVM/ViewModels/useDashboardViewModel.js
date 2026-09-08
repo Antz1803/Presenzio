@@ -440,7 +440,7 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
       const { data: enrollments, error: enrollmentError } = await supabase
         .from("enrollments")
         .select(
-          "id, ctrl_no, status, student:students(id, full_name, gender, student_no)",
+          "id, ctrl_no, status, student:students(id, full_name, gender, student_no, course, year_level, contact_no, email, photo_url)",
         )
         .eq("section_id", sectionData.id)
         .order("ctrl_no");
@@ -655,6 +655,11 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
             ] ?? "plum",
           number: student?.student_no ?? "CTRL-" + (enrollment.ctrl_no ?? "—"),
           gender: student?.gender ?? "—",
+          course: student?.course ?? "",
+          yearLevel: student?.year_level ?? "",
+          contactNo: student?.contact_no ?? "",
+          email: student?.email ?? "",
+          photoUrl: student?.photo_url ?? "",
           attendance: attendanceRate,
           grades,
           gradeDetails,
@@ -974,7 +979,7 @@ const {
   refreshGrades, importGradeSheet, saveAttendance,
   saveGrades, saveAssessmentScores, saveAssessment, updateAssessment,
   deleteAssessment, grantAssessmentAttempt, loadStudentAssessment,
-  submitAssessment, addStudent, updateSection, deleteSection,
+   submitAssessment, addStudent, updateStudent, updateSection, deleteSection,
   flushOfflineMutations,
 } = useDashboardActions({
   accountId, accountScoped, currentSectionId, period, section, sections, students,
@@ -1060,6 +1065,7 @@ const {
     loadStudentAssessment,
     submitAssessment,
     addStudent,
+    updateStudent,
     updateSection,
     deleteSection,
     refreshGrades,

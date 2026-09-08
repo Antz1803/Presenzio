@@ -419,8 +419,10 @@ export function useDashboardActions(context) {
         });
       } catch (error) {
         const message = error.message ?? "Grade-sheet import failed.";
-        setConnectionStatus(isNetworkError(error) ? "offline" : "error");
-        setConnectionMessage(message);
+        if (isNetworkError(error)) {
+          setConnectionStatus("offline");
+          setConnectionMessage(message);
+        }
         setGradeSheetImportState({
           status: "error",
           message,
@@ -1548,6 +1550,53 @@ export function useDashboardActions(context) {
     [currentSectionId, loadLiveData, queueOfflineChange, students.length],
   );
 
+  const updateStudent = useCallback(
+    async ({ studentId, enrollmentId, sectionId, ctrlNo, ...student }) => {
+      if (!studentId || !enrollmentId || !sectionId) {
+        throw new Error("Student information is incomplete.");
+      }
+      const studentPayload = {
+        id: studentId,
+        student_no: String(student.student_no ?? "").trim() || null,
+        full_name: String(student.full_name ?? "").trim(),
+        gender: student.gender || null,
+        course: String(student.course ?? "").trim() || null,
+        year_level: String(student.year_level ?? "").trim() || null,
+        contact_no: String(student.contact_no ?? "").trim() || null,
+        email: String(student.email ?? "").trim() || null,
+        photo_url: student.photo_url || null,
+      };
+      if (!studentPayload.full_name) throw new Error("Full name is required.");
+      const nextCtrlNo = Number(ctrlNo);
+      if (!Number.isInteger(nextCtrlNo) || nextCtrlNo < 1) {
+        throw new Error("Control number must be a positive whole number.");
+      }
+      if (browserIsOffline() || !supabase) {
+        await queueOfflineChange("update-student", {
+          student: studentPayload,
+          enrollment: { id: enrollmentId, section_id: sectionId, ctrl_no: nextCtrlNo },
+        });
+        setStudents((current) => current.map((item) => item.id === enrollmentId
+          ? { ...item, ctrlNo: nextCtrlNo, name: studentPayload.full_name, number: studentPayload.student_no || `CTRL-${nextCtrlNo}`, gender: studentPayload.gender || "—", course: studentPayload.course || "", yearLevel: studentPayload.year_level || "", contactNo: studentPayload.contact_no || "", email: studentPayload.email || "", photoUrl: studentPayload.photo_url || "" }
+          : item));
+        return;
+      }
+      const { error: studentError } = await supabase
+        .from("students")
+        .update(studentPayload)
+        .eq("id", studentId);
+      if (studentError) throw studentError;
+      const { error: enrollmentError } = await supabase
+        .from("enrollments")
+        .update({ ctrl_no: nextCtrlNo })
+        .eq("id", enrollmentId)
+        .eq("section_id", sectionId);
+      if (enrollmentError) throw enrollmentError;
+      await loadLiveData(sectionId);
+    },
+    [browserIsOffline, loadLiveData, queueOfflineChange, setStudents, supabase],
+  );
+
   const updateSection = useCallback(
     async (sectionId, changes) => {
       if (!sectionId) throw new Error("No class was selected for editing.");
@@ -1708,6 +1757,7 @@ export function useDashboardActions(context) {
     loadStudentAssessment,
     submitAssessment,
     addStudent,
+    updateStudent,
     updateSection,
     deleteSection,
     flushOfflineMutations,

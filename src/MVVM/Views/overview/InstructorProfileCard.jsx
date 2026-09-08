@@ -213,7 +213,7 @@ export default function ExpandedInstructorProfileCard({ instructor, onUpdateInst
           <div className="bg-white/90 backdrop-blur-2xl rounded-3xl max-w-md w-full p-6 shadow-2xl border border-white/60 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-800">Edit Profile Details</h3>
-              <button type="button" onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-slate-600 text-sm font-bold">âœ•</button>
+              <button type="button" onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-slate-600 text-sm font-bold">×</button>
             </div>
 
             <form onSubmit={handleSave} className="space-y-3 text-xs">

@@ -49,6 +49,13 @@ create table if not exists students (
   created_at timestamptz not null default now()
 );
 
+-- Keep existing Supabase projects compatible with editable student profiles.
+alter table if exists students add column if not exists course text;
+alter table if exists students add column if not exists year_level text;
+alter table if exists students add column if not exists contact_no text;
+alter table if exists students add column if not exists email text;
+alter table if exists students add column if not exists photo_url text;
+
 create index if not exists students_student_no_idx on students(student_no);
 
 create table if not exists enrollments (

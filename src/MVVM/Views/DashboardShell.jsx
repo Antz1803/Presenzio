@@ -276,6 +276,7 @@ export default function DashboardShell() {
         <StudentModal
           section={studentSection}
           students={selectedSection?.id === studentModalId ? viewModel.students : []}
+          onUpdateStudent={viewModel.updateStudent}
           onClose={() => setStudentModalId(null)}
         />
       )}

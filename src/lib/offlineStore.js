@@ -195,6 +195,21 @@ export async function replayOfflineMutation({ supabase, mutation, importMasterLi
     return { sectionId: payload.enrollment.section_id };
   }
 
+  if (type === "update-student") {
+    const { error: studentError } = await supabase
+      .from("students")
+      .update(payload.student)
+      .eq("id", payload.student.id);
+    if (studentError) throw studentError;
+    const { error: enrollmentError } = await supabase
+      .from("enrollments")
+      .update(payload.enrollment)
+      .eq("id", payload.enrollment.id)
+      .eq("section_id", payload.enrollment.section_id);
+    if (enrollmentError) throw enrollmentError;
+    return { sectionId: payload.enrollment.section_id };
+  }
+
   if (type === "update-section") {
     const { error } = await supabase
       .from("sections")

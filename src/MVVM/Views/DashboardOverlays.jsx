@@ -140,7 +140,31 @@ function ClassOptionsModal({
   );
 }
 
-function StudentModal({ section, students, onClose }) {
+function roundedUpGrade(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "—";
+  return (Math.ceil((number - Number.EPSILON) * 10) / 10).toFixed(1);
+}
+
+function studentDraft(student) {
+  return {
+    ctrlNo: String(student.ctrlNo ?? ""),
+    student_no: student.number?.startsWith("CTRL-") ? "" : student.number ?? "",
+    full_name: student.name ?? "",
+    gender: ["M", "F"].includes(student.gender) ? student.gender : "",
+    course: student.course ?? "",
+    year_level: student.yearLevel ?? "",
+    contact_no: student.contactNo ?? "",
+    email: student.email ?? "",
+    photo_url: student.photoUrl ?? "",
+  };
+}
+
+function StudentModal({ section, students, onClose, onUpdateStudent }) {
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [draft, setDraft] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState({ status: "", text: "" });
   const sortedStudents = useMemo(
     () =>
       [...students].sort((a, b) =>
@@ -150,6 +174,45 @@ function StudentModal({ section, students, onClose }) {
       ),
     [students],
   );
+
+  const startEditing = (student) => {
+    setEditingStudent(student);
+    setDraft(studentDraft(student));
+    setMessage({ status: "", text: "" });
+  };
+  const updateDraft = (key, value) => setDraft((current) => ({ ...current, [key]: value }));
+  const handlePhoto = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setMessage({ status: "error", text: "Profile photos must be 2 MB or smaller." });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => updateDraft("photo_url", String(reader.result || ""));
+    reader.readAsDataURL(file);
+  };
+  const saveStudent = async (event) => {
+    event.preventDefault();
+    if (!editingStudent || !draft || !onUpdateStudent) return;
+    setSaving(true);
+    setMessage({ status: "", text: "" });
+    try {
+      await onUpdateStudent({
+        studentId: editingStudent.studentId,
+        enrollmentId: editingStudent.id,
+        sectionId: section?.id,
+        ...draft,
+      });
+      setMessage({ status: "success", text: "Student profile updated." });
+      setEditingStudent(null);
+      setDraft(null);
+    } catch (error) {
+      setMessage({ status: "error", text: error?.message || "Student profile could not be updated." });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div
@@ -181,6 +244,28 @@ function StudentModal({ section, students, onClose }) {
           </button>
         </div>
 
+        {draft && editingStudent && (
+          <form className="mb-5 rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4" onSubmit={saveStudent}>
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Edit student profile</p>
+                <p className="mt-0.5 text-xs text-slate-500">Update the complete record for {editingStudent.name}.</p>
+              </div>
+              <button type="button" className="text-xs font-semibold text-slate-500 hover:text-slate-800" onClick={() => { setEditingStudent(null); setDraft(null); }}>Cancel</button>
+            </div>
+            <div className="mb-4 flex items-center gap-3">
+              {draft.photo_url ? <img src={draft.photo_url} alt="" className="h-16 w-16 rounded-2xl object-cover ring-2 ring-white" /> : <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-100 text-lg font-bold text-indigo-600">{editingStudent.name?.slice(0, 1) || "?"}</div>}
+              <label className="text-xs font-semibold text-slate-600">Profile photo<input type="file" accept="image/*" onChange={handlePhoto} disabled={saving} className="mt-1 block w-full text-[11px] text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-white file:px-2.5 file:py-1.5 file:text-[11px] file:font-semibold file:text-indigo-600" /></label>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[['student_no', 'Student ID'], ['full_name', 'Full name'], ['course', 'Course'], ['year_level', 'Year level'], ['contact_no', 'Contact number'], ['email', 'Email']].map(([key, label]) => <label className="text-xs font-semibold text-slate-600" key={key}>{label}<input name={key} type={key === "email" ? "email" : "text"} value={draft[key]} onChange={(event) => updateDraft(key, event.target.value)} disabled={saving} required={key === "full_name"} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" /></label>)}
+              <label className="text-xs font-semibold text-slate-600">Gender<select name="gender" value={draft.gender} onChange={(event) => updateDraft("gender", event.target.value)} disabled={saving} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"><option value="">Select</option><option value="M">Male</option><option value="F">Female</option></select></label>
+            </div>
+            {message.text && <p className={`mt-3 rounded-xl px-3 py-2 text-xs ${message.status === "error" ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-700"}`} role="status">{message.text}</p>}
+            <div className="mt-4 flex justify-end"><button type="submit" disabled={saving} className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60">{saving ? "Saving..." : "Save student"}</button></div>
+          </form>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
@@ -191,6 +276,7 @@ function StudentModal({ section, students, onClose }) {
                 <th className="py-2 pr-3">Gender</th>
                 <th className="py-2 pr-3">Attendance</th>
                 <th className="py-2 pr-3">Grade</th>
+                <th className="py-2 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -203,7 +289,8 @@ function StudentModal({ section, students, onClose }) {
                     {student.gender === "F" ? "Female" : student.gender === "M" ? "Male" : "—"}
                   </td>
                   <td className="py-2 pr-3 text-slate-600">{student.attendance}%</td>
-                  <td className="py-2 pr-3 text-slate-600">{Number(student.grade || 0).toFixed(2)}</td>
+                  <td className="py-2 pr-3 text-slate-600">{roundedUpGrade(student.grade)}</td>
+                  <td className="py-2 text-right"><button type="button" className="rounded-lg border border-indigo-200 px-2.5 py-1 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50" onClick={() => startEditing(student)}>Edit</button></td>
                 </tr>
               ))}
             </tbody>
