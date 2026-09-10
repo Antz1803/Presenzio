@@ -548,10 +548,10 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
             .select("id, assessment_id, student_id, extra_attempts, granted_at")
             .in("assessment_id", assessmentIds),
           supabase
-            .from("assessment_violations")
-            .select("id, assessment_id, student_id, attempt_no, violation_type, details, occurred_at")
-            .in("assessment_id", assessmentIds)
-            .order("occurred_at", { ascending: false }),
+        .from("assessment_violations")
+        .select("id, assessment_id, student_id, attempt_no, violation_type, details, occurred_at")
+        .in("assessment_id", assessmentIds)
+        .order("occurred_at", { ascending: false }),
         ]);
         attemptRows = attemptResult.error ? [] : attemptResult.data ?? [];
         grantRows = grantResult.error ? [] : grantResult.data ?? [];

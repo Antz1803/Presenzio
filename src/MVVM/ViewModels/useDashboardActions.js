@@ -691,8 +691,37 @@ export function useDashboardActions(context) {
     [currentSectionId, loadLiveData, queueOfflineChange, recalculatePeriodGrades],
   );
 
+  /**
+   * Create a new assessment for a category/period/item-number slot.
+   *
+   * If `replaceAssessmentId` is provided, the caller has already confirmed
+   * (via the UI) that they want to replace the assessment currently sitting
+   * in that slot. In that case:
+   *   - the conflict check ignores the slot IF it's occupied by exactly
+   *     that assessment (any other occupant is still a hard error — the
+   *     confirmation the user saw was only for the assessment they were
+   *     shown);
+   *   - the old assessment row (and its questions, via DB cascade / local
+   *     state) is deleted;
+   *   - any previously recorded assessment_scores for that section/period/
+   *     category/item_no are cleared, since they belonged to the old
+   *     assessment's question set and point scale.
+   * Everything else behaves exactly like a normal, non-conflicting save.
+   */
   const saveAssessment = useCallback(
-    async ({ title, category, period, instructions, timeLimitMinutes, availableFrom, availableUntil, questions }) => {
+    async ({
+      title,
+      category,
+      period,
+      itemNo: requestedItemNo,
+      instructions,
+      timeLimitMinutes,
+      availableFrom,
+      availableUntil,
+      questions,
+      replaceAssessmentId,
+      overwriteScores,
+    }) => {
       if (!currentSectionId)
         throw new Error("No active Supabase section.");
       if (!title?.trim()) throw new Error("An assessment title is required.");
@@ -705,28 +734,103 @@ export function useDashboardActions(context) {
       }
 
       if (browserIsOffline() || !supabase) {
-        const usedItemNumbers = new Set([
-          ...assessmentDefinitions
-            .filter(
-              (item) =>
-                item.period?.code === period && item.category === category,
-            )
-            .map((item) => Number(item.item_no)),
-          ...assessmentScores
-            .filter(
-              (item) =>
-                item.period?.code === period && item.category === category,
-            )
-            .map((item) => Number(item.item_no)),
-        ]);
-        const itemLimit = assessmentItemLimits[category] ?? 1;
-        const itemNo = Array.from(
-          { length: itemLimit },
-          (_, index) => index + 1,
-        ).find((candidate) => !usedItemNumbers.has(candidate));
-        if (!itemNo) {
-          throw new Error(`All ${itemLimit} ${category} score columns are already in use.`);
+        if (replaceAssessmentId) {
+          await queueOfflineChange("delete-assessment", {
+            assessmentId: replaceAssessmentId,
+            sectionId: currentSectionId,
+          });
+          setAssessmentDefinitions((current) =>
+            current.filter((item) => item.id !== replaceAssessmentId),
+          );
         }
+
+        const usedByAssessment = new Set(
+          assessmentDefinitions
+            .filter(
+              (item) =>
+                item.id !== replaceAssessmentId &&
+                item.period?.code === period &&
+                item.category === category,
+            )
+            .map((item) => Number(item.item_no)),
+        );
+        const usedByScoresOnly = new Set(
+          assessmentScores
+            .filter(
+              (item) =>
+                item.period?.code === period &&
+                item.category === category &&
+                !usedByAssessment.has(Number(item.item_no)),
+            )
+            .map((item) => Number(item.item_no)),
+        );
+        const itemLimit = assessmentItemLimits[category] ?? 1;
+        let itemNo;
+        if (requestedItemNo) {
+          const candidate = Number(requestedItemNo);
+          if (!Number.isInteger(candidate) || candidate < 1 || candidate > itemLimit) {
+            throw new Error(`Item number must be between 1 and ${itemLimit} for this type.`);
+          }
+          if (usedByAssessment.has(candidate)) {
+            // Surface which assessment is actually occupying the slot so the
+            // modal can offer a replace-confirmation instead of a dead-end
+            // error, even when its own client-side conflict check missed this
+            // because its `assessments` prop hadn't caught up yet.
+            const occupyingAssessment = assessmentDefinitions.find(
+              (item) =>
+                item.id !== replaceAssessmentId &&
+                item.period?.code === period &&
+                item.category === category &&
+                Number(item.item_no) === candidate,
+            );
+            const conflictError = new Error(
+              `Item ${candidate} for this type and period is already used by another assessment.`,
+            );
+            if (occupyingAssessment) {
+              conflictError.conflict = { id: occupyingAssessment.id, title: occupyingAssessment.title };
+            }
+            throw conflictError;
+          }
+          if (usedByScoresOnly.has(candidate) && !overwriteScores) {
+            // No assessment occupies this slot — it just already has recorded
+            // scores (e.g. entered manually or imported before any assessment
+            // was created for this column). There's nothing to "replace", so
+            // this needs a different confirmation: overwrite those scores.
+            const scoreConflictError = new Error(
+              `Item ${candidate} for this type and period already has recorded scores. Creating this assessment will reset those scores to 0 for every student.`,
+            );
+            scoreConflictError.scoreConflict = true;
+            throw scoreConflictError;
+          }
+          itemNo = candidate;
+        } else {
+          itemNo = Array.from(
+            { length: itemLimit },
+            (_, index) => index + 1,
+          ).find((candidate) => !usedByAssessment.has(candidate) && !usedByScoresOnly.has(candidate));
+          if (!itemNo) {
+            throw new Error(`All ${itemLimit} ${category} score columns are already in use.`);
+          }
+        }
+
+        if (replaceAssessmentId || overwriteScores) {
+          // Either an existing assessment's scores or leftover unassessed
+          // scores are sitting in this slot — clear them from local state so
+          // the new score rows we're about to add don't end up duplicated
+          // alongside them (unlike the online path, this local array isn't
+          // deduped by an upsert onConflict key).
+          setAssessmentScores((current) =>
+            current.filter(
+              (row) =>
+                !(
+                  row.period?.code === period &&
+                  row.category === category &&
+                  Number(row.item_no) === itemNo
+                ),
+            ),
+          );
+        }
+
         const assessmentId =
           createLocalId();
         const accessKey = createAssessmentAccessKey();
@@ -790,10 +894,19 @@ export function useDashboardActions(context) {
         return { id: assessmentId, access_key: accessKey };
       }
 
+      if (replaceAssessmentId) {
+        const { error: deleteAssessmentError } = await supabase
+          .from("assessments")
+          .delete()
+          .eq("id", replaceAssessmentId)
+          .eq("section_id", currentSectionId);
+        if (deleteAssessmentError) throw deleteAssessmentError;
+      }
+
       const [{ data: existingAssessments, error: existingAssessmentError }, { data: existingScores, error: existingScoreError }] = await Promise.all([
         supabase
           .from("assessments")
-          .select("item_no")
+          .select("id, item_no, title")
           .eq("section_id", currentSectionId)
           .eq("period_id", periodRow.id)
           .eq("category", category),
@@ -806,16 +919,69 @@ export function useDashboardActions(context) {
       ]);
       if (existingAssessmentError) throw existingAssessmentError;
       if (existingScoreError) throw existingScoreError;
-      const usedItemNumbers = new Set([
-        ...(existingAssessments ?? []).map((item) => Number(item.item_no)),
-        ...(existingScores ?? []).map((item) => Number(item.item_no)),
-      ]);
-      const itemLimit = assessmentItemLimits[category] ?? 1;
-      const itemNo = Array.from({ length: itemLimit }, (_, index) => index + 1).find(
-        (candidate) => !usedItemNumbers.has(candidate),
+      const usedByAssessment = new Set(
+        (existingAssessments ?? []).map((item) => Number(item.item_no)),
       );
-      if (!itemNo) {
-        throw new Error(`All ${itemLimit} ${category} score columns are already in use.`);
+      const usedByScoresOnly = new Set(
+        (existingScores ?? [])
+          .map((item) => Number(item.item_no))
+          .filter((itemNumber) => !usedByAssessment.has(itemNumber)),
+      );
+      const itemLimit = assessmentItemLimits[category] ?? 1;
+      let itemNo;
+      if (requestedItemNo) {
+        const candidate = Number(requestedItemNo);
+        if (!Number.isInteger(candidate) || candidate < 1 || candidate > itemLimit) {
+          throw new Error(`Item number must be between 1 and ${itemLimit} for this type.`);
+        }
+        // Note: when replaceAssessmentId was set, that assessment's own row
+        // was already deleted above, so a legitimate replace no longer trips
+        // this check — only a *different* assessment occupying the slot will.
+        if (usedByAssessment.has(candidate)) {
+          // This query reflects the live DB, not the modal's (possibly stale)
+          // cached assessments list, so this can fire even when the modal's
+          // own client-side conflict check found nothing. Attach who actually
+          // occupies the slot so the modal can still offer a replace-confirm
+          // dialog instead of a dead-end error.
+          const occupyingAssessment = (existingAssessments ?? []).find(
+            (item) => Number(item.item_no) === candidate,
+          );
+          const conflictError = new Error(
+            `Item ${candidate} for this type and period is already used by another assessment.`,
+          );
+          if (occupyingAssessment) {
+            conflictError.conflict = { id: occupyingAssessment.id, title: occupyingAssessment.title };
+          }
+          throw conflictError;
+        }
+        if (usedByScoresOnly.has(candidate) && !overwriteScores) {
+          // No assessment occupies this slot — it just already has recorded
+          // scores. There's nothing to "replace", so this needs a different
+          // confirmation: overwrite those scores.
+          const scoreConflictError = new Error(
+            `Item ${candidate} for this type and period already has recorded scores. Creating this assessment will reset those scores to 0 for every student.`,
+          );
+          scoreConflictError.scoreConflict = true;
+          throw scoreConflictError;
+        }
+        itemNo = candidate;
+        if (replaceAssessmentId) {
+          const { error: deleteScoresError } = await supabase
+            .from("assessment_scores")
+            .delete()
+            .eq("section_id", currentSectionId)
+            .eq("period_id", periodRow.id)
+            .eq("category", category)
+            .eq("item_no", itemNo);
+          if (deleteScoresError) throw deleteScoresError;
+        }
+      } else {
+        itemNo = Array.from({ length: itemLimit }, (_, index) => index + 1).find(
+          (candidate) => !usedByAssessment.has(candidate) && !usedByScoresOnly.has(candidate),
+        );
+        if (!itemNo) {
+          throw new Error(`All ${itemLimit} ${category} score columns are already in use.`);
+        }
       }
 
       const { data: assessment, error: assessmentError } = await supabase
@@ -890,8 +1056,27 @@ export function useDashboardActions(context) {
     ],
   );
 
+  /**
+   * Update an existing assessment's details/questions, and optionally move
+   * it to a new category/period/item-number slot.
+   *
+   * This mirrors saveAssessment's replace flow: if the target slot is
+   * already occupied by a *different* assessment, the caller must confirm
+   * the replacement first (see AssessmentManager's pendingReplace state)
+   * and pass that assessment's id as `replaceAssessmentId`. When confirmed:
+   *   - the conflict check ignores the slot IF it's occupied by exactly
+   *     that assessment (any other occupant is still a hard error — the
+   *     confirmation the user saw was only for the assessment they were
+   *     shown, and a stale confirmation shouldn't silently apply to a
+   *     different occupant);
+   *   - the conflicting assessment (and its questions, via DB cascade /
+   *     local state) is deleted;
+   *   - any previously recorded assessment_scores for that conflicting
+   *     assessment's section/period/category/item_no are cleared, since
+   *     they belonged to its question set and point scale, not this one's.
+   */
   const updateAssessment = useCallback(
-    async ({ assessmentId, itemNo, title, category, period, instructions, timeLimitMinutes, availableFrom, availableUntil, questions }) => {
+    async ({ assessmentId, itemNo, title, category, period, instructions, timeLimitMinutes, availableFrom, availableUntil, questions, replaceAssessmentId }) => {
       if (!currentSectionId)
         throw new Error("No active Supabase section.");
       const periodRow = gradingPeriods.find((item) => item.code === period);
@@ -900,7 +1085,43 @@ export function useDashboardActions(context) {
       if (!Array.isArray(questions) || !questions.length)
         throw new Error("Add at least one assessment question.");
 
+      const conflict = assessmentDefinitions.find(
+        (item) =>
+          item.id !== assessmentId &&
+          item.category === category &&
+          item.period?.code === period &&
+          Number(item.item_no) === Number(itemNo),
+      );
+      const confirmedReplace = Boolean(conflict) && conflict.id === replaceAssessmentId;
+      if (conflict && !confirmedReplace) {
+        const conflictError = new Error(
+          `Item ${itemNo} for this type and period is already used by another assessment.`,
+        );
+        conflictError.conflict = { id: conflict.id, title: conflict.title };
+        throw conflictError;
+      }
+
       if (browserIsOffline() || !supabase) {
+        if (confirmedReplace) {
+          await queueOfflineChange("delete-assessment", {
+            assessmentId: conflict.id,
+            sectionId: currentSectionId,
+          });
+          setAssessmentDefinitions((current) =>
+            current.filter((item) => item.id !== conflict.id),
+          );
+          setAssessmentScores((current) =>
+            current.filter(
+              (row) =>
+                !(
+                  row.period?.code === conflict.period?.code &&
+                  row.category === conflict.category &&
+                  Number(row.item_no) === Number(conflict.item_no)
+                ),
+            ),
+          );
+        }
+
         const existing = assessmentDefinitions.find((item) => item.id === assessmentId);
         const questionRows = questions.map((question, index) => ({
           id:
@@ -959,12 +1180,30 @@ export function useDashboardActions(context) {
         return { id: assessmentId, access_key: existing?.access_key };
       }
 
+      if (confirmedReplace) {
+        const { error: deleteConflictError } = await supabase
+          .from("assessments")
+          .delete()
+          .eq("id", conflict.id)
+          .eq("section_id", currentSectionId);
+        if (deleteConflictError) throw deleteConflictError;
+        const { error: deleteConflictScoresError } = await supabase
+          .from("assessment_scores")
+          .delete()
+          .eq("section_id", currentSectionId)
+          .eq("period_id", conflict.period_id)
+          .eq("category", conflict.category)
+          .eq("item_no", conflict.item_no);
+        if (deleteConflictScoresError) throw deleteConflictScoresError;
+      }
+
       const { data: assessment, error: assessmentError } = await supabase
         .from("assessments")
         .update({
           title: title.trim(),
           category,
           period_id: periodRow.id,
+          item_no: Number(itemNo),
           instructions: instructions?.trim() || null,
           time_limit_minutes: timeLimitMinutes ? Number(timeLimitMinutes) : null,
           available_from: serializeAssessmentDate(availableFrom),
@@ -1023,10 +1262,22 @@ export function useDashboardActions(context) {
     ],
   );
 
+  /**
+   * Delete an assessment and the assessment_scores rows that belong to it.
+   *
+   * assessment_scores isn't linked to assessments by a foreign key — it's
+   * keyed by (section_id, period_id, category, item_no), the same slot key
+   * used for the "Record Score" columns that work even without a formal
+   * assessment attached. Deleting the assessments row alone (even with the
+   * DB cascade on assessment_questions) therefore left those score rows
+   * behind. We look the assessment up first so we know which slot to
+   * clear, and clear it in both the online and offline paths.
+   */
   const deleteAssessment = useCallback(
     async (assessmentId) => {
       if (!currentSectionId)
         throw new Error("No active Supabase section.");
+      const target = assessmentDefinitions.find((item) => item.id === assessmentId);
       if (browserIsOffline() || !supabase) {
         await queueOfflineChange("delete-assessment", {
           assessmentId,
@@ -1035,6 +1286,18 @@ export function useDashboardActions(context) {
         setAssessmentDefinitions((current) =>
           current.filter((item) => item.id !== assessmentId),
         );
+        if (target) {
+          setAssessmentScores((current) =>
+            current.filter(
+              (row) =>
+                !(
+                  row.period?.code === target.period?.code &&
+                  row.category === target.category &&
+                  Number(row.item_no) === Number(target.item_no)
+                ),
+            ),
+          );
+        }
         return;
       }
       const { error } = await supabase
@@ -1043,9 +1306,19 @@ export function useDashboardActions(context) {
         .eq("id", assessmentId)
         .eq("section_id", currentSectionId);
       if (error) throw error;
+      if (target) {
+        const { error: scoresError } = await supabase
+          .from("assessment_scores")
+          .delete()
+          .eq("section_id", currentSectionId)
+          .eq("period_id", target.period_id)
+          .eq("category", target.category)
+          .eq("item_no", target.item_no);
+        if (scoresError) throw scoresError;
+      }
       await loadLiveData(currentSectionId);
     },
-    [currentSectionId, loadLiveData, queueOfflineChange],
+    [assessmentDefinitions, currentSectionId, loadLiveData, queueOfflineChange],
   );
 
   const grantAssessmentAttempt = useCallback(

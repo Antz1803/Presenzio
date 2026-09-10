@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { localDateTimeInputValue } from "./actionUtils";
 import { ModalShell } from "./ActionModalShell";
+import { RichTextEditor } from "./Richtexteditor";
 
 const assessmentCategories = [
   { key: "quiz", label: "Quiz" },
@@ -15,6 +16,31 @@ const assessmentPeriods = [
   { key: "semifinal", label: "Semi-final" },
   { key: "final", label: "Final" },
 ];
+
+// Mirrors assessmentItemLimits in useDashboardViewModel.js — keep these in
+// sync so the dropdown never offers an item number the backend would reject.
+const assessmentItemLimits = {
+  quiz: 4,
+  assignment: 4,
+  activity: 4,
+  exam: 1,
+};
+
+const categoryItemPrefixes = {
+  quiz: "Q",
+  assignment: "A",
+  activity: "G",
+  exam: "E",
+};
+
+function itemNoOptions(category) {
+  const limit = assessmentItemLimits[category] ?? 4;
+  const prefix = categoryItemPrefixes[category] ?? "Q";
+  return Array.from({ length: limit }, (_, index) => index + 1).map((number) => ({
+    value: String(number),
+    label: `${prefix}${number}`,
+  }));
+}
 
 const codingLanguages = [
   { key: "sql", label: "SQL" },
@@ -116,10 +142,11 @@ function parsePastedQuestions(value) {
   }));
 }
 
-function AssessmentBuilder({ section, onSave, onClose }) {
+function AssessmentBuilder({ section, assessments = [], onSave, onClose }) {
   const [form, setForm] = useState({
     title: "",
     category: "quiz",
+    itemNo: "1",
     period: "prelim",
     instructions: "",
     timeLimitMinutes: "",
@@ -131,12 +158,38 @@ function AssessmentBuilder({ section, onSave, onClose }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ status: "", text: "" });
   const [generatorMessage, setGeneratorMessage] = useState({ status: "", text: "" });
+  // Set (not just returned) when the user's current title/category/period/item
+  // combination collides with an existing assessment. Saving while this is set
+  // shows a confirm dialog instead of saving immediately; the actual save only
+  // proceeds once the user explicitly confirms the replacement.
+  const [pendingReplace, setPendingReplace] = useState(null);
+  // Set when the slot has no assessment to replace but does have recorded
+  // scores (e.g. entered manually before any assessment existed for that
+  // column). There's nothing to delete here, just scores that would be
+  // reset to 0 — so this gets its own confirm dialog and resubmits with
+  // overwriteScores instead of replaceAssessmentId.
+  const [pendingScoreOverwrite, setPendingScoreOverwrite] = useState(false);
   const maximumScore = questions.reduce(
     (total, question) => total + Number(question.points || 0),
     0,
   );
 
-  const updateForm = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const conflictingAssessment = assessments.find(
+    (item) =>
+      item.category === form.category &&
+      item.period?.code === form.period &&
+      Number(item.item_no) === Number(form.itemNo),
+  );
+
+  const updateForm = (key, value) =>
+    setForm((current) => {
+      if (key === "category") {
+        const limit = assessmentItemLimits[value] ?? 4;
+        const clampedItemNo = Math.min(Math.max(Number(current.itemNo || 1), 1), limit);
+        return { ...current, category: value, itemNo: String(clampedItemNo) };
+      }
+      return { ...current, [key]: value };
+    });
   const updateQuestion = (index, key, value) => {
     setQuestions((current) =>
       current.map((question, questionIndex) =>
@@ -205,23 +258,20 @@ function AssessmentBuilder({ section, onSave, onClose }) {
     }
     return "";
   };
-  const save = async (event) => {
-    event.preventDefault();
-    const validationError = validate();
-    if (validationError) {
-      setMessage({ status: "error", text: validationError });
-      return;
-    }
+  const performSave = async (replaceAssessmentId, overwriteScores) => {
     setSaving(true);
     setMessage({ status: "", text: "" });
     try {
       const savedAssessment = await onSave({
         ...form,
         title: form.title.trim(),
+        itemNo: Number(form.itemNo),
         instructions: form.instructions.trim(),
         timeLimitMinutes: form.timeLimitMinutes ? Number(form.timeLimitMinutes) : null,
         availableFrom: form.availableFrom,
         availableUntil: form.availableUntil,
+        replaceAssessmentId,
+        overwriteScores,
         questions: questions.map((question) => ({
           type: question.type,
           prompt: question.prompt.trim(),
@@ -237,16 +287,52 @@ function AssessmentBuilder({ section, onSave, onClose }) {
         status: "success",
         text: `Assessment saved. Key ID: ${savedAssessment?.access_key ?? "available in Supabase"}`,
       });
-      setForm((current) => ({ ...current, title: "", instructions: "", timeLimitMinutes: "" }));
+      setForm((current) => ({ ...current, title: "", instructions: "", timeLimitMinutes: "", itemNo: "1" }));
       setQuestions([createAssessmentQuestion()]);
     } catch (error) {
-      setMessage({
-        status: "error",
-        text: error?.message || "Assessment could not be saved.",
-      });
+      // The client-side conflictingAssessment check below is based on the
+      // `assessments` prop, which can lag a beat behind the live database
+      // (e.g. right after creating another assessment in this same slot).
+      // When that happens the save reaches the server, which still catches
+      // the real conflict and reports back who it collided with — use that
+      // to show the same replace-confirmation dialog instead of a dead end.
+      if (error?.conflict) {
+        setPendingReplace(error.conflict);
+      } else if (error?.scoreConflict) {
+        // No assessment to replace — the slot just has recorded scores.
+        setPendingScoreOverwrite(true);
+      } else {
+        setMessage({
+          status: "error",
+          text: error?.message || "Assessment could not be saved.",
+        });
+      }
     } finally {
       setSaving(false);
     }
+  };
+  const save = async (event) => {
+    event.preventDefault();
+    const validationError = validate();
+    if (validationError) {
+      setMessage({ status: "error", text: validationError });
+      return;
+    }
+    if (conflictingAssessment) {
+      setPendingReplace(conflictingAssessment);
+      return;
+    }
+    await performSave();
+  };
+  const confirmReplace = async () => {
+    if (!pendingReplace) return;
+    const replaceAssessmentId = pendingReplace.id;
+    setPendingReplace(null);
+    await performSave(replaceAssessmentId);
+  };
+  const confirmScoreOverwrite = async () => {
+    setPendingScoreOverwrite(false);
+    await performSave(undefined, true);
   };
   return (
     <ModalShell title="Create Assessment" section={section} onClose={onClose} size="wide">
@@ -287,6 +373,24 @@ function AssessmentBuilder({ section, onSave, onClose }) {
             </select>
           </label>
           <label>
+            Item number
+            <select name="assessmentItemNo" value={form.itemNo} onChange={(event) => updateForm("itemNo", event.target.value)}>
+              {itemNoOptions(form.category).map((item) => {
+                const occupied = assessments.find(
+                  (assessment) =>
+                    assessment.category === form.category &&
+                    assessment.period?.code === form.period &&
+                    Number(assessment.item_no) === Number(item.value),
+                );
+                return (
+                  <option value={item.value} key={item.value}>
+                    {item.label}{occupied ? ` — in use: ${occupied.title}` : ""}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+          <label>
             Grading period
             <select name="assessmentPeriod" value={form.period} onChange={(event) => updateForm("period", event.target.value)}>
               {assessmentPeriods.map((item) => <option value={item.key} key={item.key}>{item.label}</option>)}
@@ -305,15 +409,20 @@ function AssessmentBuilder({ section, onSave, onClose }) {
             <input name="assessmentTimeLimit" type="number" min="1" step="1" value={form.timeLimitMinutes} placeholder="e.g. 30" onChange={(event) => updateForm("timeLimitMinutes", event.target.value)} />
           </label>
         </div>
+        {conflictingAssessment && (
+          <p className="assessment-field-hint assessment-slot-conflict" role="status">
+            {itemNoOptions(form.category).find((item) => item.value === form.itemNo)?.label} is currently
+            assigned to “{conflictingAssessment.title}”. Saving will ask you to confirm replacing it.
+          </p>
+        )}
         <p className="action-help">Students can submit once by default. Grant another attempt to an individual student from Manage Assessments.</p>
         <label className="assessment-instructions-field">
           Instructions <span>(optional)</span>
-          <textarea
-            name="assessmentInstructions"
-            rows="2"
+          <RichTextEditor
             value={form.instructions}
+            onChange={(html) => updateForm("instructions", html)}
             placeholder="Add instructions for your students..."
-            onChange={(event) => updateForm("instructions", event.target.value)}
+            uploadPathPrefix={`assessments/${section?.id ?? "new"}`}
           />
         </label>
         <section className="question-generator">
@@ -412,13 +521,82 @@ function AssessmentBuilder({ section, onSave, onClose }) {
           <button type="submit" className="primary-button" disabled={saving}>{saving ? "Saving…" : "Save assessment"}</button>
         </div>
       </form>
+      {pendingReplace && (
+        <div
+          className="assessment-confirm-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPendingReplace(null);
+          }}
+        >
+          <section
+            className="assessment-confirm-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="assessment-replace-title"
+          >
+            <div className="assessment-confirm-icon">!</div>
+            <p>REPLACE ASSESSMENT</p>
+            <h3 id="assessment-replace-title">
+              {itemNoOptions(form.category).find((item) => item.value === form.itemNo)?.label} is already
+              assigned to “{pendingReplace.title}”
+            </h3>
+            <span>
+              Saving will delete “{pendingReplace.title}” (its questions and any recorded scores for this
+              item) and put this new assessment in its place. This can't be undone.
+            </span>
+            <div>
+              <button type="button" className="outline-button" onClick={() => setPendingReplace(null)} disabled={saving}>
+                Cancel
+              </button>
+              <button type="button" className="danger-button" onClick={confirmReplace} disabled={saving}>
+                {saving ? "Replacing…" : "Replace assessment"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+      {pendingScoreOverwrite && (
+        <div
+          className="assessment-confirm-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPendingScoreOverwrite(false);
+          }}
+        >
+          <section
+            className="assessment-confirm-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="assessment-score-overwrite-title"
+          >
+            <div className="assessment-confirm-icon">!</div>
+            <p>EXISTING SCORES FOUND</p>
+            <h3 id="assessment-score-overwrite-title">
+              {itemNoOptions(form.category).find((item) => item.value === form.itemNo)?.label} already has
+              recorded scores
+            </h3>
+            <span>
+              No assessment is attached to this column yet, but scores have already been entered for it.
+              Saving will reset those scores to 0 for every student so they line up with this new
+              assessment. This can't be undone.
+            </span>
+            <div>
+              <button type="button" className="outline-button" onClick={() => setPendingScoreOverwrite(false)} disabled={saving}>
+                Cancel
+              </button>
+              <button type="button" className="danger-button" onClick={confirmScoreOverwrite} disabled={saving}>
+                {saving ? "Saving…" : "Overwrite scores"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </ModalShell>
   );
 }
 
 function assessmentToDraft(assessment) {
   return {
-    itemNo: assessment.item_no,
+    itemNo: String(assessment.item_no ?? "1"),
     title: assessment.title ?? "",
     category: assessment.category ?? "quiz",
     period: assessment.period?.code ?? "prelim",
@@ -452,13 +630,35 @@ function AssessmentManager({ section, assessments, students, onUpdate, onDelete,
   const [notification, setNotification] = useState("");
   const [message, setMessage] = useState({ status: "", text: "" });
   const [grantingStudentId, setGrantingStudentId] = useState("");
+  // Set (not just returned) when the draft's current category/period/item
+  // combination collides with a *different* assessment. Saving while this is
+  // set shows a confirm dialog instead of saving immediately, mirroring the
+  // same replace-with-confirmation flow AssessmentBuilder uses for create.
+  const [pendingReplace, setPendingReplace] = useState(null);
   const selectedAssessment = assessments.find((item) => item.id === selectedId);
+  const conflictingAssessment = draft
+    ? assessments.find(
+        (item) =>
+          item.id !== selectedAssessment?.id &&
+          item.category === draft.category &&
+          item.period?.code === draft.period &&
+          Number(item.item_no) === Number(draft.itemNo),
+      )
+    : null;
   const selectAssessment = (assessment) => {
     setSelectedId(assessment.id);
     setDraft(assessmentToDraft(assessment));
     setMessage({ status: "", text: "" });
   };
-  const updateDraft = (key, value) => setDraft((current) => ({ ...current, [key]: value }));
+  const updateDraft = (key, value) =>
+    setDraft((current) => {
+      if (key === "category") {
+        const limit = assessmentItemLimits[value] ?? 4;
+        const clampedItemNo = Math.min(Math.max(Number(current.itemNo || 1), 1), limit);
+        return { ...current, category: value, itemNo: String(clampedItemNo) };
+      }
+      return { ...current, [key]: value };
+    });
   const updateQuestion = (index, key, value) => {
     setDraft((current) => ({
       ...current,
@@ -487,39 +687,69 @@ function AssessmentManager({ section, assessments, students, onUpdate, onDelete,
       ),
     }));
   };
-  const save = async (event) => {
-    event.preventDefault();
-    if (!draft || !selectedAssessment) return;
-    if (!draft.title.trim()) {
-      setMessage({ status: "error", text: "Enter an assessment title." });
-      return;
-    }
+  const validateDraft = () => {
+    if (!draft || !selectedAssessment) return "Select an assessment to edit.";
+    if (!draft.title.trim()) return "Enter an assessment title.";
     if (draft.timeLimitMinutes && (!Number.isInteger(Number(draft.timeLimitMinutes)) || Number(draft.timeLimitMinutes) < 1)) {
-      setMessage({ status: "error", text: "Time limit must be a whole number of minutes." });
-      return;
+      return "Time limit must be a whole number of minutes.";
     }
     if (draft.availableFrom && draft.availableUntil && draft.availableFrom >= draft.availableUntil) {
-      setMessage({ status: "error", text: "The answer window end must be after the start." });
-      return;
+      return "The answer window end must be after the start.";
     }
     if (!draft.questions.length || draft.questions.some((question) => !question.prompt.trim())) {
-      setMessage({ status: "error", text: "Every question needs a prompt." });
-      return;
+      return "Every question needs a prompt.";
     }
     if (draft.questions.some((question) => question.type === "multiple_choice" && question.choices.some((choice) => !choice.trim()))) {
-      setMessage({ status: "error", text: "Complete all multiple-choice options." });
-      return;
+      return "Complete all multiple-choice options.";
     }
+    return "";
+  };
+  const performSave = async (replaceAssessmentId) => {
     setSaving(true);
     setMessage({ status: "", text: "" });
     try {
-      const saved = await onUpdate({ assessmentId: selectedAssessment.id, ...draft, title: draft.title.trim(), instructions: draft.instructions.trim() });
+      const saved = await onUpdate({
+        assessmentId: selectedAssessment.id,
+        ...draft,
+        itemNo: Number(draft.itemNo),
+        title: draft.title.trim(),
+        instructions: draft.instructions.trim(),
+        replaceAssessmentId,
+      });
       setMessage({ status: "success", text: `Assessment updated. Key ID: ${saved?.access_key ?? selectedAssessment.access_key}` });
     } catch (error) {
-      setMessage({ status: "error", text: error?.message || "Assessment could not be updated." });
+      // Same fallback as AssessmentBuilder: if the client-side
+      // conflictingAssessment check (based on the `assessments` prop) missed
+      // a conflict that the server caught, use the server's reported
+      // occupant to show the replace-confirmation dialog instead of leaving
+      // the user stuck on a plain error.
+      if (error?.conflict) {
+        setPendingReplace(error.conflict);
+      } else {
+        setMessage({ status: "error", text: error?.message || "Assessment could not be updated." });
+      }
     } finally {
       setSaving(false);
     }
+  };
+  const save = async (event) => {
+    event.preventDefault();
+    const validationError = validateDraft();
+    if (validationError) {
+      setMessage({ status: "error", text: validationError });
+      return;
+    }
+    if (conflictingAssessment) {
+      setPendingReplace(conflictingAssessment);
+      return;
+    }
+    await performSave();
+  };
+  const confirmReplace = async () => {
+    if (!pendingReplace) return;
+    const replaceAssessmentId = pendingReplace.id;
+    setPendingReplace(null);
+    await performSave(replaceAssessmentId);
   };
   const grantAttempt = async (student) => {
     const studentId = student.studentId;
@@ -617,12 +847,39 @@ function AssessmentManager({ section, assessments, students, onUpdate, onDelete,
             <div className="action-form-grid assessment-details-grid">
               <label>Assessment title<input name="editAssessmentTitle" required value={draft.title} onChange={(event) => updateDraft("title", event.target.value)} /></label>
               <label>Type<select name="editAssessmentCategory" value={draft.category} onChange={(event) => updateDraft("category", event.target.value)}>{assessmentCategories.map((item) => <option value={item.key} key={item.key}>{item.label}</option>)}</select></label>
+              <label>Item number<select name="editAssessmentItemNo" value={draft.itemNo} onChange={(event) => updateDraft("itemNo", event.target.value)}>{itemNoOptions(draft.category).map((item) => {
+                const occupied = assessments.find(
+                  (assessment) =>
+                    assessment.id !== selectedAssessment?.id &&
+                    assessment.category === draft.category &&
+                    assessment.period?.code === draft.period &&
+                    Number(assessment.item_no) === Number(item.value),
+                );
+                return (
+                  <option value={item.value} key={item.value}>
+                    {item.label}{occupied ? ` — in use: ${occupied.title}` : ""}
+                  </option>
+                );
+              })}</select></label>
               <label>Grading period<select name="editAssessmentPeriod" value={draft.period} onChange={(event) => updateDraft("period", event.target.value)}>{assessmentPeriods.map((item) => <option value={item.key} key={item.key}>{item.label}</option>)}</select></label>
               <label>Available from <span>(optional)</span><input name="editAssessmentAvailableFrom" type="datetime-local" value={draft.availableFrom} onChange={(event) => updateDraft("availableFrom", event.target.value)} /></label>
               <label>Available until <span>(optional)</span><input name="editAssessmentAvailableUntil" type="datetime-local" value={draft.availableUntil} onChange={(event) => updateDraft("availableUntil", event.target.value)} /></label>
               <label>Time limit <span>(minutes, optional)</span><input name="editAssessmentTimeLimit" type="number" min="1" step="1" value={draft.timeLimitMinutes} placeholder="e.g. 30" onChange={(event) => updateDraft("timeLimitMinutes", event.target.value)} /></label>
             </div>
-            <label className="assessment-instructions-field">Instructions <span>(optional)</span><textarea name="editAssessmentInstructions" rows="2" value={draft.instructions} onChange={(event) => updateDraft("instructions", event.target.value)} /></label>
+            {conflictingAssessment && (
+              <p className="assessment-field-hint assessment-slot-conflict" role="status">
+                {itemNoOptions(draft.category).find((item) => item.value === draft.itemNo)?.label} is currently
+                assigned to “{conflictingAssessment.title}”. Saving will ask you to confirm replacing it.
+              </p>
+            )}
+            <label className="assessment-instructions-field">
+              Instructions <span>(optional)</span>
+              <RichTextEditor
+                value={draft.instructions}
+                onChange={(html) => updateDraft("instructions", html)}
+                uploadPathPrefix={`assessments/${selectedAssessment?.id ?? "edit"}`}
+              />
+            </label>
             <section className="assessment-retry-panel">
               <div>
                 <span>INDIVIDUAL RETRY ACCESS</span>
@@ -721,6 +978,40 @@ function AssessmentManager({ section, assessments, students, onUpdate, onDelete,
           </section>
         </div>
       )}
+      {pendingReplace && (
+        <div
+          className="assessment-confirm-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPendingReplace(null);
+          }}
+        >
+          <section
+            className="assessment-confirm-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="assessment-manager-replace-title"
+          >
+            <div className="assessment-confirm-icon">!</div>
+            <p>REPLACE ASSESSMENT</p>
+            <h3 id="assessment-manager-replace-title">
+              {draft && itemNoOptions(draft.category).find((item) => item.value === draft.itemNo)?.label} is
+              already assigned to “{pendingReplace.title}”
+            </h3>
+            <span>
+              Saving will delete “{pendingReplace.title}” (its questions and any recorded scores for this
+              item) and put this assessment in its place. This can't be undone.
+            </span>
+            <div>
+              <button type="button" className="outline-button" onClick={() => setPendingReplace(null)} disabled={saving}>
+                Cancel
+              </button>
+              <button type="button" className="danger-button" onClick={confirmReplace} disabled={saving}>
+                {saving ? "Replacing…" : "Replace assessment"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </ModalShell>
   );
 }
@@ -801,7 +1092,12 @@ function StudentViewer({ section, students, assessments, onSubmit, onClose }) {
               <div>
                 <span>{categoryLabel} · {periodLabel || "Assessment"}</span>
                 <h3>{assessment.title}</h3>
-                {assessment.instructions && <p>{assessment.instructions}</p>}
+                {assessment.instructions && (
+                  <div
+                    className="student-assessment-instructions"
+                    dangerouslySetInnerHTML={{ __html: assessment.instructions }}
+                  />
+                )}
               </div>
               <strong>{questions.length} {questions.length === 1 ? "question" : "questions"}</strong>
             </div>

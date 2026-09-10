@@ -84,6 +84,7 @@ export default function ClassActionModal({
     return (
       <AssessmentBuilder
         section={section}
+        assessments={assessmentDefinitions}
         onSave={onSaveAssessment}
         onClose={onClose}
       />
