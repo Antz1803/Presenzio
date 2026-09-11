@@ -62,6 +62,11 @@ function createAssessmentQuestion(type = "multiple_choice") {
     language: "sql",
     starterCode: "",
     expectedOutput: "",
+    // Coding-question scoring: exact matches always earn full Points. These
+    // two knobs control the two other tiers, as a % of Points, instead of
+    // the previous fixed 50% near-match / 0% incorrect split.
+    nearMatchScorePercent: "50",
+    incorrectScorePercent: "0",
   };
 }
 
@@ -254,6 +259,15 @@ function AssessmentBuilder({ section, assessments = [], onSave, onClose }) {
           return `Complete all choices for question ${index + 1}.`;
         }
         if (!question.correctAnswer) return `Select the correct answer for question ${index + 1}.`;
+      } else {
+        const nearMatch = Number(question.nearMatchScorePercent);
+        if (!Number.isFinite(nearMatch) || nearMatch < 0 || nearMatch > 100) {
+          return `Enter a near-match score between 0 and 100 for question ${index + 1}.`;
+        }
+        const incorrect = Number(question.incorrectScorePercent);
+        if (!Number.isFinite(incorrect) || incorrect < 0 || incorrect > 100) {
+          return `Enter an incorrect score between 0 and 100 for question ${index + 1}.`;
+        }
       }
     }
     return "";
@@ -281,6 +295,8 @@ function AssessmentBuilder({ section, assessments = [], onSave, onClose }) {
           language: question.type === "coding" ? question.language : null,
           starterCode: question.type === "coding" ? question.starterCode : null,
           expectedOutput: question.type === "coding" ? question.expectedOutput : null,
+          nearMatchScorePercent: question.type === "coding" ? Number(question.nearMatchScorePercent) : null,
+          incorrectScorePercent: question.type === "coding" ? Number(question.incorrectScorePercent) : null,
         })),
       });
       setMessage({
@@ -507,6 +523,36 @@ function AssessmentBuilder({ section, assessments = [], onSave, onClose }) {
                     Expected output / answer criteria <span>(optional)</span>
                     <textarea name={`question-${index}-expectedOutput`} rows="3" value={question.expectedOutput} placeholder="Describe the expected result..." onChange={(event) => updateQuestion(index, "expectedOutput", event.target.value)} />
                   </label>
+                  <label>
+                    Near-match score <span>(% of points, optional)</span>
+                    <input
+                      name={`question-${index}-nearMatchScorePercent`}
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={question.nearMatchScorePercent}
+                      placeholder="e.g. 50"
+                      onChange={(event) => updateQuestion(index, "nearMatchScorePercent", event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Incorrect score <span>(% of points, optional)</span>
+                    <input
+                      name={`question-${index}-incorrectScorePercent`}
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={question.incorrectScorePercent}
+                      placeholder="e.g. 0"
+                      onChange={(event) => updateQuestion(index, "incorrectScorePercent", event.target.value)}
+                    />
+                  </label>
+                  <p className="assessment-field-hint">
+                    An answer close to the expected output (but not exact) earns the near-match score;
+                    anything else earns the incorrect score. Both are a percentage of this question's points.
+                  </p>
                 </div>
               )}
             </article>
@@ -615,6 +661,8 @@ function assessmentToDraft(assessment) {
         language: question.language ?? "sql",
         starterCode: question.starter_code ?? "",
         expectedOutput: question.expected_output ?? "",
+        nearMatchScorePercent: String(question.near_match_score_percent ?? "50"),
+        incorrectScorePercent: String(question.incorrect_score_percent ?? "0"),
       })),
   };
 }
@@ -701,6 +749,17 @@ function AssessmentManager({ section, assessments, students, onUpdate, onDelete,
     }
     if (draft.questions.some((question) => question.type === "multiple_choice" && question.choices.some((choice) => !choice.trim()))) {
       return "Complete all multiple-choice options.";
+    }
+    for (const question of draft.questions) {
+      if (question.type === "multiple_choice") continue;
+      const nearMatch = Number(question.nearMatchScorePercent);
+      if (!Number.isFinite(nearMatch) || nearMatch < 0 || nearMatch > 100) {
+        return "Enter a near-match score between 0 and 100 for every coding question.";
+      }
+      const incorrect = Number(question.incorrectScorePercent);
+      if (!Number.isFinite(incorrect) || incorrect < 0 || incorrect > 100) {
+        return "Enter an incorrect score between 0 and 100 for every coding question.";
+      }
     }
     return "";
   };
@@ -950,7 +1009,7 @@ function AssessmentManager({ section, assessments, students, onUpdate, onDelete,
                   <div className="assessment-question-header"><div><span>QUESTION {index + 1}</span><strong>{question.type === "multiple_choice" ? "Multiple choice" : "Coding question"}</strong></div>{draft.questions.length > 1 && <button type="button" className="assessment-remove-button" onClick={() => updateDraft("questions", draft.questions.filter((_, questionIndex) => questionIndex !== index))}>Remove</button>}</div>
                   <div className="assessment-question-controls"><button type="button" className={question.type === "multiple_choice" ? "active" : ""} onClick={() => changeQuestionType(index, "multiple_choice")}>Multiple choice</button><button type="button" className={question.type === "coding" ? "active" : ""} onClick={() => changeQuestionType(index, "coding")}>Coding</button></div>
                   <div className="action-form-grid assessment-question-grid"><label className="assessment-prompt-field">Question prompt<textarea name={`edit-question-${index}-prompt`} required rows="3" value={question.prompt} onChange={(event) => updateQuestion(index, "prompt", event.target.value)} /></label><label>Points<input name={`edit-question-${index}-points`} type="number" min="0.01" step="0.01" value={question.points} onChange={(event) => updateQuestion(index, "points", event.target.value)} /></label></div>
-                  {question.type === "multiple_choice" ? <div className="assessment-choices-grid">{question.choices.map((choice, choiceIndex) => <label key={multipleChoiceLetters[choiceIndex]}><span className="choice-letter">{multipleChoiceLetters[choiceIndex]}</span><input name={`edit-question-${index}-choice-${choiceIndex}`} required value={choice} onChange={(event) => updateChoice(index, choiceIndex, event.target.value)} /><input className="choice-radio" type="radio" name={`edit-correct-${index}`} checked={question.correctAnswer === multipleChoiceLetters[choiceIndex]} onChange={() => updateQuestion(index, "correctAnswer", multipleChoiceLetters[choiceIndex])} aria-label={`Mark ${multipleChoiceLetters[choiceIndex]} correct`} /></label>)}</div> : <div className="coding-question-fields"><label>Programming language<select name={`edit-question-${index}-language`} value={question.language} onChange={(event) => updateQuestion(index, "language", event.target.value)}>{codingLanguages.map((language) => <option value={language.key} key={language.key}>{language.label}</option>)}</select></label><label>Starter code<textarea name={`edit-question-${index}-starterCode`} rows="4" value={question.starterCode} onChange={(event) => updateQuestion(index, "starterCode", event.target.value)} /></label><label>Expected output<textarea name={`edit-question-${index}-expectedOutput`} rows="3" value={question.expectedOutput} onChange={(event) => updateQuestion(index, "expectedOutput", event.target.value)} /></label></div>}
+                  {question.type === "multiple_choice" ? <div className="assessment-choices-grid">{question.choices.map((choice, choiceIndex) => <label key={multipleChoiceLetters[choiceIndex]}><span className="choice-letter">{multipleChoiceLetters[choiceIndex]}</span><input name={`edit-question-${index}-choice-${choiceIndex}`} required value={choice} onChange={(event) => updateChoice(index, choiceIndex, event.target.value)} /><input className="choice-radio" type="radio" name={`edit-correct-${index}`} checked={question.correctAnswer === multipleChoiceLetters[choiceIndex]} onChange={() => updateQuestion(index, "correctAnswer", multipleChoiceLetters[choiceIndex])} aria-label={`Mark ${multipleChoiceLetters[choiceIndex]} correct`} /></label>)}</div> : <div className="coding-question-fields"><label>Programming language<select name={`edit-question-${index}-language`} value={question.language} onChange={(event) => updateQuestion(index, "language", event.target.value)}>{codingLanguages.map((language) => <option value={language.key} key={language.key}>{language.label}</option>)}</select></label><label>Starter code<textarea name={`edit-question-${index}-starterCode`} rows="4" value={question.starterCode} onChange={(event) => updateQuestion(index, "starterCode", event.target.value)} /></label><label>Expected output<textarea name={`edit-question-${index}-expectedOutput`} rows="3" value={question.expectedOutput} onChange={(event) => updateQuestion(index, "expectedOutput", event.target.value)} /></label><label>Near-match score <span>(% of points)</span><input name={`edit-question-${index}-nearMatchScorePercent`} type="number" min="0" max="100" step="1" value={question.nearMatchScorePercent} placeholder="e.g. 50" onChange={(event) => updateQuestion(index, "nearMatchScorePercent", event.target.value)} /></label><label>Incorrect score <span>(% of points)</span><input name={`edit-question-${index}-incorrectScorePercent`} type="number" min="0" max="100" step="1" value={question.incorrectScorePercent} placeholder="e.g. 0" onChange={(event) => updateQuestion(index, "incorrectScorePercent", event.target.value)} /></label></div>}
                 </article>
               ))}
             </div>

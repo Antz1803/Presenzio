@@ -507,7 +507,7 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
       let { data: assessmentData, error: assessmentDataError } = await supabase
         .from("assessments")
         .select(
-          "id, section_id, period_id, category, item_no, access_key, title, instructions, time_limit_minutes, available_from, available_until, created_at, period:grading_periods(code), section:sections(id, subject_code, subject_title), questions:assessment_questions(id, question_no, question_type, prompt, points, choices, correct_answer, language, starter_code, expected_output)",
+          "id, section_id, period_id, category, item_no, access_key, title, instructions, time_limit_minutes, available_from, available_until, created_at, period:grading_periods(code), section:sections(id, subject_code, subject_title), questions:assessment_questions(id, question_no, question_type, prompt, points, choices, correct_answer, language, starter_code, expected_output, near_match_score_percent, incorrect_score_percent)",
         )
         .eq("section_id", sectionData.id)
         .order("created_at", { ascending: false });
@@ -515,7 +515,7 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
         const fallbackAssessments = await supabase
           .from("assessments")
           .select(
-            "id, section_id, period_id, category, item_no, access_key, title, instructions, created_at, period:grading_periods(code), section:sections(id, subject_code, subject_title), questions:assessment_questions(id, question_no, question_type, prompt, points, choices, correct_answer, language, starter_code, expected_output)",
+            "id, section_id, period_id, category, item_no, access_key, title, instructions, created_at, period:grading_periods(code), section:sections(id, subject_code, subject_title), questions:assessment_questions(id, question_no, question_type, prompt, points, choices, correct_answer, language, starter_code, expected_output, near_match_score_percent, incorrect_score_percent)",
           )
           .eq("section_id", sectionData.id)
           .order("created_at", { ascending: false });

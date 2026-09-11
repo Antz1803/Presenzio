@@ -847,6 +847,14 @@ export function useDashboardActions(context) {
           language: question.language || null,
           starter_code: question.starterCode || null,
           expected_output: question.expectedOutput || null,
+          near_match_score_percent:
+            question.type === "coding"
+              ? Math.max(0, Math.min(100, Number(question.nearMatchScorePercent) || 0))
+              : null,
+          incorrect_score_percent:
+            question.type === "coding"
+              ? Math.max(0, Math.min(100, Number(question.incorrectScorePercent) || 0))
+              : null,
         }));
         const maxScore = questions.reduce(
           (total, question) => total + Number(question.points || 0),
@@ -1013,6 +1021,14 @@ export function useDashboardActions(context) {
         language: question.language || null,
         starter_code: question.starterCode || null,
         expected_output: question.expectedOutput || null,
+        near_match_score_percent:
+          question.type === "coding"
+            ? Math.max(0, Math.min(100, Number(question.nearMatchScorePercent) || 0))
+            : null,
+        incorrect_score_percent:
+          question.type === "coding"
+            ? Math.max(0, Math.min(100, Number(question.incorrectScorePercent) || 0))
+            : null,
       }));
       const { error: questionError } = await supabase
         .from("assessment_questions")
@@ -1136,6 +1152,14 @@ export function useDashboardActions(context) {
           language: question.language || null,
           starter_code: question.starterCode || null,
           expected_output: question.expectedOutput || null,
+          near_match_score_percent:
+            question.type === "coding"
+              ? Math.max(0, Math.min(100, Number(question.nearMatchScorePercent) || 0))
+              : null,
+          incorrect_score_percent:
+            question.type === "coding"
+              ? Math.max(0, Math.min(100, Number(question.incorrectScorePercent) || 0))
+              : null,
         }));
         const maxScore = questions.reduce(
           (total, question) => total + Number(question.points || 0),
@@ -1231,6 +1255,14 @@ export function useDashboardActions(context) {
         language: question.language || null,
         starter_code: question.starterCode || null,
         expected_output: question.expectedOutput || null,
+        near_match_score_percent:
+          question.type === "coding"
+            ? Math.max(0, Math.min(100, Number(question.nearMatchScorePercent) || 0))
+            : null,
+        incorrect_score_percent:
+          question.type === "coding"
+            ? Math.max(0, Math.min(100, Number(question.incorrectScorePercent) || 0))
+            : null,
       }));
       const { error: questionError } = await supabase
         .from("assessment_questions")
@@ -1442,7 +1474,7 @@ export function useDashboardActions(context) {
     let { data: assessment, error: assessmentError } = await supabase
       .from("assessments")
       .select(
-        "id, section_id, period_id, category, item_no, access_key, title, instructions, time_limit_minutes, available_from, available_until, created_at, period:grading_periods(code), section:sections(id, subject_code, subject_title), questions:assessment_questions(id, question_no, question_type, prompt, points, choices, correct_answer, language, starter_code, expected_output)",
+        "id, section_id, period_id, category, item_no, access_key, title, instructions, time_limit_minutes, available_from, available_until, created_at, period:grading_periods(code), section:sections(id, subject_code, subject_title), questions:assessment_questions(id, question_no, question_type, prompt, points, choices, correct_answer, language, starter_code, expected_output, near_match_score_percent, incorrect_score_percent)",
       )
       .eq("access_key", normalizedKey)
       .maybeSingle();
@@ -1450,7 +1482,7 @@ export function useDashboardActions(context) {
       const fallbackAssessment = await supabase
         .from("assessments")
         .select(
-          "id, section_id, period_id, category, item_no, access_key, title, instructions, created_at, period:grading_periods(code), section:sections(id, subject_code, subject_title), questions:assessment_questions(id, question_no, question_type, prompt, points, choices, correct_answer, language, starter_code, expected_output)",
+          "id, section_id, period_id, category, item_no, access_key, title, instructions, created_at, period:grading_periods(code), section:sections(id, subject_code, subject_title), questions:assessment_questions(id, question_no, question_type, prompt, points, choices, correct_answer, language, starter_code, expected_output, near_match_score_percent, incorrect_score_percent)",
         )
         .eq("access_key", normalizedKey)
         .maybeSingle();
@@ -1579,7 +1611,22 @@ export function useDashboardActions(context) {
           hasExpectedCodingAnswer &&
           codingSimilarity >= 0.75 &&
           codingSimilarity < 1;
-        const pointsMultiplier = isCorrect ? 1 : isPartial ? 0.5 : 0;
+        // Multiple choice is still strictly correct/incorrect. For coding
+        // questions, correct/near-match/incorrect each carry their own
+        // score as a % of this question's points — near-match and
+        // incorrect default to 50%/0% if a question predates these columns.
+        let pointsMultiplier;
+        if (isMultipleChoice) {
+          pointsMultiplier = isCorrect ? 1 : 0;
+        } else if (isCorrect) {
+          pointsMultiplier = 1;
+        } else if (isPartial) {
+          const nearMatchPercent = Number(question.near_match_score_percent);
+          pointsMultiplier = (Number.isFinite(nearMatchPercent) ? Math.max(0, Math.min(100, nearMatchPercent)) : 50) / 100;
+        } else {
+          const incorrectPercent = Number(question.incorrect_score_percent);
+          pointsMultiplier = (Number.isFinite(incorrectPercent) ? Math.max(0, Math.min(100, incorrectPercent)) : 0) / 100;
+        }
         return {
           question_id: question.id,
           answer,
