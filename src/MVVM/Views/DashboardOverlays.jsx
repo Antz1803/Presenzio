@@ -160,11 +160,65 @@ function studentDraft(student) {
   };
 }
 
+// Strips accents/punctuation and collapses whitespace so "Dela Cruz, Juan"
+// and "dela  cruz juan" compare equal — pasted rosters are rarely formatted
+// identically to what's already in the roster.
+function normalizeNameForMatch(value) {
+  return String(value ?? "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// A pasted row's two columns could be "Name, ID" or "ID, Name" depending on
+// where the person copied from — this looks at which field reads like an ID
+// (letters/digits/dashes only, no spaces, at least one digit) to figure out
+// which is which, rather than assuming a fixed column order.
+function looksLikeStudentId(value) {
+  return /\d/.test(value) && /^[A-Za-z0-9-]+$/.test(value);
+}
+
+function parseIdPasteRows(text) {
+  return String(text ?? "")
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      // Prefer tab-separated (pasted straight from a spreadsheet), then
+      // comma-separated, then fall back to splitting on the last run of
+      // whitespace (e.g. "Juan Dela Cruz 2021-00123").
+      let parts = line.split("\t").map((part) => part.trim()).filter(Boolean);
+      if (parts.length < 2) {
+        parts = line.split(",").map((part) => part.trim()).filter(Boolean);
+      }
+      if (parts.length < 2) {
+        const spacedMatch = line.match(/^(.*\S)\s+(\S+)$/);
+        parts = spacedMatch ? [spacedMatch[1], spacedMatch[2]] : [line];
+      }
+      if (parts.length < 2) return { raw: line, name: "", studentId: "" };
+
+      const [first, second] = parts;
+      const [name, studentId] =
+        looksLikeStudentId(first) && !looksLikeStudentId(second)
+          ? [second, first]
+          : [first, second];
+      return { raw: line, name, studentId };
+    });
+}
+
 function StudentModal({ section, students, onClose, onUpdateStudent }) {
   const [editingStudent, setEditingStudent] = useState(null);
   const [draft, setDraft] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ status: "", text: "" });
+  const [showIdPaste, setShowIdPaste] = useState(false);
+  const [idPasteText, setIdPasteText] = useState("");
+  const [applyingIds, setApplyingIds] = useState(false);
+  const [idResultMessage, setIdResultMessage] = useState({ status: "", text: "" });
   const sortedStudents = useMemo(
     () =>
       [...students].sort((a, b) =>
@@ -174,6 +228,78 @@ function StudentModal({ section, students, onClose, onUpdateStudent }) {
       ),
     [students],
   );
+
+  // Matches each pasted row to exactly one student by name. Rows that match
+  // more than one student (e.g. two students sharing a first name) are
+  // flagged "ambiguous" rather than guessed at, so nothing gets applied to
+  // the wrong person.
+  const idPreview = useMemo(() => {
+    if (!idPasteText.trim()) return [];
+    return parseIdPasteRows(idPasteText).map((row) => {
+      if (!row.name || !row.studentId) {
+        return { ...row, status: "unparsed" };
+      }
+      const normalized = normalizeNameForMatch(row.name);
+      const exactMatches = students.filter(
+        (student) => normalizeNameForMatch(student.name) === normalized,
+      );
+      if (exactMatches.length === 1) {
+        return { ...row, status: "matched", student: exactMatches[0], fuzzy: false };
+      }
+      if (exactMatches.length > 1) {
+        return { ...row, status: "ambiguous", candidates: exactMatches };
+      }
+      const fuzzyMatches = students.filter((student) => {
+        const studentNormalized = normalizeNameForMatch(student.name);
+        return (
+          studentNormalized.includes(normalized) || normalized.includes(studentNormalized)
+        );
+      });
+      if (fuzzyMatches.length === 1) {
+        return { ...row, status: "matched", student: fuzzyMatches[0], fuzzy: true };
+      }
+      if (fuzzyMatches.length > 1) {
+        return { ...row, status: "ambiguous", candidates: fuzzyMatches };
+      }
+      return { ...row, status: "unmatched" };
+    });
+  }, [idPasteText, students]);
+
+  const matchedRows = idPreview.filter((row) => row.status === "matched");
+
+  const applyIdUpdates = async () => {
+    if (!onUpdateStudent || !matchedRows.length) return;
+    setApplyingIds(true);
+    setIdResultMessage({ status: "", text: "" });
+    let succeeded = 0;
+    let failed = 0;
+    for (const row of matchedRows) {
+      try {
+        await onUpdateStudent({
+          studentId: row.student.studentId,
+          enrollmentId: row.student.id,
+          sectionId: section?.id,
+          ...studentDraft(row.student),
+          student_no: row.studentId,
+        });
+        succeeded += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    setApplyingIds(false);
+    const leftoverCount = idPreview.length - matchedRows.length;
+    setIdResultMessage({
+      status: failed ? "error" : "success",
+      text:
+        `${succeeded} student ID${succeeded === 1 ? "" : "s"} updated.` +
+        (failed ? ` ${failed} failed to save — try those again.` : "") +
+        (leftoverCount
+          ? ` ${leftoverCount} row(s) weren't matched or were ambiguous — review them below.`
+          : ""),
+    });
+    if (!failed && !leftoverCount) setIdPasteText("");
+  };
 
   const startEditing = (student) => {
     setEditingStudent(student);
@@ -242,6 +368,116 @@ function StudentModal({ section, students, onClose, onUpdateStudent }) {
           >
             ×
           </button>
+        </div>
+
+        <div className="mb-5 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Bulk update</p>
+              <h3 className="mt-0.5 text-sm font-bold text-slate-800">Update Student IDs by pasting a list</h3>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Paste rows of a name and a Student ID (straight from Excel/Sheets works) — each row is
+                matched to a student here by name, so nothing saves until you review the matches below.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-100"
+              onClick={() => setShowIdPaste((current) => !current)}
+            >
+              {showIdPaste ? "Hide" : "Open"}
+            </button>
+          </div>
+          {showIdPaste && (
+            <div className="mt-3">
+              <textarea
+                rows="6"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-mono text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                placeholder={"Juan Dela Cruz\t2021-00123\nMaria Santos\t2021-00124\n(paste directly from a spreadsheet, or use commas)"}
+                value={idPasteText}
+                onChange={(event) => setIdPasteText(event.target.value)}
+                disabled={applyingIds}
+              />
+
+              {idPreview.length > 0 && (
+                <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200">
+                  <table className="w-full border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                        <th className="py-2 px-3">Pasted name</th>
+                        <th className="py-2 px-3">New ID</th>
+                        <th className="py-2 px-3">Matched student</th>
+                        <th className="py-2 px-3">Current ID</th>
+                        <th className="py-2 px-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {idPreview.map((row, index) => (
+                        <tr key={index}>
+                          <td className="py-1.5 px-3 text-slate-700">
+                            {row.name || <span className="text-rose-500">Couldn't parse this line</span>}
+                          </td>
+                          <td className="py-1.5 px-3 text-slate-700">{row.studentId || "—"}</td>
+                          <td className="py-1.5 px-3 text-slate-700">
+                            {row.status === "matched"
+                              ? row.student.name
+                              : row.status === "ambiguous"
+                                ? `${row.candidates.length} possible matches`
+                                : "—"}
+                          </td>
+                          <td className="py-1.5 px-3 text-slate-500">
+                            {row.status === "matched" ? row.student.number || "—" : "—"}
+                          </td>
+                          <td className="py-1.5 px-3">
+                            {row.status === "matched" && (
+                              <span className={`font-semibold ${row.fuzzy ? "text-amber-600" : "text-emerald-600"}`}>
+                                {row.fuzzy ? "Matched (verify)" : "Matched"}
+                              </span>
+                            )}
+                            {row.status === "ambiguous" && (
+                              <span className="font-semibold text-amber-600">Ambiguous</span>
+                            )}
+                            {row.status === "unmatched" && (
+                              <span className="font-semibold text-rose-500">No match</span>
+                            )}
+                            {row.status === "unparsed" && (
+                              <span className="font-semibold text-rose-500">Unparsed row</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {idResultMessage.text && (
+                <p
+                  className={`mt-3 rounded-xl px-3 py-2 text-xs ${idResultMessage.status === "error" ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-700"}`}
+                  role="status"
+                >
+                  {idResultMessage.text}
+                </p>
+              )}
+
+              <div className="mt-3 flex items-center justify-between">
+                <p className="text-[11px] text-slate-500">
+                  {matchedRows.length} of {idPreview.length} row{idPreview.length === 1 ? "" : "s"} matched
+                  and ready to update.
+                </p>
+                <button
+                  type="button"
+                  className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+                  disabled={!matchedRows.length || applyingIds}
+                  onClick={applyIdUpdates}
+                >
+                  {applyingIds
+                    ? "Updating…"
+                    : `Update ${matchedRows.length || ""} matched student ID${matchedRows.length === 1 ? "" : "s"}`}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {draft && editingStudent && (
