@@ -70,6 +70,8 @@ function createAssessmentQuestion(type = "multiple_choice") {
   };
 }
 
+// Multiple-choice paste format: a numbered question, its A–D choices (each
+// on its own line), and an optional "Answer: B" line.
 function parsePastedQuestions(value) {
   const lines = String(value ?? "").replace(/\r/g, "").split("\n");
   const parsed = [];
@@ -147,6 +149,66 @@ function parsePastedQuestions(value) {
   }));
 }
 
+// Coding paste format: a numbered question (the prompt, which may run
+// across several lines and include bullet points), followed by an
+// "Answer:" line whose remainder — plus every line after it up to the next
+// numbered question — is the expected code/query. Unlike the multiple-
+// choice parser, whitespace inside the answer is preserved (trailing only
+// trimmed) since indentation is meaningful in SQL/code.
+function parsePastedCodingQuestions(value, { language } = {}) {
+  const lines = String(value ?? "").replace(/\r/g, "").split("\n");
+  const parsed = [];
+  let current = null; // { promptLines: string[], answerLines: string[], inAnswer: boolean }
+
+  const finishQuestion = () => {
+    if (!current) return;
+    const prompt = current.promptLines.join("\n").trim();
+    const expectedOutput = current.answerLines.join("\n").trim();
+    if (prompt) parsed.push({ prompt, expectedOutput });
+    current = null;
+  };
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+
+    const questionMatch = trimmed.match(
+      /^(?:question\s*|q\s*)?(\d+)\s*[.):-]\s*(.+)$/i,
+    );
+    if (questionMatch) {
+      // A new question marker always starts a new question, even if we
+      // were in the middle of reading the previous one's answer.
+      finishQuestion();
+      current = { promptLines: [questionMatch[2].trim()], answerLines: [], inAnswer: false };
+      return;
+    }
+
+    if (!current) return; // ignore any text before the first numbered question
+
+    if (!current.inAnswer) {
+      const answerMatch = trimmed.match(/^answer\s*:?\s*(.*)$/i);
+      if (answerMatch) {
+        current.inAnswer = true;
+        if (answerMatch[1]) current.answerLines.push(answerMatch[1]);
+        return;
+      }
+      if (trimmed) current.promptLines.push(trimmed);
+      return;
+    }
+
+    // Inside the answer: keep the line mostly as-is (minus trailing
+    // whitespace) so multi-line SQL/code keeps its indentation.
+    current.answerLines.push(line.trimEnd());
+  });
+  finishQuestion();
+
+  return parsed.map(({ prompt, expectedOutput }) => ({
+    ...createAssessmentQuestion("coding"),
+    prompt,
+    language: language || "sql",
+    expectedOutput,
+  }));
+}
+
 function AssessmentBuilder({ section, assessments = [], onSave, onClose }) {
   const [form, setForm] = useState({
     title: "",
@@ -160,6 +222,10 @@ function AssessmentBuilder({ section, assessments = [], onSave, onClose }) {
   });
   const [questions, setQuestions] = useState(() => [createAssessmentQuestion()]);
   const [pastedQuestions, setPastedQuestions] = useState("");
+  // Which paste format to parse: multiple-choice (numbered + A–D choices)
+  // or coding (numbered + an "Answer:" code/query block).
+  const [pasteType, setPasteType] = useState("multiple_choice");
+  const [pasteCodingLanguage, setPasteCodingLanguage] = useState("sql");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ status: "", text: "" });
   const [generatorMessage, setGeneratorMessage] = useState({ status: "", text: "" });
@@ -226,11 +292,17 @@ function AssessmentBuilder({ section, assessments = [], onSave, onClose }) {
     );
   };
   const generateQuestions = () => {
-    const generatedQuestions = parsePastedQuestions(pastedQuestions);
+    const generatedQuestions =
+      pasteType === "coding"
+        ? parsePastedCodingQuestions(pastedQuestions, { language: pasteCodingLanguage })
+        : parsePastedQuestions(pastedQuestions);
     if (!generatedQuestions.length) {
       setGeneratorMessage({
         status: "error",
-        text: "No questions found. Number each question and add choices such as A. Choice text.",
+        text:
+          pasteType === "coding"
+            ? 'No questions found. Number each question and add an "Answer:" line with the code or query.'
+            : "No questions found. Number each question and add choices such as A. Choice text.",
       });
       return;
     }
@@ -445,15 +517,53 @@ function AssessmentBuilder({ section, assessments = [], onSave, onClose }) {
           <div className="question-generator-heading">
             <div>
               <strong>Generate questions from pasted text</strong>
-              <p>Paste numbered questions with A–D choices and optional answer lines.</p>
+              <p>
+                {pasteType === "coding"
+                  ? 'Paste numbered questions, each followed by an "Answer:" line with the code or query.'
+                  : "Paste numbered questions with A–D choices and optional answer lines."}
+              </p>
             </div>
             <span>PASTE &amp; GENERATE</span>
           </div>
+          <div className="assessment-question-controls">
+            <button
+              type="button"
+              className={pasteType === "multiple_choice" ? "active" : ""}
+              onClick={() => setPasteType("multiple_choice")}
+            >
+              Multiple choice
+            </button>
+            <button
+              type="button"
+              className={pasteType === "coding" ? "active" : ""}
+              onClick={() => setPasteType("coding")}
+            >
+              Coding
+            </button>
+          </div>
+          {pasteType === "coding" && (
+            <label className="assessment-paste-language-field">
+              Language for generated questions
+              <select
+                name="pasteCodingLanguage"
+                value={pasteCodingLanguage}
+                onChange={(event) => setPasteCodingLanguage(event.target.value)}
+              >
+                {codingLanguages.map((language) => (
+                  <option value={language.key} key={language.key}>{language.label}</option>
+                ))}
+              </select>
+            </label>
+          )}
           <textarea
             name="questionGeneratorText"
             rows="7"
             value={pastedQuestions}
-            placeholder={'Example:\n1. What is 2 + 2?\nA. 3\nB. 4\nC. 5\nD. 6\nAnswer: B'}
+            placeholder={
+              pasteType === "coding"
+                ? 'Example:\n1. Write a query to list all students and their enrolled courses.\nAnswer: SELECT s.Name, e.CourseID\nFROM Students s\nLEFT JOIN Enrollment e\n    ON s.StudentID = e.StudentID;\n\n2. Write a query to list students and course names.\nAnswer: SELECT s.Name, c.CourseName\nFROM Students s\nINNER JOIN Enrollment e ON s.StudentID = e.StudentID\nINNER JOIN Courses c ON e.CourseID = c.CourseID;'
+                : 'Example:\n1. What is 2 + 2?\nA. 3\nB. 4\nC. 5\nD. 6\nAnswer: B'
+            }
             onChange={(event) => setPastedQuestions(event.target.value)}
           />
           <div className="question-generator-footer">
