@@ -23,6 +23,16 @@ create table if not exists sections (
   created_at timestamptz not null default now()
 );
 
+create table student_groups (
+  id uuid primary key default gen_random_uuid(),
+  section_id uuid not null references sections(id) on delete cascade,
+  label text not null,
+  group_count integer not null,
+  assignments jsonb not null default '{}',
+  created_at timestamptz not null default now()
+);
+create index student_groups_section_id_idx on student_groups(section_id);
+
 -- Keep existing Supabase projects compatible with the class editor. The
 -- CREATE TABLE above does not add columns when sections already exists.
 alter table if exists sections add column if not exists subject_title text;

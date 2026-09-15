@@ -269,6 +269,7 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
   const [gradingPeriods, setGradingPeriods] = useState([]);
   const [assessmentScores, setAssessmentScores] = useState([]);
   const [assessmentDefinitions, setAssessmentDefinitions] = useState([]);
+  const [studentGroups, setStudentGroups] = useState([]);
   const [assessmentAttempts, setAssessmentAttempts] = useState([]);
   const [assessmentAttemptGrants, setAssessmentAttemptGrants] = useState([]);
   const [assessmentViolations, setAssessmentViolations] = useState([]);
@@ -337,6 +338,7 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
     setGradingPeriods([]);
     setAssessmentScores([]);
     setAssessmentDefinitions([]);
+    setStudentGroups([]);
     setAssessmentAttempts([]);
     setAssessmentAttemptGrants([]);
     setAssessmentViolations([]);
@@ -354,6 +356,7 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
     setGradingPeriods(snapshot.gradingPeriods ?? []);
     setAssessmentScores(snapshot.assessmentScores ?? []);
     setAssessmentDefinitions(snapshot.assessmentDefinitions ?? []);
+    setStudentGroups(snapshot.studentGroups ?? []);
     setAssessmentAttempts(snapshot.assessmentAttempts ?? []);
     setAssessmentAttemptGrants(snapshot.assessmentAttemptGrants ?? []);
     setAssessmentViolations(snapshot.assessmentViolations ?? []);
@@ -502,6 +505,22 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
         lanScores?.scores ?? [],
       );
 
+      const { data: studentGroupData, error: studentGroupError } = await supabase
+        .from("student_groups")
+        .select("id, label, group_count, assignments, category, period_code, item_no, created_at")
+        .eq("section_id", sectionData.id)
+        .order("created_at", { ascending: false });
+      if (studentGroupError) throw studentGroupError;
+      const liveStudentGroups = (studentGroupData ?? []).map((row) => ({
+        id: row.id,
+        label: row.label,
+        groupCount: row.group_count,
+        assignments: row.assignments ?? {},
+        category: row.category ?? null,
+        period: row.period_code ?? null,
+        itemNo: row.item_no ?? null,
+        createdAt: row.created_at,
+      }));
       // Assessment authoring is optional for existing projects. If the new
       // tables have not been migrated yet, keep the class dashboard usable.
       let { data: assessmentData, error: assessmentDataError } = await supabase
@@ -830,6 +849,7 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
         setAssessmentAttemptGrants(grantRows);
         setAssessmentViolations(violationRows);
         setAssessmentDefinitions(liveAssessmentDefinitions);
+        setStudentGroups(liveStudentGroups);
         setAttendanceSessions(liveAttendanceSessions);
         setSessions(liveSessions);
         setStats(liveStats);
@@ -847,6 +867,7 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
         periods: periods ?? [],
         assessmentScores: combinedAssessmentScoreData,
         assessmentDefinitions: liveAssessmentDefinitions,
+        studentGroups: liveStudentGroups,
         attendanceSessions: liveAttendanceSessions,
       };
     } catch (error) {
@@ -888,6 +909,7 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
         gradingPeriods,
         assessmentScores,
         assessmentDefinitions,
+        studentGroups,
         assessmentAttempts,
         assessmentAttemptGrants,
         assessmentViolations,
@@ -905,6 +927,7 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
     gradingPeriods,
     assessmentScores,
     assessmentDefinitions,
+    studentGroups,
     assessmentAttempts,
     assessmentAttemptGrants,
     assessmentViolations,
@@ -966,6 +989,16 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
         { event: "*", schema: "public", table: "attendance_records" },
         scheduleReload,
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "student_groups",
+          filter: "section_id=eq." + currentSectionId,
+        },
+        scheduleReload,
+      )
       .subscribe();
     return () => {
       clearTimeout(reloadTimerRef.current);
@@ -978,15 +1011,16 @@ const {
   selectSection, saveGradingPeriods, importMasterList, syncToExcel,
   refreshGrades, importGradeSheet, saveAttendance,
   saveGrades, saveAssessmentScores, saveAssessment, updateAssessment,
-  deleteAssessment, grantAssessmentAttempt, loadStudentAssessment,
+  deleteAssessment, saveStudentGroup, deleteStudentGroup,
+  grantAssessmentAttempt, loadStudentAssessment,
    submitAssessment, addStudent, updateStudent, updateSection, deleteSection,
   flushOfflineMutations,
 } = useDashboardActions({
   accountId, accountScoped, currentSectionId, period, section, sections, students,
-  gradingPeriods, assessmentScores, assessmentDefinitions, attendanceSessions,
+  gradingPeriods, assessmentScores, assessmentDefinitions, studentGroups, attendanceSessions,
   loadLiveData, clearLiveData, queueOfflineChange, setSection, setSections,
   setStudents,
-  setGradingPeriods, setAssessmentScores, setAssessmentDefinitions,
+  setGradingPeriods, setAssessmentScores, setAssessmentDefinitions, setStudentGroups,
   setAttendanceSessions, setConnectionStatus, setConnectionMessage,
   setPendingSyncCount, setImportState, setGradeSheetImportState,
   helpers: {
@@ -1059,6 +1093,9 @@ const {
     grantAssessmentAttempt,
     deleteAssessment,
     assessmentDefinitions,
+    studentGroups,
+    saveStudentGroup,
+    deleteStudentGroup,
     assessmentAttempts,
     assessmentAttemptGrants,
     assessmentViolations,

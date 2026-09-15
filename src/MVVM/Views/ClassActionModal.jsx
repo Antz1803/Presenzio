@@ -7,6 +7,7 @@ import { AssessmentBuilder, AssessmentManager, StudentViewer } from "./classActi
 import { AddStudentForm } from "./classActions/StudentActions";
 import { GradeSettings, RecordSummary } from "./classActions/SummaryActions";
 import { titles, gradePeriods, getGradeRemark } from "./classActions/actionUtils";
+import { GroupActivities } from "./classActions/GroupActions";
 
 export { gradePeriods, recordSummaryGroups, formatDisplayDate, getAssessmentItem, getAttendanceTotal, getGradeRemark } from "./classActions/actionUtils";
 
@@ -16,6 +17,7 @@ export default function ClassActionModal({
   students,
   assessmentScores,
   assessmentDefinitions,
+  studentGroups,
   sessions,
   attendanceSessions,
   gradingPeriods,
@@ -33,6 +35,8 @@ export default function ClassActionModal({
   onSaveGradingPeriods,
   onAddStudent,
   onRefreshGrades,
+  onSaveStudentGroup,
+  onDeleteStudentGroup,
 }) {
   const previousType = useRef(null);
 
@@ -79,6 +83,19 @@ export default function ClassActionModal({
           onClose={onClose}
         />
       </ModalShell>
+    );
+      if (type === "group-activities")
+    return (
+      <GroupActivities
+        section={section}
+        students={students}
+        assessmentScores={assessmentScores}
+        savedGroups={studentGroups}
+        onSaveGroup={onSaveStudentGroup}
+        onDeleteGroup={onDeleteStudentGroup}
+        onSave={onSaveAssessmentScores}
+        onClose={onClose}
+      />
     );
   if (type === "create-assessment")
     return (

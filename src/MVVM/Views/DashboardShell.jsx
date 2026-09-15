@@ -151,6 +151,7 @@ export default function DashboardShell() {
     students: actionReady ? viewModel.students : [],
     assessmentScores: actionReady ? viewModel.assessmentScores : [],
     assessmentDefinitions: actionReady ? viewModel.assessmentDefinitions : [],
+    studentGroups: actionReady ? viewModel.studentGroups : [],
     sessions: actionReady ? viewModel.sessions : [],
     attendanceSessions: actionReady ? viewModel.attendanceSessions : [],
     gradingPeriods: actionReady ? viewModel.gradingPeriods : [],
@@ -189,6 +190,8 @@ export default function DashboardShell() {
       closeAction();
     },
     onRefreshGrades: viewModel.refreshGrades,
+    onSaveStudentGroup: viewModel.saveStudentGroup,
+    onDeleteStudentGroup: viewModel.deleteStudentGroup,
   };
 
   return (

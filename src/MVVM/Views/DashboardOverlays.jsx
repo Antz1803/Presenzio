@@ -40,6 +40,7 @@ function ClassOptionsModal({
     ["create-assessment", "Create Assessment"],
     ["manage-assessments", "Manage Assessments"],
     ["record-score", "Record Score"],
+    ["group-activities", "Group Activities"],
     ["show-grades", "Show Grades"],
     ["grade-summary", "Record Summary"],
     ["grade-settings", "Grade Sheet Settings"],
@@ -271,22 +272,25 @@ function StudentModal({ section, students, onClose, onUpdateStudent }) {
     if (!onUpdateStudent || !matchedRows.length) return;
     setApplyingIds(true);
     setIdResultMessage({ status: "", text: "" });
-    let succeeded = 0;
-    let failed = 0;
-    for (const row of matchedRows) {
-      try {
-        await onUpdateStudent({
+    // Each call to onUpdateStudent also triggers a full class-data reload
+    // internally (roster, grades, scores, assessments, attendance — about
+    // ten queries), so awaiting them one at a time means waiting out N full
+    // reloads back to back. Firing them concurrently instead lets those
+    // round trips overlap, which is the biggest lever available here
+    // without changing how onUpdateStudent itself works.
+    const results = await Promise.allSettled(
+      matchedRows.map((row) =>
+        onUpdateStudent({
           studentId: row.student.studentId,
           enrollmentId: row.student.id,
           sectionId: section?.id,
           ...studentDraft(row.student),
           student_no: row.studentId,
-        });
-        succeeded += 1;
-      } catch {
-        failed += 1;
-      }
-    }
+        }),
+      ),
+    );
+    const succeeded = results.filter((result) => result.status === "fulfilled").length;
+    const failed = results.length - succeeded;
     setApplyingIds(false);
     const leftoverCount = idPreview.length - matchedRows.length;
     setIdResultMessage({
