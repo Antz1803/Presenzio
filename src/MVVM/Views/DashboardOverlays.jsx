@@ -174,6 +174,35 @@ function normalizeNameForMatch(value) {
     .trim();
 }
 
+// Breaks a name into comparable word tokens, ignoring case, punctuation,
+// and word order — so "Abadiano, Alexander M." matches a roster entry
+// stored as "Alexander M. Abadiano", regardless of which order either side
+// uses.
+function nameTokens(value) {
+  return normalizeNameForMatch(value).split(" ").filter(Boolean);
+}
+
+function tokensEqual(a, b) {
+  if (!a.length || a.length !== b.length) return false;
+  const sortedA = [...a].sort();
+  const sortedB = [...b].sort();
+  return sortedA.every((token, index) => token === sortedB[index]);
+}
+
+// True when every token in `smaller` also appears in `larger` and `larger`
+// has at least one extra token — covers a pasted name that's missing (or
+// has an extra) middle initial compared to the roster entry.
+function tokensSubset(smaller, larger) {
+  if (!smaller.length || smaller.length >= larger.length) return false;
+  const remaining = [...larger];
+  return smaller.every((token) => {
+    const index = remaining.indexOf(token);
+    if (index === -1) return false;
+    remaining.splice(index, 1);
+    return true;
+  });
+}
+
 // A pasted row's two columns could be "Name, ID" or "ID, Name" depending on
 // where the person copied from — this looks at which field reads like an ID
 // (letters/digits/dashes only, no spaces, at least one digit) to figure out
@@ -189,29 +218,57 @@ function parseIdPasteRows(text) {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      // Prefer tab-separated (pasted straight from a spreadsheet), then
-      // comma-separated, then fall back to splitting on the last run of
-      // whitespace (e.g. "Juan Dela Cruz 2021-00123").
-      let parts = line.split("\t").map((part) => part.trim()).filter(Boolean);
-      if (parts.length < 2) {
-        parts = line.split(",").map((part) => part.trim()).filter(Boolean);
+      // Spreadsheet paste: tab-separated columns.
+      const tabParts = line.split("\t").map((part) => part.trim()).filter(Boolean);
+      if (tabParts.length >= 2) {
+        const [first, second] = tabParts;
+        const [name, studentId] =
+          looksLikeStudentId(first) && !looksLikeStudentId(second)
+            ? [second, first]
+            : [first, second];
+        return { raw: line, name, studentId };
       }
-      if (parts.length < 2) {
-        const spacedMatch = line.match(/^(.*\S)\s+(\S+)$/);
-        parts = spacedMatch ? [spacedMatch[1], spacedMatch[2]] : [line];
-      }
-      if (parts.length < 2) return { raw: line, name: "", studentId: "" };
 
-      const [first, second] = parts;
-      const [name, studentId] =
-        looksLikeStudentId(first) && !looksLikeStudentId(second)
-          ? [second, first]
-          : [first, second];
-      return { raw: line, name, studentId };
+      // "LASTNAME, FIRSTNAME M.        2414338" (with or without a middle
+      // initial) — the ID trails the name after a run of whitespace. Pull
+      // the ID off the *end* first so the comma inside "Last, First" isn't
+      // mistaken for a field separator.
+      const whitespaceTokens = line.split(/\s+/).filter(Boolean);
+      if (whitespaceTokens.length >= 2) {
+        const lastToken = whitespaceTokens[whitespaceTokens.length - 1];
+        const firstToken = whitespaceTokens[0].replace(/,$/, "");
+        if (looksLikeStudentId(lastToken)) {
+          const name = line
+            .slice(0, line.lastIndexOf(lastToken))
+            .trim()
+            .replace(/,\s*$/, "");
+          return { raw: line, name, studentId: lastToken };
+        }
+        if (looksLikeStudentId(firstToken)) {
+          const name = line
+            .slice(line.indexOf(whitespaceTokens[0]) + whitespaceTokens[0].length)
+            .trim()
+            .replace(/^,\s*/, "");
+          return { raw: line, name, studentId: firstToken };
+        }
+      }
+
+      // Fall back to a comma-separated "Name, ID" / "ID, Name" pair.
+      const commaParts = line.split(",").map((part) => part.trim()).filter(Boolean);
+      if (commaParts.length >= 2) {
+        const [first, second] = commaParts;
+        const [name, studentId] =
+          looksLikeStudentId(first) && !looksLikeStudentId(second)
+            ? [second, first]
+            : [first, second];
+        return { raw: line, name, studentId };
+      }
+
+      return { raw: line, name: "", studentId: "" };
     });
 }
 
-function StudentModal({ section, students, onClose, onUpdateStudent }) {
+function StudentModal({ section, students, sections = [], onClose, onUpdateStudent, onTransferStudent, onLoadTransferPreview }) {
   const [editingStudent, setEditingStudent] = useState(null);
   const [draft, setDraft] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -220,6 +277,16 @@ function StudentModal({ section, students, onClose, onUpdateStudent }) {
   const [idPasteText, setIdPasteText] = useState("");
   const [applyingIds, setApplyingIds] = useState(false);
   const [idResultMessage, setIdResultMessage] = useState({ status: "", text: "" });
+  const [transferringStudent, setTransferringStudent] = useState(null);
+  const [transferStep, setTransferStep] = useState("pick"); // "pick" | "review"
+  const [transferTargetId, setTransferTargetId] = useState("");
+  const [transferSaving, setTransferSaving] = useState(false);
+  const [transferMessage, setTransferMessage] = useState({ status: "", text: "" });
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [oldRecordCount, setOldRecordCount] = useState(0);
+  const [targetSessions, setTargetSessions] = useState([]);
+  const [attendanceStatuses, setAttendanceStatuses] = useState({}); // sessionId -> "present" | "absent" | "late" | ""
+
   const sortedStudents = useMemo(
     () =>
       [...students].sort((a, b) =>
@@ -230,6 +297,92 @@ function StudentModal({ section, students, onClose, onUpdateStudent }) {
     [students],
   );
 
+  const otherSections = useMemo(
+    () => sections.filter((item) => item.id !== section?.id),
+    [sections, section],
+  );
+
+   const startTransfer = (student) => {
+    setEditingStudent(null);
+    setDraft(null);
+    setTransferringStudent(student);
+    setTransferStep("pick");
+    setTransferTargetId("");
+    setTargetSessions([]);
+    setAttendanceStatuses({});
+    setOldRecordCount(0);
+    setTransferMessage({ status: "", text: "" });
+  };
+
+  const cancelTransfer = () => {
+    setTransferringStudent(null);
+    setTransferStep("pick");
+    setTransferTargetId("");
+    setTargetSessions([]);
+    setAttendanceStatuses({});
+    setOldRecordCount(0);
+    setTransferMessage({ status: "", text: "" });
+  };
+
+  const goToReview = async () => {
+    if (!transferringStudent || !transferTargetId || !onLoadTransferPreview) return;
+    setPreviewLoading(true);
+    setTransferMessage({ status: "", text: "" });
+    try {
+      const preview = await onLoadTransferPreview({
+        enrollmentId: transferringStudent.id,
+        fromSectionId: section?.id,
+        toSectionId: transferTargetId,
+      });
+      setTargetSessions(preview.targetSessions);
+      setOldRecordCount(preview.oldRecordCount);
+      setAttendanceStatuses({});
+      setTransferStep("review");
+    } catch (error) {
+      setTransferMessage({ status: "error", text: error?.message || "Could not load the target class's sessions." });
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const backToPick = () => {
+    setTransferStep("pick");
+    setTransferMessage({ status: "", text: "" });
+  };
+
+  const setSessionStatus = (sessionId, status) => {
+    setAttendanceStatuses((current) => ({ ...current, [sessionId]: status }));
+  };
+
+  const confirmTransfer = async () => {
+    if (!transferringStudent || !transferTargetId || !onTransferStudent) return;
+    setTransferSaving(true);
+    setTransferMessage({ status: "", text: "" });
+    try {
+      const attendanceEntries = Object.entries(attendanceStatuses)
+        .filter(([, status]) => status)
+        .map(([sessionId, status]) => ({ sessionId, status }));
+      const result = await onTransferStudent({
+        enrollmentId: transferringStudent.id,
+        studentId: transferringStudent.studentId,
+        fromSectionId: section?.id,
+        toSectionId: transferTargetId,
+        attendanceEntries,
+      });
+      const attendanceNote = result?.offline
+        ? " Attendance for the new class can be recorded once back online."
+        : ` ${result?.attendanceRecorded ?? 0} attendance entr${result?.attendanceRecorded === 1 ? "y" : "ies"} recorded in the new class; the old class's attendance for this student was removed.`;
+      setTransferMessage({
+        status: "success",
+        text: `${transferringStudent.name} was transferred.${attendanceNote}`,
+      });
+      setTimeout(() => cancelTransfer(), 1800);
+    } catch (error) {
+      setTransferMessage({ status: "error", text: error?.message || "Transfer failed." });
+    } finally {
+      setTransferSaving(false);
+    }
+  };
   // Matches each pasted row to exactly one student by name. Rows that match
   // more than one student (e.g. two students sharing a first name) are
   // flagged "ambiguous" rather than guessed at, so nothing gets applied to
@@ -240,9 +393,9 @@ function StudentModal({ section, students, onClose, onUpdateStudent }) {
       if (!row.name || !row.studentId) {
         return { ...row, status: "unparsed" };
       }
-      const normalized = normalizeNameForMatch(row.name);
-      const exactMatches = students.filter(
-        (student) => normalizeNameForMatch(student.name) === normalized,
+      const rowTokens = nameTokens(row.name);
+      const exactMatches = students.filter((student) =>
+        tokensEqual(rowTokens, nameTokens(student.name)),
       );
       if (exactMatches.length === 1) {
         return { ...row, status: "matched", student: exactMatches[0], fuzzy: false };
@@ -251,10 +404,8 @@ function StudentModal({ section, students, onClose, onUpdateStudent }) {
         return { ...row, status: "ambiguous", candidates: exactMatches };
       }
       const fuzzyMatches = students.filter((student) => {
-        const studentNormalized = normalizeNameForMatch(student.name);
-        return (
-          studentNormalized.includes(normalized) || normalized.includes(studentNormalized)
-        );
+        const studentTokens = nameTokens(student.name);
+        return tokensSubset(rowTokens, studentTokens) || tokensSubset(studentTokens, rowTokens);
       });
       if (fuzzyMatches.length === 1) {
         return { ...row, status: "matched", student: fuzzyMatches[0], fuzzy: true };
@@ -306,6 +457,7 @@ function StudentModal({ section, students, onClose, onUpdateStudent }) {
   };
 
   const startEditing = (student) => {
+    setTransferringStudent(null);
     setEditingStudent(student);
     setDraft(studentDraft(student));
     setMessage({ status: "", text: "" });
@@ -397,7 +549,7 @@ function StudentModal({ section, students, onClose, onUpdateStudent }) {
               <textarea
                 rows="6"
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-mono text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                placeholder={"Juan Dela Cruz\t2021-00123\nMaria Santos\t2021-00124\n(paste directly from a spreadsheet, or use commas)"}
+                placeholder={"ANTIPASO, JEORGE REY M.        2414456\nMANCILLA, JEORGE REY        2414456\n(also works with tabs or a plain comma, with or without a middle initial)"}
                 value={idPasteText}
                 onChange={(event) => setIdPasteText(event.target.value)}
                 disabled={applyingIds}
@@ -484,6 +636,140 @@ function StudentModal({ section, students, onClose, onUpdateStudent }) {
           )}
         </div>
 
+                    {transferringStudent && (
+          <div className="mb-5 rounded-2xl border border-amber-100 bg-amber-50/40 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600">Transfer student</p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  {transferStep === "pick"
+                    ? `Move ${transferringStudent.name} to a different class. Scores and grades transfer automatically.`
+                    : `Mark ${transferringStudent.name}'s attendance for the new class's own session dates. Confirming will also permanently remove their attendance from the current class.`}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+                onClick={cancelTransfer}
+                disabled={transferSaving || previewLoading}
+              >
+                Cancel
+              </button>
+            </div>
+
+            {transferStep === "pick" && (
+              otherSections.length ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <select
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 sm:flex-1"
+                    value={transferTargetId}
+                    onChange={(event) => setTransferTargetId(event.target.value)}
+                    disabled={previewLoading}
+                  >
+                    <option value="">Select a class…</option>
+                    {otherSections.map((item) => (
+                      <option value={item.id} key={item.id}>
+                        {item.subject_code} · {item.subject_title || "Untitled"}
+                        {item.section_no ? ` · Sec ${item.section_no}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="shrink-0 rounded-xl bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-500 disabled:opacity-60"
+                    disabled={!transferTargetId || previewLoading}
+                    onClick={goToReview}
+                  >
+                    {previewLoading ? "Loading class sessions…" : "Continue"}
+                  </button>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500">No other classes are available to transfer this student to.</p>
+              )
+            )}
+
+            {transferStep === "review" && (
+              <div>
+                {oldRecordCount > 0 && (
+                  <p className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-600">
+                    This student has {oldRecordCount} attendance record{oldRecordCount === 1 ? "" : "s"} in
+                    the current class. Confirming this transfer will permanently delete them.
+                  </p>
+                )}
+
+                {targetSessions.length === 0 ? (
+                  <p className="text-xs text-slate-500">
+                    The new class has no recorded sessions yet — nothing to mark. You can still confirm
+                    the transfer; attendance can be taken normally once sessions exist there.
+                  </p>
+                ) : (
+                  <div className="max-h-72 overflow-y-auto rounded-xl border border-slate-200">
+                    <table className="w-full border-collapse text-xs">
+                      <thead className="sticky top-0 bg-slate-50">
+                        <tr className="border-b border-slate-200 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                          <th className="py-2 px-3">Session date (new class)</th>
+                          <th className="py-2 px-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {targetSessions.map((session) => (
+                          <tr key={session.id}>
+                            <td className="py-1.5 px-3 text-slate-700">
+                              {session.date}
+                              {session.time ? ` · ${session.time}` : ""}
+                            </td>
+                            <td className="py-1.5 px-3">
+                              <select
+                                className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs"
+                                value={attendanceStatuses[session.id] ?? ""}
+                                disabled={transferSaving}
+                                onChange={(event) => setSessionStatus(session.id, event.target.value)}
+                              >
+                                <option value="">Leave unmarked</option>
+                                <option value="present">Present</option>
+                                <option value="absent">Absent</option>
+                                <option value="late">Late</option>
+                              </select>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <div className="mt-3 flex items-center justify-between">
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+                    onClick={backToPick}
+                    disabled={transferSaving}
+                  >
+                    ← Back
+                  </button>
+                  <button
+                    type="button"
+                    className="shrink-0 rounded-xl bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-500 disabled:opacity-60"
+                    disabled={transferSaving}
+                    onClick={confirmTransfer}
+                  >
+                    {transferSaving ? "Transferring…" : "Confirm transfer"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {transferMessage.text && (
+              <p
+                className={`mt-3 rounded-xl px-3 py-2 text-xs ${transferMessage.status === "error" ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-700"}`}
+                role="status"
+              >
+                {transferMessage.text}
+              </p>
+            )}
+          </div>
+        )}
+
         {draft && editingStudent && (
           <form className="mb-5 rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4" onSubmit={saveStudent}>
             <div className="mb-3 flex items-center justify-between">
@@ -530,7 +816,26 @@ function StudentModal({ section, students, onClose, onUpdateStudent }) {
                   </td>
                   <td className="py-2 pr-3 text-slate-600">{student.attendance}%</td>
                   <td className="py-2 pr-3 text-slate-600">{roundedUpGrade(student.grade)}</td>
-                  <td className="py-2 text-right"><button type="button" className="rounded-lg border border-indigo-200 px-2.5 py-1 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50" onClick={() => startEditing(student)}>Edit</button></td>
+                  <td className="py-2 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        className="rounded-lg border border-indigo-200 px-2.5 py-1 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50"
+                        onClick={() => startEditing(student)}
+                      >
+                        Edit
+                      </button>
+                      {onTransferStudent && (
+                        <button
+                          type="button"
+                          className="rounded-lg border border-amber-200 px-2.5 py-1 text-[11px] font-semibold text-amber-600 hover:bg-amber-50"
+                          onClick={() => startTransfer(student)}
+                        >
+                          Transfer
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

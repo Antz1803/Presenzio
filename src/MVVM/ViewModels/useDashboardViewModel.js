@@ -1013,7 +1013,8 @@ const {
   saveGrades, saveAssessmentScores, saveAssessment, updateAssessment,
   deleteAssessment, saveStudentGroup, deleteStudentGroup,
   grantAssessmentAttempt, loadStudentAssessment,
-   submitAssessment, addStudent, updateStudent, updateSection, deleteSection,
+   submitAssessment, addStudent, updateStudent, transferStudent, loadTransferPreview,
+   updateSection, deleteSection,
   flushOfflineMutations,
 } = useDashboardActions({
   accountId, accountScoped, currentSectionId, period, section, sections, students,
@@ -1103,6 +1104,8 @@ const {
     submitAssessment,
     addStudent,
     updateStudent,
+    transferStudent,
+    loadTransferPreview,
     updateSection,
     deleteSection,
     refreshGrades,

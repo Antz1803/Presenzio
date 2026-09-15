@@ -278,8 +278,11 @@ export default function DashboardShell() {
       {studentModalId && (
         <StudentModal
           section={studentSection}
+          sections={viewModel.sections}
           students={selectedSection?.id === studentModalId ? viewModel.students : []}
           onUpdateStudent={viewModel.updateStudent}
+          onTransferStudent={viewModel.transferStudent}
+          onLoadTransferPreview={viewModel.loadTransferPreview}
           onClose={() => setStudentModalId(null)}
         />
       )}
