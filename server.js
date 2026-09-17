@@ -5,6 +5,9 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import sql from "mssql";
+import { config } from "dotenv";
+
+config({ path: ".env.local" });
 
 const port = Number(process.env.PORT || 3000);
 const dataFile = join(process.env.DATA_DIR || "/data", "presenzio-lan.json");
@@ -370,6 +373,7 @@ async function cacheResult(result) {
   delete assessmentRow.section;
   delete assessmentRow.period;
   delete assessmentRow.questions;
+  delete assessmentRow.attemptGrants;
   catalog.assessments = merge(catalog.assessments, assessmentRow);
   for (const question of assessment.questions || []) catalog.questions = merge(catalog.questions, question);
   store.catalog = catalog;
@@ -424,13 +428,21 @@ async function syncCatalog() {
       supabaseRequest("assessment_attempt_grants").catch(() => []),
       supabaseRequest("assessment_violations", {}, { order: "occurred_at.asc" }).catch(() => []),
     ]);
+    const assessmentIds = new Set(assessments.map((assessment) => assessment.id));
     const grantsByStudent = new Map(
       attemptGrants.map((grant) => [
         `${grant.assessment_id}:${grant.student_id}`,
         grant,
       ]),
     );
+    // Drop any locally-cached grant whose assessment no longer exists remotely,
+    // instead of merging it back in and letting it get rediscovered as orphaned
+    // later (which is what fed the repeating 23503 sync-error loop).
     for (const localGrant of localGrants) {
+      if (!assessmentIds.has(localGrant.assessment_id)) {
+        console.warn("Pruning local grant for deleted assessment:", localGrant.assessment_id, localGrant.id);
+        continue;
+      }
       const key = `${localGrant.assessment_id}:${localGrant.student_id}`;
       const remoteGrant = grantsByStudent.get(key);
       if (!remoteGrant || Number(localGrant.extra_attempts || 0) > Number(remoteGrant.extra_attempts || 0)) {
@@ -459,6 +471,20 @@ async function syncCatalog() {
     catalogSyncPromise = null;
   });
   return catalogSyncPromise;
+}
+
+// Forces a catalog resync (from Supabase truth) if the local cache is missing
+// or stale, so grant requests can't be validated against a ghost assessment
+// that has since been deleted remotely.
+async function ensureFreshCatalogForGrant() {
+  const lastSync = store.lastCatalogSync ? Date.parse(store.lastCatalogSync) : 0;
+  const isStale = !store.catalog || Date.now() - lastSync > 30_000;
+  if (!isStale) return;
+  try {
+    await syncCatalog();
+  } catch (error) {
+    console.warn("Catalog resync before grant deferred:", error.message);
+  }
 }
 
 function scoreRecordKey(score = {}) {
@@ -530,12 +556,25 @@ async function syncPending() {
   if (pendingSyncPromise) return pendingSyncPromise;
   pendingSyncPromise = (async () => {
     if (!supabaseUrl || !supabaseAnonKey) return;
+    const validGrants = [];
+    let grantsChanged = false;
     for (const grant of store.catalog?.attemptGrants ?? []) {
       try {
         await syncAttemptGrant(grant);
+        validGrants.push(grant);
       } catch (error) {
+        if (error.message.includes('"code":"23503"')) {
+          console.warn("Dropping orphaned attempt grant (assessment no longer exists):", grant.id);
+          grantsChanged = true;
+          continue;
+        }
         console.warn("Attempt grant sync deferred:", error.message);
+        validGrants.push(grant);
       }
+    }
+    if (grantsChanged && store.catalog) {
+      store.catalog.attemptGrants = validGrants;
+      await persistStore();
     }
     const recordByScore = recordSubmissionByScore();
     for (const submission of store.submissions) {
@@ -712,6 +751,14 @@ async function handleRequest(request, response) {
     const payload = await readJson(request);
     const assessmentId = String(payload.assessment_id || "");
     const studentId = String(payload.student_id || "");
+
+    // Force a fresh catalog pull if the local cache is stale/missing, so this
+    // request can't be validated against an assessment that Supabase has
+    // already deleted. This is what previously let deleted-assessment grants
+    // keep getting re-created and re-queued, causing the repeating 23503
+    // foreign-key errors during sync.
+    await ensureFreshCatalogForGrant();
+
     const assessment = store.catalog?.assessments?.find((item) => item.id === assessmentId);
     const student = store.catalog?.students?.find((item) => item.id === studentId);
     const enrolled = store.catalog?.enrollments?.some(

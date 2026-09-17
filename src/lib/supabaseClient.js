@@ -1,9 +1,7 @@
 ﻿import { createClient } from '@supabase/supabase-js'
 
 const configuredSupabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim().replace(/\/$/, "")
-const supabaseUrl = import.meta.env.DEV && typeof window !== "undefined"
-  ? `${window.location.origin}/supabase`
-  : configuredSupabaseUrl
+const supabaseUrl = configuredSupabaseUrl
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
 
 function isTransientFetchError(error) {
@@ -33,4 +31,3 @@ export const supabase = isSupabaseConfigured
       global: { fetch: fetchWithRetry },
     })
   : null
-

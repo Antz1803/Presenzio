@@ -129,7 +129,7 @@ export function CompactTodayScheduleSection({ sections, onOpenClassOptions, onOp
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <strong className="text-slate-900 font-extrabold text-sm">{meta.code}</strong>
-                          {meta.name && <span className="text-[11px] font-medium text-slate-500 truncate max-w-[150px]">â€¢ {meta.name}</span>}
+                          {meta.name && <span className="text-[11px] font-medium text-slate-500 truncate max-w-[150px]">{meta.name}</span>}
                           <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusStyles[status.tone]}`}>
                             {status.label}
                           </span>

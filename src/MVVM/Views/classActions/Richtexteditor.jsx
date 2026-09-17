@@ -1,14 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../../../lib/supabaseClient";
-
-// Rename this if you want screenshots to land in a different bucket. The
-// bucket must exist in Supabase Storage and allow public reads (or you'll
-// need to swap getPublicUrl for a signed URL).
 const INSTRUCTIONS_IMAGE_BUCKET = "assessment-instructions";
-
 function sanitizePastedHtml(html) {
-  // Strip script tags and inline event handlers from anything pasted in,
-  // since execCommand("insertHTML") will otherwise happily insert them.
   const container = document.createElement("div");
   container.innerHTML = html;
   container.querySelectorAll("script").forEach((node) => node.remove());
@@ -21,7 +14,6 @@ function sanitizePastedHtml(html) {
   });
   return container.innerHTML;
 }
-
 function buildTableHtml(rows, columns) {
   const cell = () => `<td style="border:1px solid #cbd5e1;padding:6px 8px;min-width:60px;">&nbsp;</td>`;
   const headerCell = (index) => `<th style="border:1px solid #cbd5e1;padding:6px 8px;background:#f1f5f9;text-align:left;">Column ${index + 1}</th>`;
@@ -32,47 +24,28 @@ function buildTableHtml(rows, columns) {
   ).join("");
   return `<table style="border-collapse:collapse;width:100%;margin:8px 0;">${headerRow}${bodyRows}</table><p><br></p>`;
 }
-
-/**
- * A minimal contentEditable-based rich text editor. Supports bold/italic/
- * underline, inserting a table, and inserting an image either by upload or
- * by pasting a screenshot from the clipboard. Stores/returns HTML.
- *
- * Note: uses document.execCommand, which is deprecated but still broadly
- * supported in every current browser and keeps this dependency-free. If you
- * later add a real editor library (TipTap, etc.) this component can be
- * swapped out without changing callers, since the contract is just
- * value (html string) + onChange(html string).
- */
 function RichTextEditor({ value, onChange, placeholder, uploadPathPrefix = "instructions" }) {
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
-
-  // Keep the DOM in sync with external value changes (e.g. switching which
-  // assessment is being edited) without fighting the user's own typing.
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== (value || "")) {
       editorRef.current.innerHTML = value || "";
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   const emitChange = useCallback(() => {
     onChange?.(editorRef.current?.innerHTML ?? "");
   }, [onChange]);
-
   const runCommand = (command, argument) => {
     editorRef.current?.focus();
     document.execCommand(command, false, argument);
     emitChange();
   };
-
   const insertTable = () => {
     const dimensions = window.prompt("Table size as rows x columns (e.g. 3x4):", "3x3");
     if (!dimensions) return;
-    const match = dimensions.match(/^\s*(\d+)\s*[x×]\s*(\d+)\s*$/i);
+    const match = dimensions.match(/^\s*(\d+)\s*[xÃƒ]\s*(\d+)\s*$/i);
     if (!match) {
       setError("Enter the table size like 3x4.");
       return;
@@ -82,7 +55,6 @@ function RichTextEditor({ value, onChange, placeholder, uploadPathPrefix = "inst
     setError("");
     runCommand("insertHTML", buildTableHtml(rows, columns));
   };
-
   const uploadImageFile = useCallback(
     async (file) => {
       if (!file || !file.type?.startsWith("image/")) return;
@@ -113,7 +85,6 @@ function RichTextEditor({ value, onChange, placeholder, uploadPathPrefix = "inst
     },
     [uploadPathPrefix],
   );
-
   const handlePaste = (event) => {
     const items = [...(event.clipboardData?.items ?? [])];
     const imageItem = items.find((item) => item.type?.startsWith("image/"));
@@ -128,15 +99,12 @@ function RichTextEditor({ value, onChange, placeholder, uploadPathPrefix = "inst
       event.preventDefault();
       runCommand("insertHTML", sanitizePastedHtml(pastedHtml));
     }
-    // Plain text paste falls through to the browser's default behavior.
   };
-
   const handleFileInputChange = (event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (file) void uploadImageFile(file);
   };
-
   const toolbarButtonStyle = {
     display: "inline-flex",
     alignItems: "center",
@@ -149,7 +117,6 @@ function RichTextEditor({ value, onChange, placeholder, uploadPathPrefix = "inst
     cursor: "pointer",
     color: "#334155",
   };
-
   return (
     <div className="rich-text-editor" style={{ border: "1px solid #cbd5e1", borderRadius: "8px", overflow: "hidden" }}>
       <div
@@ -169,7 +136,7 @@ function RichTextEditor({ value, onChange, placeholder, uploadPathPrefix = "inst
         </button>
         <span className="rich-text-toolbar-divider" style={{ width: "1px", background: "#e2e8f0", margin: "0 2px" }} />
         <button type="button" style={toolbarButtonStyle} onMouseDown={(event) => event.preventDefault()} onClick={insertTable} title="Insert table">
-          ▦ Table
+          Ã¢Â¦ Table
         </button>
         <button
           type="button"
@@ -179,7 +146,7 @@ function RichTextEditor({ value, onChange, placeholder, uploadPathPrefix = "inst
           disabled={uploading}
           title="Insert screenshot"
         >
-          {uploading ? "Uploading…" : "🖼 Screenshot"}
+          {uploading ? "UploadingÃ¢â‚¬Â¦" : "Ã°Å¸Â¼ Screenshot"}
         </button>
         <input
           ref={fileInputRef}
@@ -215,5 +182,4 @@ function RichTextEditor({ value, onChange, placeholder, uploadPathPrefix = "inst
     </div>
   );
 }
-
 export { RichTextEditor, INSTRUCTIONS_IMAGE_BUCKET };

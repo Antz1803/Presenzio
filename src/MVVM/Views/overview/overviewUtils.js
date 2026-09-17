@@ -37,7 +37,7 @@ function parseTimeToMinutes(timeStr) {
 }
 
 function formatClassTime(value) {
-  if (!value) return "â€”";
+  if (!value) return "";
   const [hour, minute] = String(value).split(":").map(Number);
   if (isNaN(hour)) return value;
   const suffix = hour >= 12 ? "PM" : "AM";
@@ -46,7 +46,7 @@ function formatClassTime(value) {
 
 function getSectionMeta(s) {
   return {
-    code: s?.subject_code || s?.code || "â€”",
+    code: s?.subject_code || s?.code || "",
     name: s?.subject_name || s?.title || s?.name || "",
     sec: s?.section_no || s?.section_name || s?.section || s?.course_section || s?.sectionCode || "N/A",
     room: s?.room || "TBA",
