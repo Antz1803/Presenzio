@@ -1,3 +1,5 @@
+const LAN_API_BASE_URL = "https://presenzio-api.onrender.com";
+
 import { transmutationBreakpoints } from "./dashboardConstants";
 export function transmutePercentage(value) {
   if (!Number.isFinite(Number(value))) return null;
@@ -95,7 +97,7 @@ export async function callLanApi(path, options = {}) {
   const timeoutMs = options.timeoutMs ?? DEFAULT_LAN_API_TIMEOUT_MS;
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    response = await fetch(path, {
+    response = await fetch(`${LAN_API_BASE_URL}${path}`, {
       ...options,
       signal: options.signal ?? controller.signal,
       headers: {
