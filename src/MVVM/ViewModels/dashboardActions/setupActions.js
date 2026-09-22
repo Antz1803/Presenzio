@@ -4,11 +4,61 @@ import { importMasterListFile } from "../importMasterList";
 import { importGradeSheetFile } from "../importRecord";
 import { syncGradeSheetToExcel } from "../syncGradeSheetToExcelPreservingTemplate";
 import { supabase } from "../../../lib/supabaseClient";
-import { countOfflineMutations, listOfflineMutations, readOfflineSnapshot, removeOfflineMutation, replayOfflineMutation } from "../../../lib/offlineStore";
+import {
+  countOfflineMutations,
+  listOfflineMutations,
+  readOfflineSnapshot,
+  removeOfflineMutation,
+  replayOfflineMutation,
+} from "../../../lib/offlineStore";
 
 export function useSetupActions(context) {
-  const { accountId, accountScoped, currentSectionId, period, section, sections, students, gradingPeriods, assessmentScores, assessmentDefinitions, studentGroups, attendanceSessions, loadLiveData, clearLiveData, queueOfflineChange, setSection, setSections, setStudents, setGradingPeriods, setAssessmentScores, setAssessmentDefinitions, setStudentGroups, setAssessmentAttemptGrants, setAttendanceSessions, setConnectionStatus, setConnectionMessage, setPendingSyncCount, setImportState, setGradeSheetImportState, helpers } = context;
-  const { answerSimilarity, assessmentItemLimits, average, browserIsOffline, callLanApi, createAssessmentAccessKey, createLocalId, formatShortDate, gradingWeights, isNetworkError, serializeAssessmentDate, transmutePercentage } = helpers;
+  const {
+    accountId,
+    accountScoped,
+    currentSectionId,
+    period,
+    section,
+    sections,
+    students,
+    gradingPeriods,
+    assessmentScores,
+    assessmentDefinitions,
+    studentGroups,
+    attendanceSessions,
+    loadLiveData,
+    clearLiveData,
+    queueOfflineChange,
+    setSection,
+    setSections,
+    setStudents,
+    setGradingPeriods,
+    setAssessmentScores,
+    setAssessmentDefinitions,
+    setStudentGroups,
+    setAssessmentAttemptGrants,
+    setAttendanceSessions,
+    setConnectionStatus,
+    setConnectionMessage,
+    setPendingSyncCount,
+    setImportState,
+    setGradeSheetImportState,
+    helpers,
+  } = context;
+  const {
+    answerSimilarity,
+    assessmentItemLimits,
+    average,
+    browserIsOffline,
+    callLanApi,
+    createAssessmentAccessKey,
+    createLocalId,
+    formatShortDate,
+    gradingWeights,
+    isNetworkError,
+    serializeAssessmentDate,
+    transmutePercentage,
+  } = helpers;
   const selectSection = useCallback(
     (sectionId) => {
       if (sectionId) loadLiveData(sectionId);
@@ -24,8 +74,7 @@ export function useSetupActions(context) {
         const hasStart = Boolean(dates.start);
         const hasEnd = Boolean(dates.end);
         return (
-          hasStart !== hasEnd ||
-          (hasStart && hasEnd && dates.start > dates.end)
+          hasStart !== hasEnd || (hasStart && hasEnd && dates.start > dates.end)
         );
       });
       if (invalidPeriod) {
@@ -109,7 +158,11 @@ export function useSetupActions(context) {
           });
           return;
         }
-        const result = await importMasterListFile({ file, supabase, userId: accountId });
+        const result = await importMasterListFile({
+          file,
+          supabase,
+          userId: accountId,
+        });
         const preferredSectionId = result.sectionIds?.includes(currentSectionId)
           ? currentSectionId
           : result.sectionId;
@@ -140,7 +193,6 @@ export function useSetupActions(context) {
     },
     [accountId, currentSectionId, loadLiveData, queueOfflineChange],
   );
-
 
   return { selectSection, saveGradingPeriods, importMasterList };
 }

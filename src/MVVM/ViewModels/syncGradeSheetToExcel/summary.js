@@ -7,13 +7,14 @@ const summaryFormulas = {
   prelim: (row) => `IF(Prelim!AJ${row}<>"",Prelim!AJ${row},"")`,
   midterm: (row) => `IF(Midterm!AL${row}<>"",Midterm!AL${row},"")`,
   semifinal: (row) => `IF(SemiFinal!AM${row}<>"",SemiFinal!AM${row},"")`,
-  final: (row) => `IF(Final!AN${row}<>"",IF(Final!AN${row}<=3.05,Final!AN${row},5),"")`,
+  final: (row) =>
+    `IF(Final!AN${row}<>"",IF(Final!AN${row}<=3.05,Final!AN${row},5),"")`,
 };
 
 // Fixed offsets for the signature block, relative to the LAST student row.
 // Adjust ROW_GAP / SIGNATORY_COL if your template places them differently.
-const ROW_GAP = 2;          // blank rows between last student and signature block
-const SIGNATORY_COL = 3;    // column D — change if "Mary Clarence A. Babatid" sits elsewhere
+const ROW_GAP = 2; // blank rows between last student and signature block
+const SIGNATORY_COL = 3; // column D — change if "Mary Clarence A. Babatid" sits elsewhere
 const OLD_SIGNATURE_ROWS = { start: 62, end: 63 }; // rows 63–64 (1-based) in your sheet, 0-based here
 
 function writePeriodGrades(patches, row, periodRow, student, activeSet) {
@@ -21,7 +22,13 @@ function writePeriodGrades(patches, row, periodRow, student, activeSet) {
   summaryPeriodOrder.forEach((code) => {
     const column = summaryColumns[code];
     if (activeSet.has(code)) {
-      patchFormula(patches, "Summary", row, column, summaryFormulas[code](periodRow));
+      patchFormula(
+        patches,
+        "Summary",
+        row,
+        column,
+        summaryFormulas[code](periodRow),
+      );
       const grade = Number(student.grades?.[code]);
       if (Number.isFinite(grade)) carriedGrade = grade;
     } else if (carriedGrade != null) {
@@ -34,9 +41,11 @@ function writePeriodGrades(patches, row, periodRow, student, activeSet) {
 
 export function fillSummary(patches, students, gradingPeriods) {
   clearRange(patches, "Summary", 6, summaryRosterRows + 5, 0, 6);
-  ["CtrlNo.", "Student's Name", "PG", "MG", "SF", "FG", "Remarks"].forEach((value, index) => {
-    patchCell(patches, "Summary", 5, index, value);
-  });
+  ["CtrlNo.", "Student's Name", "PG", "MG", "SF", "FG", "Remarks"].forEach(
+    (value, index) => {
+      patchCell(patches, "Summary", 5, index, value);
+    },
+  );
 
   const activeSet = new Set(getActivePeriodCodes(gradingPeriods));
 
@@ -61,8 +70,21 @@ export function fillSummary(patches, students, gradingPeriods) {
 
   // Wipe out the old hardcoded signature block first, in case it now falls
   // inside the roster range (this was the actual bug in the screenshot).
-  clearRange(patches, "Summary", OLD_SIGNATURE_ROWS.start, OLD_SIGNATURE_ROWS.end, SIGNATORY_COL, SIGNATORY_COL + 1);
+  clearRange(
+    patches,
+    "Summary",
+    OLD_SIGNATURE_ROWS.start,
+    OLD_SIGNATURE_ROWS.end,
+    SIGNATORY_COL,
+    SIGNATORY_COL + 1,
+  );
 
-  patchCell(patches, "Summary", signatureRow, SIGNATORY_COL, "Mary Clarence A. Babatid");
+  patchCell(
+    patches,
+    "Summary",
+    signatureRow,
+    SIGNATORY_COL,
+    "Mary Clarence A. Babatid",
+  );
   patchCell(patches, "Summary", signatureRow + 1, SIGNATORY_COL, "Dean:");
 }

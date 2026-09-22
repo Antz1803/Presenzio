@@ -4,33 +4,87 @@ import { importMasterListFile } from "../importMasterList";
 import { importGradeSheetFile } from "../importRecord";
 import { syncGradeSheetToExcel } from "../syncGradeSheetToExcelPreservingTemplate";
 import { supabase } from "../../../lib/supabaseClient";
-import { countOfflineMutations, listOfflineMutations, readOfflineSnapshot, removeOfflineMutation, replayOfflineMutation } from "../../../lib/offlineStore";
+import {
+  countOfflineMutations,
+  listOfflineMutations,
+  readOfflineSnapshot,
+  removeOfflineMutation,
+  replayOfflineMutation,
+} from "../../../lib/offlineStore";
 
 export function useGradeCalculationActions(context) {
-  const { accountId, accountScoped, currentSectionId, period, section, sections, students, gradingPeriods, assessmentScores, assessmentDefinitions, studentGroups, attendanceSessions, loadLiveData, clearLiveData, queueOfflineChange, setSection, setSections, setStudents, setGradingPeriods, setAssessmentScores, setAssessmentDefinitions, setStudentGroups, setAssessmentAttemptGrants, setAttendanceSessions, setConnectionStatus, setConnectionMessage, setPendingSyncCount, setImportState, setGradeSheetImportState, helpers } = context;
-  const { answerSimilarity, assessmentItemLimits, average, browserIsOffline, callLanApi, createAssessmentAccessKey, createLocalId, formatShortDate, gradingWeights, isNetworkError, serializeAssessmentDate, transmutePercentage } = helpers;
+  const {
+    accountId,
+    accountScoped,
+    currentSectionId,
+    period,
+    section,
+    sections,
+    students,
+    gradingPeriods,
+    assessmentScores,
+    assessmentDefinitions,
+    studentGroups,
+    attendanceSessions,
+    loadLiveData,
+    clearLiveData,
+    queueOfflineChange,
+    setSection,
+    setSections,
+    setStudents,
+    setGradingPeriods,
+    setAssessmentScores,
+    setAssessmentDefinitions,
+    setStudentGroups,
+    setAssessmentAttemptGrants,
+    setAttendanceSessions,
+    setConnectionStatus,
+    setConnectionMessage,
+    setPendingSyncCount,
+    setImportState,
+    setGradeSheetImportState,
+    helpers,
+  } = context;
+  const {
+    answerSimilarity,
+    assessmentItemLimits,
+    average,
+    browserIsOffline,
+    callLanApi,
+    createAssessmentAccessKey,
+    createLocalId,
+    formatShortDate,
+    gradingWeights,
+    isNetworkError,
+    serializeAssessmentDate,
+    transmutePercentage,
+  } = helpers;
   const recalculatePeriodGrades = useCallback(
-    async (periodId, sectionId = currentSectionId, roster = students, gradeOverrides = {}) => {
+    async (
+      periodId,
+      sectionId = currentSectionId,
+      roster = students,
+      gradeOverrides = {},
+    ) => {
       if (!periodId) return;
       const [
         { data: assessmentRows, error: assessmentError },
         { data: sessionRows, error: sessionError },
         { data: periodRows, error: periodError },
-      ] =
-        await Promise.all([
-          supabase
-            .from("assessment_scores")
-            .select("period_id, enrollment_id, category, score, max_score")
-            .eq("section_id", sectionId),
-          supabase
-            .from("class_sessions")
-            .select("id, period_id, attendance_records(enrollment_id, status)")
-            .eq("section_id", sectionId),
-          supabase
-            .from("grading_periods")
-            .select("id, code, sort_order")
-            .order("sort_order"),
-        ]);
+      ] = await Promise.all([
+        supabase
+          .from("assessment_scores")
+          .select("period_id, enrollment_id, category, score, max_score")
+          .eq("section_id", sectionId),
+        supabase
+          .from("class_sessions")
+          .select("id, period_id, attendance_records(enrollment_id, status)")
+          .eq("section_id", sectionId),
+        supabase
+          .from("grading_periods")
+          .select("id, code, sort_order")
+          .order("sort_order"),
+      ]);
       if (assessmentError) throw assessmentError;
       if (sessionError) throw sessionError;
       if (periodError) throw periodError;
@@ -66,7 +120,8 @@ export function useGradeCalculationActions(context) {
                 ),
               )
               .filter((grade) => grade !== null);
-            if (itemGrades.length) categoryGrades[categoryKey] = average(itemGrades);
+            if (itemGrades.length)
+              categoryGrades[categoryKey] = average(itemGrades);
           });
 
           if (periodSessions.length) {
@@ -95,8 +150,10 @@ export function useGradeCalculationActions(context) {
               0,
             );
           } else {
-            const overrideOwn = gradeOverrides?.[period.code]?.[student.id]?.own;
-            if (Number.isFinite(Number(overrideOwn))) gradePoint = Number(overrideOwn);
+            const overrideOwn =
+              gradeOverrides?.[period.code]?.[student.id]?.own;
+            if (Number.isFinite(Number(overrideOwn)))
+              gradePoint = Number(overrideOwn);
           }
 
           if (gradePoint == null) return;
@@ -108,12 +165,14 @@ export function useGradeCalculationActions(context) {
       const averageDefined = (values) => {
         const validValues = values.filter((value) => value != null);
         return validValues.length
-          ? validValues.reduce((total, value) => total + value, 0) / validValues.length
+          ? validValues.reduce((total, value) => total + value, 0) /
+              validValues.length
           : null;
       };
       const periodGradeRows = [];
       roster.forEach((student) => {
-        const overrideFor = (code) => gradeOverrides?.[code]?.[student.id]?.cumulative ?? null;
+        const overrideFor = (code) =>
+          gradeOverrides?.[code]?.[student.id]?.cumulative ?? null;
         const prelim = ownGrades.get("prelim")?.get(student.id) ?? null;
         const midterm = ownGrades.get("midterm")?.get(student.id) ?? null;
         const semifinal = ownGrades.get("semifinal")?.get(student.id) ?? null;
@@ -167,27 +226,31 @@ export function useGradeCalculationActions(context) {
     [currentSectionId, students],
   );
 
-  const refreshGrades = useCallback(async (sectionId = currentSectionId) => {
-    if (!sectionId || !supabase || browserIsOffline()) return;
-    const loaded = await loadLiveData(sectionId);
-    if (!loaded?.students?.length || !loaded.periods?.length) return;
-    const gradeOverrides = {};
-    loaded.students.forEach((student) => {
-      Object.entries(student.gradeDetails ?? {}).forEach(([periodCode, details]) => {
-        if (details?.own == null && details?.cumulative == null) return;
-        gradeOverrides[periodCode] ??= {};
-        gradeOverrides[periodCode][student.id] = details;
+  const refreshGrades = useCallback(
+    async (sectionId = currentSectionId) => {
+      if (!sectionId || !supabase || browserIsOffline()) return;
+      const loaded = await loadLiveData(sectionId);
+      if (!loaded?.students?.length || !loaded.periods?.length) return;
+      const gradeOverrides = {};
+      loaded.students.forEach((student) => {
+        Object.entries(student.gradeDetails ?? {}).forEach(
+          ([periodCode, details]) => {
+            if (details?.own == null && details?.cumulative == null) return;
+            gradeOverrides[periodCode] ??= {};
+            gradeOverrides[periodCode][student.id] = details;
+          },
+        );
       });
-    });
-    await recalculatePeriodGrades(
-      loaded.periods[0].id,
-      sectionId,
-      loaded.students,
-      gradeOverrides,
-    );
-    await loadLiveData(sectionId);
-  }, [currentSectionId, loadLiveData, recalculatePeriodGrades]);
-
+      await recalculatePeriodGrades(
+        loaded.periods[0].id,
+        sectionId,
+        loaded.students,
+        gradeOverrides,
+      );
+      await loadLiveData(sectionId);
+    },
+    [currentSectionId, loadLiveData, recalculatePeriodGrades],
+  );
 
   return { recalculatePeriodGrades, refreshGrades };
 }

@@ -13,7 +13,9 @@ export function shuffle(list) {
 
 export function toAssignments(groups) {
   return Object.fromEntries(
-    groups.flatMap((group, index) => group.map((student) => [student.id, index + 1])),
+    groups.flatMap((group, index) =>
+      group.map((student) => [student.id, index + 1]),
+    ),
   );
 }
 
@@ -21,5 +23,9 @@ export function formatSavedDate(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? ""
-    : date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+    : date.toLocaleDateString([], {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
 }

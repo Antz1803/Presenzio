@@ -4,15 +4,65 @@ import { importMasterListFile } from "../importMasterList";
 import { importGradeSheetFile } from "../importRecord";
 import { syncGradeSheetToExcel } from "../syncGradeSheetToExcelPreservingTemplate";
 import { supabase } from "../../../lib/supabaseClient";
-import { countOfflineMutations, listOfflineMutations, readOfflineSnapshot, removeOfflineMutation, replayOfflineMutation } from "../../../lib/offlineStore";
+import {
+  countOfflineMutations,
+  listOfflineMutations,
+  readOfflineSnapshot,
+  removeOfflineMutation,
+  replayOfflineMutation,
+} from "../../../lib/offlineStore";
 
 export function useAttendanceActions(context) {
-  const { accountId, accountScoped, currentSectionId, period, section, sections, students, gradingPeriods, assessmentScores, assessmentDefinitions, studentGroups, attendanceSessions, recalculatePeriodGrades, loadLiveData, clearLiveData, queueOfflineChange, setSection, setSections, setStudents, setGradingPeriods, setAssessmentScores, setAssessmentDefinitions, setStudentGroups, setAssessmentAttemptGrants, setAttendanceSessions, setConnectionStatus, setConnectionMessage, setPendingSyncCount, setImportState, setGradeSheetImportState, helpers } = context;
-  const { answerSimilarity, assessmentItemLimits, average, browserIsOffline, callLanApi, createAssessmentAccessKey, createLocalId, formatShortDate, gradingWeights, isNetworkError, serializeAssessmentDate, transmutePercentage } = helpers;
+  const {
+    accountId,
+    accountScoped,
+    currentSectionId,
+    period,
+    section,
+    sections,
+    students,
+    gradingPeriods,
+    assessmentScores,
+    assessmentDefinitions,
+    studentGroups,
+    attendanceSessions,
+    recalculatePeriodGrades,
+    loadLiveData,
+    clearLiveData,
+    queueOfflineChange,
+    setSection,
+    setSections,
+    setStudents,
+    setGradingPeriods,
+    setAssessmentScores,
+    setAssessmentDefinitions,
+    setStudentGroups,
+    setAssessmentAttemptGrants,
+    setAttendanceSessions,
+    setConnectionStatus,
+    setConnectionMessage,
+    setPendingSyncCount,
+    setImportState,
+    setGradeSheetImportState,
+    helpers,
+  } = context;
+  const {
+    answerSimilarity,
+    assessmentItemLimits,
+    average,
+    browserIsOffline,
+    callLanApi,
+    createAssessmentAccessKey,
+    createLocalId,
+    formatShortDate,
+    gradingWeights,
+    isNetworkError,
+    serializeAssessmentDate,
+    transmutePercentage,
+  } = helpers;
   const saveAttendance = useCallback(
     async ({ date, sessionTime, statuses }) => {
-      if (!currentSectionId)
-        throw new Error("No active Supabase section.");
+      if (!currentSectionId) throw new Error("No active Supabase section.");
       const selectedPeriodCode = period.toLowerCase();
       const datePeriodCode = gradingPeriods
         .filter((periodItem) => periodItem.start_date && periodItem.end_date)
@@ -29,9 +79,7 @@ export function useAttendanceActions(context) {
             session.sessionTime === sessionTime &&
             session.periodCode === periodCode,
         );
-        const sessionId =
-          existingSession?.id ??
-          createLocalId();
+        const sessionId = existingSession?.id ?? createLocalId();
         await queueOfflineChange("save-attendance", {
           sectionId: currentSectionId,
           periodCode,
@@ -56,7 +104,9 @@ export function useAttendanceActions(context) {
             statuses,
           };
           return existing
-            ? current.map((session) => (session.id === existing.id ? next : session))
+            ? current.map((session) =>
+                session.id === existing.id ? next : session,
+              )
             : [...current, next].sort((first, second) =>
                 first.sessionDate.localeCompare(second.sessionDate),
               );
@@ -124,7 +174,6 @@ export function useAttendanceActions(context) {
       recalculatePeriodGrades,
     ],
   );
-
 
   return { saveAttendance };
 }

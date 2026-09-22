@@ -1,20 +1,67 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import { useCallback } from "react";
 import { supabase } from "../../../lib/supabaseClient";
-import { countOfflineMutations, listOfflineMutations, readOfflineSnapshot, removeOfflineMutation, replayOfflineMutation } from "../../../lib/offlineStore";
+import {
+  countOfflineMutations,
+  listOfflineMutations,
+  readOfflineSnapshot,
+  removeOfflineMutation,
+  replayOfflineMutation,
+} from "../../../lib/offlineStore";
 
 export function useStudentActions(context) {
-  const { accountId, accountScoped, currentSectionId, period, section, sections, students, gradingPeriods, assessmentScores, assessmentDefinitions, studentGroups, attendanceSessions, loadLiveData, clearLiveData, queueOfflineChange, setSection, setSections, setStudents, setGradingPeriods, setAssessmentScores, setAssessmentDefinitions, setStudentGroups, setAssessmentAttemptGrants, setAttendanceSessions, setConnectionStatus, setConnectionMessage, setPendingSyncCount, setImportState, setGradeSheetImportState, helpers } = context;
-  const { answerSimilarity, assessmentItemLimits, average, browserIsOffline, callLanApi, createAssessmentAccessKey, createLocalId, formatShortDate, gradingWeights, isNetworkError, serializeAssessmentDate, transmutePercentage } = helpers;
+  const {
+    accountId,
+    accountScoped,
+    currentSectionId,
+    period,
+    section,
+    sections,
+    students,
+    gradingPeriods,
+    assessmentScores,
+    assessmentDefinitions,
+    studentGroups,
+    attendanceSessions,
+    loadLiveData,
+    clearLiveData,
+    queueOfflineChange,
+    setSection,
+    setSections,
+    setStudents,
+    setGradingPeriods,
+    setAssessmentScores,
+    setAssessmentDefinitions,
+    setStudentGroups,
+    setAssessmentAttemptGrants,
+    setAttendanceSessions,
+    setConnectionStatus,
+    setConnectionMessage,
+    setPendingSyncCount,
+    setImportState,
+    setGradeSheetImportState,
+    helpers,
+  } = context;
+  const {
+    answerSimilarity,
+    assessmentItemLimits,
+    average,
+    browserIsOffline,
+    callLanApi,
+    createAssessmentAccessKey,
+    createLocalId,
+    formatShortDate,
+    gradingWeights,
+    isNetworkError,
+    serializeAssessmentDate,
+    transmutePercentage,
+  } = helpers;
   const addStudent = useCallback(
     async (student) => {
-      if (!currentSectionId)
-        throw new Error("No active Supabase section.");
+      if (!currentSectionId) throw new Error("No active Supabase section.");
       if (browserIsOffline() || !supabase) {
-        const studentId =
-          createLocalId();
-        const enrollmentId =
-          createLocalId();
+        const studentId = createLocalId();
+        const enrollmentId = createLocalId();
         const studentRow = {
           id: studentId,
           ...student,
@@ -99,11 +146,30 @@ export function useStudentActions(context) {
       if (browserIsOffline() || !supabase) {
         await queueOfflineChange("update-student", {
           student: studentPayload,
-          enrollment: { id: enrollmentId, section_id: sectionId, ctrl_no: nextCtrlNo },
+          enrollment: {
+            id: enrollmentId,
+            section_id: sectionId,
+            ctrl_no: nextCtrlNo,
+          },
         });
-        setStudents((current) => current.map((item) => item.id === enrollmentId
-          ? { ...item, ctrlNo: nextCtrlNo, name: studentPayload.full_name, number: studentPayload.student_no || `CTRL-${nextCtrlNo}`, gender: studentPayload.gender || "", course: studentPayload.course || "", yearLevel: studentPayload.year_level || "", contactNo: studentPayload.contact_no || "", email: studentPayload.email || "", photoUrl: studentPayload.photo_url || "" }
-          : item));
+        setStudents((current) =>
+          current.map((item) =>
+            item.id === enrollmentId
+              ? {
+                  ...item,
+                  ctrlNo: nextCtrlNo,
+                  name: studentPayload.full_name,
+                  number: studentPayload.student_no || `CTRL-${nextCtrlNo}`,
+                  gender: studentPayload.gender || "",
+                  course: studentPayload.course || "",
+                  yearLevel: studentPayload.year_level || "",
+                  contactNo: studentPayload.contact_no || "",
+                  email: studentPayload.email || "",
+                  photoUrl: studentPayload.photo_url || "",
+                }
+              : item,
+          ),
+        );
         return;
       }
       const { error: studentError } = await supabase
@@ -121,7 +187,6 @@ export function useStudentActions(context) {
     },
     [browserIsOffline, loadLiveData, queueOfflineChange, setStudents, supabase],
   );
-
 
   return { addStudent, updateStudent };
 }

@@ -1,12 +1,67 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useCallback, useEffect, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { countOfflineMutations, enqueueOfflineMutation, writeOfflineSnapshot } from "../../lib/offlineStore";
+import {
+  countOfflineMutations,
+  enqueueOfflineMutation,
+  writeOfflineSnapshot,
+} from "../../lib/offlineStore";
 import { useDashboardActions } from "./useDashboardActions";
 
 export function useDashboardCoordinator(context) {
-  const { accountId, accountScoped, currentSectionId, period, section, sections, students, gradeRows, gradingPeriods, assessmentScores, assessmentDefinitions, studentGroups, assessmentAttempts, assessmentAttemptGrants, assessmentViolations, attendanceSessions, sessions, stats, loadLiveData, clearLiveData, setSection, setSections, setStudents, setGradingPeriods, setAssessmentScores, setAssessmentDefinitions, setStudentGroups, setAssessmentAttempts, setAssessmentAttemptGrants, setAssessmentViolations, setAttendanceSessions, setConnectionStatus, setConnectionMessage, setPendingSyncCount, setImportState, setGradeSheetImportState, helpers } = context;
-  const { answerSimilarity, assessmentItemLimits, average, browserIsOffline, callLanApi, createAssessmentAccessKey, createLocalId, formatShortDate, gradingWeights, isNetworkError, serializeAssessmentDate, transmutePercentage } = helpers;
+  const {
+    accountId,
+    accountScoped,
+    currentSectionId,
+    period,
+    section,
+    sections,
+    students,
+    gradeRows,
+    gradingPeriods,
+    assessmentScores,
+    assessmentDefinitions,
+    studentGroups,
+    assessmentAttempts,
+    assessmentAttemptGrants,
+    assessmentViolations,
+    attendanceSessions,
+    sessions,
+    stats,
+    loadLiveData,
+    clearLiveData,
+    setSection,
+    setSections,
+    setStudents,
+    setGradingPeriods,
+    setAssessmentScores,
+    setAssessmentDefinitions,
+    setStudentGroups,
+    setAssessmentAttempts,
+    setAssessmentAttemptGrants,
+    setAssessmentViolations,
+    setAttendanceSessions,
+    setConnectionStatus,
+    setConnectionMessage,
+    setPendingSyncCount,
+    setImportState,
+    setGradeSheetImportState,
+    helpers,
+  } = context;
+  const {
+    answerSimilarity,
+    assessmentItemLimits,
+    average,
+    browserIsOffline,
+    callLanApi,
+    createAssessmentAccessKey,
+    createLocalId,
+    formatShortDate,
+    gradingWeights,
+    isNetworkError,
+    serializeAssessmentDate,
+    transmutePercentage,
+  } = helpers;
 
   const reloadTimerRef = useRef(null);
   const scheduleReload = useCallback(() => {
@@ -77,7 +132,8 @@ export function useDashboardCoordinator(context) {
   }, []);
 
   useEffect(() => {
-    if (!accountScoped || !accountId || !supabase || !currentSectionId) return undefined;
+    if (!accountScoped || !accountId || !supabase || !currentSectionId)
+      return undefined;
     const channel = supabase
       .channel("section-" + currentSectionId)
       .on(
@@ -134,26 +190,73 @@ export function useDashboardCoordinator(context) {
   }, [accountId, accountScoped, currentSectionId, scheduleReload]);
 
   const {
-    selectSection, saveGradingPeriods, importMasterList, syncToExcel,
-    refreshGrades, importGradeSheet, saveAttendance,
-    saveGrades, saveAssessmentScores, saveAssessment, updateAssessment,
-    deleteAssessment, saveStudentGroup, deleteStudentGroup,
-    grantAssessmentAttempt, loadStudentAssessment,
-    submitAssessment, addStudent, updateStudent, transferStudent, loadTransferPreview,
-    updateSection, deleteSection,
+    selectSection,
+    saveGradingPeriods,
+    importMasterList,
+    syncToExcel,
+    refreshGrades,
+    importGradeSheet,
+    saveAttendance,
+    saveGrades,
+    saveAssessmentScores,
+    saveAssessment,
+    updateAssessment,
+    deleteAssessment,
+    saveStudentGroup,
+    deleteStudentGroup,
+    grantAssessmentAttempt,
+    loadStudentAssessment,
+    submitAssessment,
+    addStudent,
+    updateStudent,
+    transferStudent,
+    loadTransferPreview,
+    updateSection,
+    deleteSection,
     flushOfflineMutations,
   } = useDashboardActions({
-    accountId, accountScoped, currentSectionId, period, section, sections, students,
-    gradingPeriods, assessmentScores, assessmentDefinitions, studentGroups, attendanceSessions,
-    loadLiveData, clearLiveData, queueOfflineChange, setSection, setSections,
+    accountId,
+    accountScoped,
+    currentSectionId,
+    period,
+    section,
+    sections,
+    students,
+    gradingPeriods,
+    assessmentScores,
+    assessmentDefinitions,
+    studentGroups,
+    attendanceSessions,
+    loadLiveData,
+    clearLiveData,
+    queueOfflineChange,
+    setSection,
+    setSections,
     setStudents,
-    setGradingPeriods, setAssessmentScores, setAssessmentDefinitions, setStudentGroups, setAssessmentAttemptGrants,
-    setAttendanceSessions, setConnectionStatus, setConnectionMessage,
-    setPendingSyncCount, setImportState, setGradeSheetImportState,
+    setGradingPeriods,
+    setAssessmentScores,
+    setAssessmentDefinitions,
+    setStudentGroups,
+    setAssessmentAttemptGrants,
+    setAttendanceSessions,
+    setConnectionStatus,
+    setConnectionMessage,
+    setPendingSyncCount,
+    setImportState,
+    setGradeSheetImportState,
     helpers: {
-      answerSimilarity, assessmentItemLimits, average, browserIsOffline, callLanApi,
-      createAssessmentAccessKey, createLocalId, formatShortDate, gradingWeights,
-      isNetworkError, serializeAssessmentDate, transmutePercentage,
+      answerSimilarity,
+      assessmentItemLimits,
+      average,
+      browserIsOffline,
+      callLanApi,
+      createAssessmentAccessKey,
+      createLocalId,
+      formatShortDate,
+      gradingWeights,
+      isNetworkError,
+      serializeAssessmentDate,
+      transmutePercentage,
     },
   });
 
@@ -179,7 +282,38 @@ export function useDashboardCoordinator(context) {
       window.removeEventListener("offline", handleOffline);
       window.removeEventListener("online", handleOnline);
     };
-  }, [accountId, accountScoped, currentSectionId, flushOfflineMutations, loadLiveData]);
+  }, [
+    accountId,
+    accountScoped,
+    currentSectionId,
+    flushOfflineMutations,
+    loadLiveData,
+  ]);
 
-  return { selectSection, saveGradingPeriods, importMasterList, syncToExcel, refreshGrades, importGradeSheet, saveAttendance, saveGrades, saveAssessmentScores, saveAssessment, updateAssessment, deleteAssessment, saveStudentGroup, deleteStudentGroup, grantAssessmentAttempt, loadStudentAssessment, submitAssessment, addStudent, updateStudent, transferStudent, loadTransferPreview, updateSection, deleteSection, flushOfflineMutations };
+  return {
+    selectSection,
+    saveGradingPeriods,
+    importMasterList,
+    syncToExcel,
+    refreshGrades,
+    importGradeSheet,
+    saveAttendance,
+    saveGrades,
+    saveAssessmentScores,
+    saveAssessment,
+    updateAssessment,
+    deleteAssessment,
+    saveStudentGroup,
+    deleteStudentGroup,
+    grantAssessmentAttempt,
+    loadStudentAssessment,
+    submitAssessment,
+    addStudent,
+    updateStudent,
+    transferStudent,
+    loadTransferPreview,
+    updateSection,
+    deleteSection,
+    flushOfflineMutations,
+  };
 }

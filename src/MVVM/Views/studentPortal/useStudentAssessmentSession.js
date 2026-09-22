@@ -1,1 +1,274 @@
-import{useCallback as O,useEffect as q,useRef as C,useState as a}from"react";import{useDashboardViewModel as de}from"../../ViewModels/useDashboardViewModel";export function useStudentAssessmentSession(){const K=de({accountScoped:!1}),{submitAssessment:I,loadStudentAssessment:$,connectionStatus:T}=K,[L,U]=a(""),[N,Y]=a(""),[o,y]=a(null),[w,g]=a({}),[Q,v]=a(!1),[V,u]=a({status:"",text:""}),[f,h]=a(null),[j,x]=a(null),[B,A]=a(""),[k,E]=a(0),[H,D]=a([]),c=C([]),l=C(!1),r=o?.assessment,d=o?.student,_=r?.section,P=[],W=d?[d]:[],z=r?[r]:[],G=_?.id??"",J=d?.id??"",X=r?.id??"",Z=()=>{},ee=()=>{},te=()=>{},se=()=>{},ne=()=>{},p=[...r?.questions??[]].sort((e,s)=>Number(e.question_no)-Number(s.question_no)),m=O((e,s)=>{const i={violation_type:e,details:s||null,occurred_at:new Date().toISOString()};return c.current=[...c.current,i],D(c.current),i},[]),M=()=>{!document.fullscreenElement&&document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{})},ie=async e=>{e.preventDefault(),M(),v(!0),u({status:"",text:""});try{const s=await $({accessKey:L,studentNumber:N}),i=s.startedAt||new Date().toISOString(),n=Number(s.assessment?.time_limit_minutes||0),t=s.sessionExpiresAt||(n>0?new Date(Date.parse(i)+n*60*1e3).toISOString():null);y({...s,startedAt:i,sessionExpiresAt:t}),g({}),E(0),c.current=[],D([]),x(null),h(null),A(""),l.current=!1}catch(s){u({status:"error",text:s?.message||"Assessment could not be opened."})}finally{v(!1)}},b=O(async(e,s=!1,i=null)=>{if(e?.preventDefault(),!d||!r){u({status:"error",text:"Open an assessment before submitting."});return}v(!0),u({status:"",text:""}),s&&(l.current=!0);try{const n=await I({assessmentId:r.id,studentId:d.id,enrollmentId:o.enrollmentId,assessment:r,answers:w,attemptNumber:o.attemptNumber,autoSubmit:s,violations:i??c.current});u({status:"success",text:n.queued?`Score: ${n.score}/${n.maxScore}. Your answers were saved on the LAN computer${n.needsReview?" and are waiting for review":""}. They will sync to Supabase when internet is available.`:n.needsReview?"Your answers were submitted. Your coding response is waiting for review.":`Your answers were submitted. Score: ${n.score}/${n.maxScore}.`}),h(n),y(t=>t&&{...t,attemptsUsed:(t.attemptsUsed||0)+1,attemptsRemaining:n.attemptsRemaining??Math.max(0,(t.attemptsRemaining||1)-1),attemptNumber:(t.attemptNumber||1)+1}),document.fullscreenElement&&document.exitFullscreen&&document.exitFullscreen().catch(()=>{})}catch(n){u({status:"error",text:n?.message||"Submission failed."})}finally{v(!1)}},[o,w,r,d,I]);q(()=>{if(!o||f)return;const e=Number(o.assessment?.time_limit_minutes||0),s=Date.parse(o.startedAt||""),i=e>0&&Number.isFinite(s)?s+e*60*1e3:NaN,n=o.availableUntil?Date.parse(o.availableUntil):NaN,t=[i,n].filter(Number.isFinite);if(!t.length)return;const S=Math.min(...t),R=()=>{const F=Math.max(0,Math.ceil((S-Date.now())/1e3));x(F),F<=0&&!l.current&&b(null,!0)};R();const ue=window.setInterval(R,1e3);return()=>window.clearInterval(ue)},[o,f,b]),q(()=>{if(!o||f)return;const e=t=>{t.preventDefault(),m(t.type,"Clipboard or context-menu action was blocked.")},s=t=>{const S=String(t.key||"").toLowerCase();if(t.key==="Escape"){t.preventDefault(),m("escape_pressed","Escape key pressed; assessment auto-submitted."),l.current||b(null,!0,c.current);return}(t.key==="F12"||(t.ctrlKey||t.metaKey)&&["a","c","v","x","p","s","u"].includes(S)||t.ctrlKey&&t.shiftKey&&["i","j","c"].includes(S))&&(t.preventDefault(),m("keyboard_shortcut",`${t.key} shortcut was blocked.`))},i=()=>{m("window_blur","The assessment window lost focus."),A("Please stay on the assessment screen. Fullscreen mode cannot block Windows Alt+Tab.")},n=()=>{document.hidden&&!l.current&&(m("tab_hidden","The assessment tab was hidden or another tab was opened."),b(null,!0,c.current))};return document.addEventListener("copy",e),document.addEventListener("cut",e),document.addEventListener("paste",e),document.addEventListener("contextmenu",e),document.addEventListener("keydown",s),document.addEventListener("visibilitychange",n),window.addEventListener("blur",i),()=>{document.removeEventListener("copy",e),document.removeEventListener("cut",e),document.removeEventListener("paste",e),document.removeEventListener("contextmenu",e),document.removeEventListener("keydown",s),document.removeEventListener("visibilitychange",n),window.removeEventListener("blur",i)}},[o,m,f,b]);const oe=()=>{const e=new Date().toISOString(),s=Number(r?.time_limit_minutes||0);h(null),g({}),E(0),y(i=>i&&{...i,startedAt:e,sessionExpiresAt:s>0?new Date(Date.parse(e)+s*60*1e3).toISOString():null}),c.current=[],D([]),x(null),u({status:"",text:""}),A(""),l.current=!1,M()},re=p.length>0&&p.every(e=>String(w[e.id]??"").trim()),ae=p[k],ce=p.filter(e=>String(w[e.id]??"").trim()).length;return{connectionStatus:T,accessKey:L,setAccessKey:U,studentNumber:N,setStudentNumber:Y,accessState:o,answers:w,setAnswers:g,submitting:Q,message:V,submittedResult:f,remainingSeconds:j,securityMessage:B,currentQuestionIndex:k,setCurrentQuestionIndex:E,violations:H,selectedAssessment:r,selectedStudent:d,section:_,sections:P,students:W,assessmentDefinitions:z,activeSectionId:G,activeStudentId:J,activeAssessmentId:X,setSelectedSectionId:Z,setStudentId:ee,setAssessmentId:te,selectSection:se,changeAssessment:ne,questions:p,accessAssessment:ie,submit:b,startNextAttempt:oe,allAnswered:re,activeQuestion:ae,answeredCount:ce}}
+import {
+  useCallback as O,
+  useEffect as q,
+  useRef as C,
+  useState as a,
+} from "react";
+import { useDashboardViewModel as de } from "../../ViewModels/useDashboardViewModel";
+export function useStudentAssessmentSession() {
+  const K = de({ accountScoped: !1 }),
+    { submitAssessment: I, loadStudentAssessment: $, connectionStatus: T } = K,
+    [L, U] = a(""),
+    [N, Y] = a(""),
+    [o, y] = a(null),
+    [w, g] = a({}),
+    [Q, v] = a(!1),
+    [V, u] = a({ status: "", text: "" }),
+    [f, h] = a(null),
+    [j, x] = a(null),
+    [B, A] = a(""),
+    [k, E] = a(0),
+    [H, D] = a([]),
+    c = C([]),
+    l = C(!1),
+    r = o?.assessment,
+    d = o?.student,
+    _ = r?.section,
+    P = [],
+    W = d ? [d] : [],
+    z = r ? [r] : [],
+    G = _?.id ?? "",
+    J = d?.id ?? "",
+    X = r?.id ?? "",
+    Z = () => {},
+    ee = () => {},
+    te = () => {},
+    se = () => {},
+    ne = () => {},
+    p = [...(r?.questions ?? [])].sort(
+      (e, s) => Number(e.question_no) - Number(s.question_no),
+    ),
+    m = O((e, s) => {
+      const i = {
+        violation_type: e,
+        details: s || null,
+        occurred_at: new Date().toISOString(),
+      };
+      return ((c.current = [...c.current, i]), D(c.current), i);
+    }, []),
+    M = () => {
+      !document.fullscreenElement &&
+        document.documentElement.requestFullscreen &&
+        document.documentElement.requestFullscreen().catch(() => {});
+    },
+    ie = async (e) => {
+      (e.preventDefault(), M(), v(!0), u({ status: "", text: "" }));
+      try {
+        const s = await $({ accessKey: L, studentNumber: N }),
+          i = s.startedAt || new Date().toISOString(),
+          n = Number(s.assessment?.time_limit_minutes || 0),
+          t =
+            s.sessionExpiresAt ||
+            (n > 0
+              ? new Date(Date.parse(i) + n * 60 * 1e3).toISOString()
+              : null);
+        (y({ ...s, startedAt: i, sessionExpiresAt: t }),
+          g({}),
+          E(0),
+          (c.current = []),
+          D([]),
+          x(null),
+          h(null),
+          A(""),
+          (l.current = !1));
+      } catch (s) {
+        u({
+          status: "error",
+          text: s?.message || "Assessment could not be opened.",
+        });
+      } finally {
+        v(!1);
+      }
+    },
+    b = O(
+      async (e, s = !1, i = null) => {
+        if ((e?.preventDefault(), !d || !r)) {
+          u({ status: "error", text: "Open an assessment before submitting." });
+          return;
+        }
+        (v(!0), u({ status: "", text: "" }), s && (l.current = !0));
+        try {
+          const n = await I({
+            assessmentId: r.id,
+            studentId: d.id,
+            enrollmentId: o.enrollmentId,
+            assessment: r,
+            answers: w,
+            attemptNumber: o.attemptNumber,
+            autoSubmit: s,
+            violations: i ?? c.current,
+          });
+          (u({
+            status: "success",
+            text: n.queued
+              ? `Score: ${n.score}/${n.maxScore}. Your answers were saved on the LAN computer${n.needsReview ? " and are waiting for review" : ""}. They will sync to Supabase when internet is available.`
+              : n.needsReview
+                ? "Your answers were submitted. Your coding response is waiting for review."
+                : `Your answers were submitted. Score: ${n.score}/${n.maxScore}.`,
+          }),
+            h(n),
+            y(
+              (t) =>
+                t && {
+                  ...t,
+                  attemptsUsed: (t.attemptsUsed || 0) + 1,
+                  attemptsRemaining:
+                    n.attemptsRemaining ??
+                    Math.max(0, (t.attemptsRemaining || 1) - 1),
+                  attemptNumber: (t.attemptNumber || 1) + 1,
+                },
+            ),
+            document.fullscreenElement &&
+              document.exitFullscreen &&
+              document.exitFullscreen().catch(() => {}));
+        } catch (n) {
+          u({ status: "error", text: n?.message || "Submission failed." });
+        } finally {
+          v(!1);
+        }
+      },
+      [o, w, r, d, I],
+    );
+  (q(() => {
+    if (!o || f) return;
+    const e = Number(o.assessment?.time_limit_minutes || 0),
+      s = Date.parse(o.startedAt || ""),
+      i = e > 0 && Number.isFinite(s) ? s + e * 60 * 1e3 : NaN,
+      n = o.availableUntil ? Date.parse(o.availableUntil) : NaN,
+      t = [i, n].filter(Number.isFinite);
+    if (!t.length) return;
+    const S = Math.min(...t),
+      R = () => {
+        const F = Math.max(0, Math.ceil((S - Date.now()) / 1e3));
+        (x(F), F <= 0 && !l.current && b(null, !0));
+      };
+    R();
+    const ue = window.setInterval(R, 1e3);
+    return () => window.clearInterval(ue);
+  }, [o, f, b]),
+    q(() => {
+      if (!o || f) return;
+      const e = (t) => {
+          (t.preventDefault(),
+            m(t.type, "Clipboard or context-menu action was blocked."));
+        },
+        s = (t) => {
+          const S = String(t.key || "").toLowerCase();
+          if (t.key === "Escape") {
+            (t.preventDefault(),
+              m(
+                "escape_pressed",
+                "Escape key pressed; assessment auto-submitted.",
+              ),
+              l.current || b(null, !0, c.current));
+            return;
+          }
+          (t.key === "F12" ||
+            ((t.ctrlKey || t.metaKey) &&
+              ["a", "c", "v", "x", "p", "s", "u"].includes(S)) ||
+            (t.ctrlKey && t.shiftKey && ["i", "j", "c"].includes(S))) &&
+            (t.preventDefault(),
+            m("keyboard_shortcut", `${t.key} shortcut was blocked.`));
+        },
+        i = () => {
+          (m("window_blur", "The assessment window lost focus."),
+            A(
+              "Please stay on the assessment screen. Fullscreen mode cannot block Windows Alt+Tab.",
+            ));
+        },
+        n = () => {
+          document.hidden &&
+            !l.current &&
+            (m(
+              "tab_hidden",
+              "The assessment tab was hidden or another tab was opened.",
+            ),
+            b(null, !0, c.current));
+        };
+      return (
+        document.addEventListener("copy", e),
+        document.addEventListener("cut", e),
+        document.addEventListener("paste", e),
+        document.addEventListener("contextmenu", e),
+        document.addEventListener("keydown", s),
+        document.addEventListener("visibilitychange", n),
+        window.addEventListener("blur", i),
+        () => {
+          (document.removeEventListener("copy", e),
+            document.removeEventListener("cut", e),
+            document.removeEventListener("paste", e),
+            document.removeEventListener("contextmenu", e),
+            document.removeEventListener("keydown", s),
+            document.removeEventListener("visibilitychange", n),
+            window.removeEventListener("blur", i));
+        }
+      );
+    }, [o, m, f, b]));
+  const oe = () => {
+      const e = new Date().toISOString(),
+        s = Number(r?.time_limit_minutes || 0);
+      (h(null),
+        g({}),
+        E(0),
+        y(
+          (i) =>
+            i && {
+              ...i,
+              startedAt: e,
+              sessionExpiresAt:
+                s > 0
+                  ? new Date(Date.parse(e) + s * 60 * 1e3).toISOString()
+                  : null,
+            },
+        ),
+        (c.current = []),
+        D([]),
+        x(null),
+        u({ status: "", text: "" }),
+        A(""),
+        (l.current = !1),
+        M());
+    },
+    re = p.length > 0 && p.every((e) => String(w[e.id] ?? "").trim()),
+    ae = p[k],
+    ce = p.filter((e) => String(w[e.id] ?? "").trim()).length;
+  return {
+    connectionStatus: T,
+    accessKey: L,
+    setAccessKey: U,
+    studentNumber: N,
+    setStudentNumber: Y,
+    accessState: o,
+    answers: w,
+    setAnswers: g,
+    submitting: Q,
+    message: V,
+    submittedResult: f,
+    remainingSeconds: j,
+    securityMessage: B,
+    currentQuestionIndex: k,
+    setCurrentQuestionIndex: E,
+    violations: H,
+    selectedAssessment: r,
+    selectedStudent: d,
+    section: _,
+    sections: P,
+    students: W,
+    assessmentDefinitions: z,
+    activeSectionId: G,
+    activeStudentId: J,
+    activeAssessmentId: X,
+    setSelectedSectionId: Z,
+    setStudentId: ee,
+    setAssessmentId: te,
+    selectSection: se,
+    changeAssessment: ne,
+    questions: p,
+    accessAssessment: ie,
+    submit: b,
+    startNextAttempt: oe,
+    allAnswered: re,
+    activeQuestion: ae,
+    answeredCount: ce,
+  };
+}

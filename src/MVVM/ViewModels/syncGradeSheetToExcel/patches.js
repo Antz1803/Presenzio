@@ -22,7 +22,14 @@ export function patchLiteral(patches, sheetName, row, column, value) {
   patchCell(patches, sheetName, row, column, { literal: value });
 }
 
-export function clearRange(patches, sheetName, startRow, endRow, startColumn, endColumn) {
+export function clearRange(
+  patches,
+  sheetName,
+  startRow,
+  endRow,
+  startColumn,
+  endColumn,
+) {
   for (let row = startRow; row <= endRow; row += 1) {
     for (let column = startColumn; column <= endColumn; column += 1) {
       patchCell(patches, sheetName, row, column, "");

@@ -12,8 +12,18 @@ export const assessmentPeriods = [
   { key: "final", label: "Final" },
 ];
 
-export const assessmentItemLimits = { quiz: 4, assignment: 4, activity: 4, exam: 1 };
-export const categoryItemPrefixes = { quiz: "Q", assignment: "A", activity: "G", exam: "E" };
+export const assessmentItemLimits = {
+  quiz: 4,
+  assignment: 4,
+  activity: 4,
+  exam: 1,
+};
+export const categoryItemPrefixes = {
+  quiz: "Q",
+  assignment: "A",
+  activity: "G",
+  exam: "E",
+};
 
 export function itemNoOptions(category) {
   const limit = assessmentItemLimits[category] ?? 4;

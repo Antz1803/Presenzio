@@ -4,11 +4,62 @@ import { importMasterListFile } from "../importMasterList";
 import { importGradeSheetFile } from "../importRecord";
 import { syncGradeSheetToExcel } from "../syncGradeSheetToExcelPreservingTemplate";
 import { supabase } from "../../../lib/supabaseClient";
-import { countOfflineMutations, listOfflineMutations, readOfflineSnapshot, removeOfflineMutation, replayOfflineMutation } from "../../../lib/offlineStore";
+import {
+  countOfflineMutations,
+  listOfflineMutations,
+  readOfflineSnapshot,
+  removeOfflineMutation,
+  replayOfflineMutation,
+} from "../../../lib/offlineStore";
 
 export function useGradeImportActions(context) {
-  const { accountId, accountScoped, currentSectionId, period, section, sections, students, gradingPeriods, assessmentScores, assessmentDefinitions, studentGroups, attendanceSessions, recalculatePeriodGrades, loadLiveData, clearLiveData, queueOfflineChange, setSection, setSections, setStudents, setGradingPeriods, setAssessmentScores, setAssessmentDefinitions, setStudentGroups, setAssessmentAttemptGrants, setAttendanceSessions, setConnectionStatus, setConnectionMessage, setPendingSyncCount, setImportState, setGradeSheetImportState, helpers } = context;
-  const { answerSimilarity, assessmentItemLimits, average, browserIsOffline, callLanApi, createAssessmentAccessKey, createLocalId, formatShortDate, gradingWeights, isNetworkError, serializeAssessmentDate, transmutePercentage } = helpers;
+  const {
+    accountId,
+    accountScoped,
+    currentSectionId,
+    period,
+    section,
+    sections,
+    students,
+    gradingPeriods,
+    assessmentScores,
+    assessmentDefinitions,
+    studentGroups,
+    attendanceSessions,
+    recalculatePeriodGrades,
+    loadLiveData,
+    clearLiveData,
+    queueOfflineChange,
+    setSection,
+    setSections,
+    setStudents,
+    setGradingPeriods,
+    setAssessmentScores,
+    setAssessmentDefinitions,
+    setStudentGroups,
+    setAssessmentAttemptGrants,
+    setAttendanceSessions,
+    setConnectionStatus,
+    setConnectionMessage,
+    setPendingSyncCount,
+    setImportState,
+    setGradeSheetImportState,
+    helpers,
+  } = context;
+  const {
+    answerSimilarity,
+    assessmentItemLimits,
+    average,
+    browserIsOffline,
+    callLanApi,
+    createAssessmentAccessKey,
+    createLocalId,
+    formatShortDate,
+    gradingWeights,
+    isNetworkError,
+    serializeAssessmentDate,
+    transmutePercentage,
+  } = helpers;
   const importGradeSheet = useCallback(
     async (file) => {
       setGradeSheetImportState({
@@ -24,7 +75,11 @@ export function useGradeImportActions(context) {
           });
           return;
         }
-        const result = await importGradeSheetFile({ file, supabase, userId: accountId });
+        const result = await importGradeSheetFile({
+          file,
+          supabase,
+          userId: accountId,
+        });
         // recalculatePeriodGrades always recomputes every grading period for
         // the section in one shot (it ignores which periodId it's passed
         // beyond the empty check below) and replaces the whole
@@ -79,7 +134,6 @@ export function useGradeImportActions(context) {
     },
     [accountId, recalculatePeriodGrades, loadLiveData, queueOfflineChange],
   );
-
 
   return { importGradeSheet };
 }

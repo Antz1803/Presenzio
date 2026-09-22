@@ -4,22 +4,75 @@ import { importMasterListFile } from "../importMasterList";
 import { importGradeSheetFile } from "../importRecord";
 import { syncGradeSheetToExcel } from "../syncGradeSheetToExcelPreservingTemplate";
 import { supabase } from "../../../lib/supabaseClient";
-import { countOfflineMutations, listOfflineMutations, readOfflineSnapshot, removeOfflineMutation, replayOfflineMutation } from "../../../lib/offlineStore";
+import {
+  countOfflineMutations,
+  listOfflineMutations,
+  readOfflineSnapshot,
+  removeOfflineMutation,
+  replayOfflineMutation,
+} from "../../../lib/offlineStore";
 
 export function useScoreActions(context) {
-  const { accountId, accountScoped, currentSectionId, period, section, sections, students, gradingPeriods, assessmentScores, assessmentDefinitions, studentGroups, attendanceSessions, recalculatePeriodGrades, loadLiveData, clearLiveData, queueOfflineChange, setSection, setSections, setStudents, setGradingPeriods, setAssessmentScores, setAssessmentDefinitions, setStudentGroups, setAssessmentAttemptGrants, setAttendanceSessions, setConnectionStatus, setConnectionMessage, setPendingSyncCount, setImportState, setGradeSheetImportState, helpers } = context;
-  const { answerSimilarity, assessmentItemLimits, average, browserIsOffline, callLanApi, createAssessmentAccessKey, createLocalId, formatShortDate, gradingWeights, isNetworkError, serializeAssessmentDate, transmutePercentage } = helpers;
+  const {
+    accountId,
+    accountScoped,
+    currentSectionId,
+    period,
+    section,
+    sections,
+    students,
+    gradingPeriods,
+    assessmentScores,
+    assessmentDefinitions,
+    studentGroups,
+    attendanceSessions,
+    recalculatePeriodGrades,
+    loadLiveData,
+    clearLiveData,
+    queueOfflineChange,
+    setSection,
+    setSections,
+    setStudents,
+    setGradingPeriods,
+    setAssessmentScores,
+    setAssessmentDefinitions,
+    setStudentGroups,
+    setAssessmentAttemptGrants,
+    setAttendanceSessions,
+    setConnectionStatus,
+    setConnectionMessage,
+    setPendingSyncCount,
+    setImportState,
+    setGradeSheetImportState,
+    helpers,
+  } = context;
+  const {
+    answerSimilarity,
+    assessmentItemLimits,
+    average,
+    browserIsOffline,
+    callLanApi,
+    createAssessmentAccessKey,
+    createLocalId,
+    formatShortDate,
+    gradingWeights,
+    isNetworkError,
+    serializeAssessmentDate,
+    transmutePercentage,
+  } = helpers;
   const saveAssessmentScores = useCallback(
     async ({ period, category, scores, maxScores }) => {
-      if (!currentSectionId)
-        throw new Error("No active Supabase section.");
+      if (!currentSectionId) throw new Error("No active Supabase section.");
       const periodCode = period.toLowerCase();
       const baseRows = Object.entries(scores)
         .map(([itemNo, value]) => {
           const itemNumber = Number(itemNo.split(":")[1]);
           const itemMaxScore = Number(maxScores?.[String(itemNumber)]);
 
-          if (value === "" && (!Number.isFinite(itemMaxScore) || itemMaxScore <= 0)) {
+          if (
+            value === "" &&
+            (!Number.isFinite(itemMaxScore) || itemMaxScore <= 0)
+          ) {
             return null;
           }
           if (!Number.isFinite(itemMaxScore) || itemMaxScore <= 0) {
@@ -55,10 +108,7 @@ export function useScoreActions(context) {
         setAssessmentScores((current) => [
           ...current.filter(
             (row) =>
-              !(
-                row.period?.code === periodCode &&
-                row.category === category
-              ),
+              !(row.period?.code === periodCode && row.category === category),
           ),
           ...baseRows.map((row) => ({
             ...row,
@@ -98,7 +148,12 @@ export function useScoreActions(context) {
       await recalculatePeriodGrades(periodRow.id);
       await loadLiveData(currentSectionId);
     },
-    [currentSectionId, loadLiveData, queueOfflineChange, recalculatePeriodGrades],
+    [
+      currentSectionId,
+      loadLiveData,
+      queueOfflineChange,
+      recalculatePeriodGrades,
+    ],
   );
 
   /**

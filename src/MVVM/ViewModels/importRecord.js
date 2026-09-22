@@ -1,1 +1,506 @@
-﻿import*as M from"xlsx";import{normalizeName as x,mergeDuplicateStudentRecords as U}from"./Studentdedup";const I={prelim:"Prelim",midterm:"Midterm",semifinal:"SemiFinal",final:"Final"},V={quiz:[2,4,6,8],assignment:[11,13,15,17],activity:[20,22,24,26],exam:[33]},X={prelim:{startColumn:4,endColumn:19},midterm:{startColumn:22,endColumn:37},semifinal:{startColumn:40,endColumn:55},final:{startColumn:58,endColumn:73}},k={prelim:{own:35},midterm:{own:35,cumulative:37},semifinal:{own:35,cumulative:38},final:{own:35,cumulative:39}},F={hps:8,firstStudent:9},L={firstStudent:6};function q(t){const e=Number(t);return Number.isFinite(e)?e:null}function Y(t){const e=q(t);return e==null?String(t??"").trim():String(e)}function P(t){const e=String(t??"").trim();if(!e)return null;const r=Number(e);return Number.isInteger(r)&&r>0?r:null}function H(t){if(t instanceof Date&&!Number.isNaN(t.getTime()))return`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`;if(typeof t=="number"){const o=M.SSF.parse_date_code(t);if(o?.y&&o?.m&&o?.d)return`${o.y}-${String(o.m).padStart(2,"0")}-${String(o.d).padStart(2,"0")}`}const e=String(t??"").trim();if(/^\d{4}-\d{2}-\d{2}$/.test(e))return e;const r=e.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);return r?`${r[3]}-${String(r[1]).padStart(2,"0")}-${String(r[2]).padStart(2,"0")}`:""}function G(t,e,r,o){const n=x(t?.[1]);return n?o.get(n)??null:r.get(Y(t?.[0]))??null}function Q(t){const e=String(t??"").trim().toLowerCase();return e==="female"||e==="f"?"F":e==="male"||e==="m"?"M":null}function W(t){const e=new Map,r=(n,s,g)=>{const c=String(n??"").trim(),f=x(c);if(!f)return;const h=e.get(f)??{name:c,ctrlNo:P(s),gender:null};h.ctrlNo==null&&P(s)!=null&&(h.ctrlNo=P(s)),!h.gender&&g&&(h.gender=g),e.set(f,h)};Object.values(I).forEach(n=>{const s=t.Sheets[n];s&&M.utils.sheet_to_json(s,{header:1,defval:""}).slice(F.firstStudent).forEach(g=>r(g?.[1],g?.[0],null))});const o=t.Sheets.Attendance;return o&&M.utils.sheet_to_json(o,{header:1,defval:""}).slice(L.firstStudent).forEach(n=>r(n?.[2],n?.[0],Q(n?.[1]))),[...e.values()]}async function J({workbook:t,supabase:e,section:r,enrollments:o}){const{data:n,error:s}=await e.from("students").select("id, full_name, gender, student_no");if(s)throw s;const g=new Map((n??[]).map(a=>[x(a.full_name),a])),c=new Set((o??[]).map(a=>a.student_id)),f=new Set((o??[]).map(a=>Number(a.ctrl_no)).filter(a=>Number.isInteger(a)));let h=Math.max(0,...f)+1;const p=[],b=[];for(const a of W(t)){let m=g.get(x(a.name));if(m){if(!m.gender&&a.gender){const{error:S}=await e.from("students").update({gender:a.gender}).eq("id",m.id);if(S)throw S;m={...m,gender:a.gender}}}else{const{data:S,error:l}=await e.from("students").insert({full_name:a.name,gender:a.gender}).select("id, full_name, gender, student_no").single();if(l)throw l;m=S,g.set(x(m.full_name),m),p.push(m.full_name)}if(c.has(m.id))continue;let C=a.ctrlNo;if(!Number.isInteger(C)||f.has(C)){for(;f.has(h);)h+=1;C=h,h+=1}const{error:i}=await e.from("enrollments").insert({section_id:r.id,student_id:m.id,ctrl_no:C,status:"active"});if(i)throw i;c.add(m.id),f.add(C),b.push({name:m.full_name,ctrlNo:C})}return{createdStudents:p,createdEnrollments:b}}function K(t){const e=String(t??"").trim().toUpperCase();return e==="1"||e==="P"||e==="PRESENT"?"present":e==="A"||e==="ABSENT"?"absent":e==="L"||e==="LATE"?"late":e==="E"||e==="EXCUSED"?"excused":""}function Z(t){const e=Number(String(t?.time_start??"").split(":")[0]);return Number.isFinite(e)&&e>=12?"PM":"AM"}function ee(t){return Object.entries(X).find(([,e])=>t>=e.startColumn&&t<=e.endColumn)?.[0]??""}function j(t,e){const r=String(e).toLowerCase().replace(/[^a-z0-9]/g,"");for(const o of t){const n=o.findIndex(s=>String(s??"").toLowerCase().replace(/[^a-z0-9]/g,"")===r);if(n>=0)return String(o[n+1]??"").trim()}return""}function te(t){const e=String(t??"").match(/(\d{1,2}):?(\d{2})\s*(AM|PM)/i);if(!e)return null;const r=Number(e[1]),o=Number(e[2]);if(!Number.isFinite(r)||!Number.isFinite(o))return null;const s=e[3].toUpperCase()==="PM"?r===12?12:r+12:r===12?0:r;return`${String(s).padStart(2,"0")}:${String(o).padStart(2,"0")}:00`}async function re({workbook:t,supabase:e,userId:r}){if(!t.Sheets.Settings)throw new Error("The selected file is not a supported grade sheet.");const o=await U(e),n=M.utils.sheet_to_json(t.Sheets.Settings,{header:1,defval:""}),s={schoolYear:j(n,"School Year"),semester:j(n,"Semester"),edpCode:j(n,"EDP Code"),subjectCode:j(n,"Subject Code"),sectionNo:j(n,"Section"),timeStart:te(j(n,"Time"))};let g=null;if(s.schoolYear&&s.semester){const{data:l,error:d}=await e.from("school_years").select("id").eq("label",s.schoolYear).eq("semester",s.semester).maybeSingle();if(d)throw d;g=l?.id??null}let c=e.from("sections").select("*");if(s.edpCode)c=c.eq("edp_code",s.edpCode);else if(s.subjectCode)c=c.eq("subject_code",s.subjectCode),s.sectionNo&&(c=c.eq("section_no",s.sectionNo));else throw new Error("The grade sheet does not contain class identification details.");g&&(c=c.eq("school_year_id",g)),r&&(c=c.eq("teacher_id",r));const{data:f,error:h}=await c.limit(2);if(h)throw h;if(!f?.length)throw new Error("No matching class was found for this grade sheet. Import its master list first.");if(f.length>1)throw new Error("More than one class matches this grade sheet. Add a unique EDP code.");const p=f[0];let{data:b,error:a}=await e.from("enrollments").select("id, student_id, ctrl_no, student:students(id, full_name, gender, student_no)").eq("section_id",p.id).order("ctrl_no");if(a)throw a;const m=await J({workbook:t,supabase:e,section:p,enrollments:b});if(m.createdEnrollments.length){const l=await e.from("enrollments").select("id, student_id, ctrl_no, student:students(id, full_name, gender, student_no)").eq("section_id",p.id).order("ctrl_no");if(l.error)throw l.error;b=l.data}const C=(b??[]).map((l,d)=>({id:l.id,ctrlNo:l.ctrl_no??d+1,name:l.student?.full_name??"",number:l.student?.student_no??""})),{data:i,error:S}=await e.from("grading_periods").select("id, code, sort_order, start_date, end_date").order("sort_order");if(S)throw S;return{section:{...p,time_start:p.time_start??s.timeStart},students:C,gradingPeriods:i??[],rosterChanges:m,dedupSummary:o}}async function O({workbook:t,supabase:e,section:r,students:o,gradingPeriods:n}){const s=new Map(o.map(i=>[Y(i.ctrlNo),i])),g=new Map(o.map(i=>[x(i.name),i])),c=new Map(n.map(i=>[i.code,i])),f=new Map,h={},p=new Set,b=new Set,a=new Set;Object.entries(I).forEach(([i,S])=>{const l=t.Sheets[S],d=c.get(i);if(!l||!d)return;const u=M.utils.sheet_to_json(l,{header:1,defval:""}),_=u[F.hps]??[],$=u.slice(F.firstStudent),w=k[i];$.forEach(N=>{if(!String(N?.[1]??"").trim())return;const E=G(N,o,s,g);if(!E){a.add(x(N[1]));return}if(b.add(E.id),Object.entries(V).forEach(([y,v])=>{v.forEach((A,T)=>{const z=q(_[A]);if(z==null||z<=0)return;const R=N[A];if(R==null||String(R).trim()==="")return;const D=q(R);if(D==null)return;const B=Math.max(0,Math.min(D,z));f.set(`${d.id}:${E.id}:${y}:${T+1}`,{section_id:r.id,period_id:d.id,enrollment_id:E.id,category:y,item_no:T+1,score:B,max_score:z}),p.add(d.id)})}),w){const y=q(N[w.own]),v=w.cumulative!=null?q(N[w.cumulative]):null;(y!=null||v!=null)&&(h[i]??={},h[i][E.id]={own:y,cumulative:v},p.add(d.id))}})});for(const i of c.values()){const S=await e.from("assessment_scores").select("id, enrollment_id, category, item_no").eq("section_id",r.id).eq("period_id",i.id);if(S.error)throw S.error;const l=(S.data??[]).filter(d=>!f.has(`${i.id}:${d.enrollment_id}:${d.category}:${d.item_no}`)).map(d=>d.id);if(l.length){const{error:d}=await e.from("assessment_scores").delete().in("id",l);if(d)throw d}}if(f.size){const{error:i}=await e.from("assessment_scores").upsert([...f.values()],{onConflict:"section_id,period_id,enrollment_id,category,item_no"});if(i)throw i}let m=0;const C=t.Sheets.Attendance;if(C){const i=M.utils.sheet_to_json(C,{header:1,defval:""}),l=(i[5]??[]).map((u,_)=>({date:H(u),column:_,periodCode:ee(_)})).filter(u=>u.date&&u.periodCode),d=new Map;l.forEach(({date:u,column:_,periodCode:$})=>{const w=c.get($);w&&d.set(`${u}:${w.id}`,{date:u,period:w,column:_,records:new Map})}),i.slice(L.firstStudent).forEach(u=>{if(!String(u?.[2]??"").trim())return;const _=G([u[0],u[2]],o,s,g);if(!_){a.add(x(u[2]));return}b.add(_.id),l.forEach(({date:$,column:w,periodCode:N})=>{const E=c.get(N);if(!E)return;const y=K(u[w]);if(!y)return;d.get(`${$}:${E.id}`).records.set(_.id,{enrollment_id:_.id,status:y})})});for(const u of d.values()){const{data:_,error:$}=await e.from("class_sessions").upsert({section_id:r.id,period_id:u.period.id,session_date:u.date,session_time:Z(r)},{onConflict:"section_id,session_date,session_time"}).select("id").single();if($)throw $;const{error:w}=await e.from("attendance_records").delete().eq("session_id",_.id);if(w)throw w;if(!u.records.size)continue;const N=[...u.records.values()].map(y=>({session_id:_.id,enrollment_id:y.enrollment_id,status:y.status})),{error:E}=await e.from("attendance_records").upsert(N,{onConflict:"session_id,enrollment_id"});if(E)throw E;m+=N.length,p.add(u.period.id)}}if(!f.size&&!m&&!Object.keys(h).length)throw new Error("No record scores, grades, or attendance values could be imported from this workbook.");return{scoreCount:f.size,attendanceCount:m,matchedStudents:b.size,unmatchedStudents:a.size,periodIds:[...p],gradeOverrides:h}}export async function importRecordFile({file:t,supabase:e,section:r,students:o,gradingPeriods:n}){const s=M.read(await t.arrayBuffer(),{type:"array",cellDates:!0});return O({workbook:s,supabase:e,section:r,students:o,gradingPeriods:n})}export async function importGradeSheetFile({file:t,supabase:e,userId:r}){if(!r)throw new Error("Your account session is not ready. Please sign in again before importing.");const o=M.read(await t.arrayBuffer(),{type:"array",cellDates:!0});if(!o.Sheets.Settings)throw new Error("This is a master list. Use Import master list for this file.");const n=await re({workbook:o,supabase:e,userId:r});return{...await O({workbook:o,supabase:e,...n}),sectionId:n.section.id,subjectCode:n.section.subject_code,students:n.students,rosterChanges:n.rosterChanges,dedupSummary:n.dedupSummary}}
+﻿import * as M from "xlsx";
+import {
+  normalizeName as x,
+  mergeDuplicateStudentRecords as U,
+} from "./Studentdedup";
+const I = {
+    prelim: "Prelim",
+    midterm: "Midterm",
+    semifinal: "SemiFinal",
+    final: "Final",
+  },
+  V = {
+    quiz: [2, 4, 6, 8],
+    assignment: [11, 13, 15, 17],
+    activity: [20, 22, 24, 26],
+    exam: [33],
+  },
+  X = {
+    prelim: { startColumn: 4, endColumn: 19 },
+    midterm: { startColumn: 22, endColumn: 37 },
+    semifinal: { startColumn: 40, endColumn: 55 },
+    final: { startColumn: 58, endColumn: 73 },
+  },
+  k = {
+    prelim: { own: 35 },
+    midterm: { own: 35, cumulative: 37 },
+    semifinal: { own: 35, cumulative: 38 },
+    final: { own: 35, cumulative: 39 },
+  },
+  F = { hps: 8, firstStudent: 9 },
+  L = { firstStudent: 6 };
+function q(t) {
+  const e = Number(t);
+  return Number.isFinite(e) ? e : null;
+}
+function Y(t) {
+  const e = q(t);
+  return e == null ? String(t ?? "").trim() : String(e);
+}
+function P(t) {
+  const e = String(t ?? "").trim();
+  if (!e) return null;
+  const r = Number(e);
+  return Number.isInteger(r) && r > 0 ? r : null;
+}
+function H(t) {
+  if (t instanceof Date && !Number.isNaN(t.getTime()))
+    return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+  if (typeof t == "number") {
+    const o = M.SSF.parse_date_code(t);
+    if (o?.y && o?.m && o?.d)
+      return `${o.y}-${String(o.m).padStart(2, "0")}-${String(o.d).padStart(2, "0")}`;
+  }
+  const e = String(t ?? "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(e)) return e;
+  const r = e.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  return r
+    ? `${r[3]}-${String(r[1]).padStart(2, "0")}-${String(r[2]).padStart(2, "0")}`
+    : "";
+}
+function G(t, e, r, o) {
+  const n = x(t?.[1]);
+  return n ? (o.get(n) ?? null) : (r.get(Y(t?.[0])) ?? null);
+}
+function Q(t) {
+  const e = String(t ?? "")
+    .trim()
+    .toLowerCase();
+  return e === "female" || e === "f"
+    ? "F"
+    : e === "male" || e === "m"
+      ? "M"
+      : null;
+}
+function W(t) {
+  const e = new Map(),
+    r = (n, s, g) => {
+      const c = String(n ?? "").trim(),
+        f = x(c);
+      if (!f) return;
+      const h = e.get(f) ?? { name: c, ctrlNo: P(s), gender: null };
+      (h.ctrlNo == null && P(s) != null && (h.ctrlNo = P(s)),
+        !h.gender && g && (h.gender = g),
+        e.set(f, h));
+    };
+  Object.values(I).forEach((n) => {
+    const s = t.Sheets[n];
+    s &&
+      M.utils
+        .sheet_to_json(s, { header: 1, defval: "" })
+        .slice(F.firstStudent)
+        .forEach((g) => r(g?.[1], g?.[0], null));
+  });
+  const o = t.Sheets.Attendance;
+  return (
+    o &&
+      M.utils
+        .sheet_to_json(o, { header: 1, defval: "" })
+        .slice(L.firstStudent)
+        .forEach((n) => r(n?.[2], n?.[0], Q(n?.[1]))),
+    [...e.values()]
+  );
+}
+async function J({ workbook: t, supabase: e, section: r, enrollments: o }) {
+  const { data: n, error: s } = await e
+    .from("students")
+    .select("id, full_name, gender, student_no");
+  if (s) throw s;
+  const g = new Map((n ?? []).map((a) => [x(a.full_name), a])),
+    c = new Set((o ?? []).map((a) => a.student_id)),
+    f = new Set(
+      (o ?? [])
+        .map((a) => Number(a.ctrl_no))
+        .filter((a) => Number.isInteger(a)),
+    );
+  let h = Math.max(0, ...f) + 1;
+  const p = [],
+    b = [];
+  for (const a of W(t)) {
+    let m = g.get(x(a.name));
+    if (m) {
+      if (!m.gender && a.gender) {
+        const { error: S } = await e
+          .from("students")
+          .update({ gender: a.gender })
+          .eq("id", m.id);
+        if (S) throw S;
+        m = { ...m, gender: a.gender };
+      }
+    } else {
+      const { data: S, error: l } = await e
+        .from("students")
+        .insert({ full_name: a.name, gender: a.gender })
+        .select("id, full_name, gender, student_no")
+        .single();
+      if (l) throw l;
+      ((m = S), g.set(x(m.full_name), m), p.push(m.full_name));
+    }
+    if (c.has(m.id)) continue;
+    let C = a.ctrlNo;
+    if (!Number.isInteger(C) || f.has(C)) {
+      for (; f.has(h);) h += 1;
+      ((C = h), (h += 1));
+    }
+    const { error: i } = await e
+      .from("enrollments")
+      .insert({
+        section_id: r.id,
+        student_id: m.id,
+        ctrl_no: C,
+        status: "active",
+      });
+    if (i) throw i;
+    (c.add(m.id), f.add(C), b.push({ name: m.full_name, ctrlNo: C }));
+  }
+  return { createdStudents: p, createdEnrollments: b };
+}
+function K(t) {
+  const e = String(t ?? "")
+    .trim()
+    .toUpperCase();
+  return e === "1" || e === "P" || e === "PRESENT"
+    ? "present"
+    : e === "A" || e === "ABSENT"
+      ? "absent"
+      : e === "L" || e === "LATE"
+        ? "late"
+        : e === "E" || e === "EXCUSED"
+          ? "excused"
+          : "";
+}
+function Z(t) {
+  const e = Number(String(t?.time_start ?? "").split(":")[0]);
+  return Number.isFinite(e) && e >= 12 ? "PM" : "AM";
+}
+function ee(t) {
+  return (
+    Object.entries(X).find(
+      ([, e]) => t >= e.startColumn && t <= e.endColumn,
+    )?.[0] ?? ""
+  );
+}
+function j(t, e) {
+  const r = String(e)
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  for (const o of t) {
+    const n = o.findIndex(
+      (s) =>
+        String(s ?? "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "") === r,
+    );
+    if (n >= 0) return String(o[n + 1] ?? "").trim();
+  }
+  return "";
+}
+function te(t) {
+  const e = String(t ?? "").match(/(\d{1,2}):?(\d{2})\s*(AM|PM)/i);
+  if (!e) return null;
+  const r = Number(e[1]),
+    o = Number(e[2]);
+  if (!Number.isFinite(r) || !Number.isFinite(o)) return null;
+  const s =
+    e[3].toUpperCase() === "PM" ? (r === 12 ? 12 : r + 12) : r === 12 ? 0 : r;
+  return `${String(s).padStart(2, "0")}:${String(o).padStart(2, "0")}:00`;
+}
+async function re({ workbook: t, supabase: e, userId: r }) {
+  if (!t.Sheets.Settings)
+    throw new Error("The selected file is not a supported grade sheet.");
+  const o = await U(e),
+    n = M.utils.sheet_to_json(t.Sheets.Settings, { header: 1, defval: "" }),
+    s = {
+      schoolYear: j(n, "School Year"),
+      semester: j(n, "Semester"),
+      edpCode: j(n, "EDP Code"),
+      subjectCode: j(n, "Subject Code"),
+      sectionNo: j(n, "Section"),
+      timeStart: te(j(n, "Time")),
+    };
+  let g = null;
+  if (s.schoolYear && s.semester) {
+    const { data: l, error: d } = await e
+      .from("school_years")
+      .select("id")
+      .eq("label", s.schoolYear)
+      .eq("semester", s.semester)
+      .maybeSingle();
+    if (d) throw d;
+    g = l?.id ?? null;
+  }
+  let c = e.from("sections").select("*");
+  if (s.edpCode) c = c.eq("edp_code", s.edpCode);
+  else if (s.subjectCode)
+    ((c = c.eq("subject_code", s.subjectCode)),
+      s.sectionNo && (c = c.eq("section_no", s.sectionNo)));
+  else
+    throw new Error(
+      "The grade sheet does not contain class identification details.",
+    );
+  (g && (c = c.eq("school_year_id", g)), r && (c = c.eq("teacher_id", r)));
+  const { data: f, error: h } = await c.limit(2);
+  if (h) throw h;
+  if (!f?.length)
+    throw new Error(
+      "No matching class was found for this grade sheet. Import its master list first.",
+    );
+  if (f.length > 1)
+    throw new Error(
+      "More than one class matches this grade sheet. Add a unique EDP code.",
+    );
+  const p = f[0];
+  let { data: b, error: a } = await e
+    .from("enrollments")
+    .select(
+      "id, student_id, ctrl_no, student:students(id, full_name, gender, student_no)",
+    )
+    .eq("section_id", p.id)
+    .order("ctrl_no");
+  if (a) throw a;
+  const m = await J({ workbook: t, supabase: e, section: p, enrollments: b });
+  if (m.createdEnrollments.length) {
+    const l = await e
+      .from("enrollments")
+      .select(
+        "id, student_id, ctrl_no, student:students(id, full_name, gender, student_no)",
+      )
+      .eq("section_id", p.id)
+      .order("ctrl_no");
+    if (l.error) throw l.error;
+    b = l.data;
+  }
+  const C = (b ?? []).map((l, d) => ({
+      id: l.id,
+      ctrlNo: l.ctrl_no ?? d + 1,
+      name: l.student?.full_name ?? "",
+      number: l.student?.student_no ?? "",
+    })),
+    { data: i, error: S } = await e
+      .from("grading_periods")
+      .select("id, code, sort_order, start_date, end_date")
+      .order("sort_order");
+  if (S) throw S;
+  return {
+    section: { ...p, time_start: p.time_start ?? s.timeStart },
+    students: C,
+    gradingPeriods: i ?? [],
+    rosterChanges: m,
+    dedupSummary: o,
+  };
+}
+async function O({
+  workbook: t,
+  supabase: e,
+  section: r,
+  students: o,
+  gradingPeriods: n,
+}) {
+  const s = new Map(o.map((i) => [Y(i.ctrlNo), i])),
+    g = new Map(o.map((i) => [x(i.name), i])),
+    c = new Map(n.map((i) => [i.code, i])),
+    f = new Map(),
+    h = {},
+    p = new Set(),
+    b = new Set(),
+    a = new Set();
+  Object.entries(I).forEach(([i, S]) => {
+    const l = t.Sheets[S],
+      d = c.get(i);
+    if (!l || !d) return;
+    const u = M.utils.sheet_to_json(l, { header: 1, defval: "" }),
+      _ = u[F.hps] ?? [],
+      $ = u.slice(F.firstStudent),
+      w = k[i];
+    $.forEach((N) => {
+      if (!String(N?.[1] ?? "").trim()) return;
+      const E = G(N, o, s, g);
+      if (!E) {
+        a.add(x(N[1]));
+        return;
+      }
+      if (
+        (b.add(E.id),
+        Object.entries(V).forEach(([y, v]) => {
+          v.forEach((A, T) => {
+            const z = q(_[A]);
+            if (z == null || z <= 0) return;
+            const R = N[A];
+            if (R == null || String(R).trim() === "") return;
+            const D = q(R);
+            if (D == null) return;
+            const B = Math.max(0, Math.min(D, z));
+            (f.set(`${d.id}:${E.id}:${y}:${T + 1}`, {
+              section_id: r.id,
+              period_id: d.id,
+              enrollment_id: E.id,
+              category: y,
+              item_no: T + 1,
+              score: B,
+              max_score: z,
+            }),
+              p.add(d.id));
+          });
+        }),
+        w)
+      ) {
+        const y = q(N[w.own]),
+          v = w.cumulative != null ? q(N[w.cumulative]) : null;
+        (y != null || v != null) &&
+          ((h[i] ??= {}),
+          (h[i][E.id] = { own: y, cumulative: v }),
+          p.add(d.id));
+      }
+    });
+  });
+  for (const i of c.values()) {
+    const S = await e
+      .from("assessment_scores")
+      .select("id, enrollment_id, category, item_no")
+      .eq("section_id", r.id)
+      .eq("period_id", i.id);
+    if (S.error) throw S.error;
+    const l = (S.data ?? [])
+      .filter(
+        (d) => !f.has(`${i.id}:${d.enrollment_id}:${d.category}:${d.item_no}`),
+      )
+      .map((d) => d.id);
+    if (l.length) {
+      const { error: d } = await e
+        .from("assessment_scores")
+        .delete()
+        .in("id", l);
+      if (d) throw d;
+    }
+  }
+  if (f.size) {
+    const { error: i } = await e
+      .from("assessment_scores")
+      .upsert([...f.values()], {
+        onConflict: "section_id,period_id,enrollment_id,category,item_no",
+      });
+    if (i) throw i;
+  }
+  let m = 0;
+  const C = t.Sheets.Attendance;
+  if (C) {
+    const i = M.utils.sheet_to_json(C, { header: 1, defval: "" }),
+      l = (i[5] ?? [])
+        .map((u, _) => ({ date: H(u), column: _, periodCode: ee(_) }))
+        .filter((u) => u.date && u.periodCode),
+      d = new Map();
+    (l.forEach(({ date: u, column: _, periodCode: $ }) => {
+      const w = c.get($);
+      w &&
+        d.set(`${u}:${w.id}`, {
+          date: u,
+          period: w,
+          column: _,
+          records: new Map(),
+        });
+    }),
+      i.slice(L.firstStudent).forEach((u) => {
+        if (!String(u?.[2] ?? "").trim()) return;
+        const _ = G([u[0], u[2]], o, s, g);
+        if (!_) {
+          a.add(x(u[2]));
+          return;
+        }
+        (b.add(_.id),
+          l.forEach(({ date: $, column: w, periodCode: N }) => {
+            const E = c.get(N);
+            if (!E) return;
+            const y = K(u[w]);
+            if (!y) return;
+            d.get(`${$}:${E.id}`).records.set(_.id, {
+              enrollment_id: _.id,
+              status: y,
+            });
+          }));
+      }));
+    for (const u of d.values()) {
+      const { data: _, error: $ } = await e
+        .from("class_sessions")
+        .upsert(
+          {
+            section_id: r.id,
+            period_id: u.period.id,
+            session_date: u.date,
+            session_time: Z(r),
+          },
+          { onConflict: "section_id,session_date,session_time" },
+        )
+        .select("id")
+        .single();
+      if ($) throw $;
+      const { error: w } = await e
+        .from("attendance_records")
+        .delete()
+        .eq("session_id", _.id);
+      if (w) throw w;
+      if (!u.records.size) continue;
+      const N = [...u.records.values()].map((y) => ({
+          session_id: _.id,
+          enrollment_id: y.enrollment_id,
+          status: y.status,
+        })),
+        { error: E } = await e
+          .from("attendance_records")
+          .upsert(N, { onConflict: "session_id,enrollment_id" });
+      if (E) throw E;
+      ((m += N.length), p.add(u.period.id));
+    }
+  }
+  if (!f.size && !m && !Object.keys(h).length)
+    throw new Error(
+      "No record scores, grades, or attendance values could be imported from this workbook.",
+    );
+  return {
+    scoreCount: f.size,
+    attendanceCount: m,
+    matchedStudents: b.size,
+    unmatchedStudents: a.size,
+    periodIds: [...p],
+    gradeOverrides: h,
+  };
+}
+export async function importRecordFile({
+  file: t,
+  supabase: e,
+  section: r,
+  students: o,
+  gradingPeriods: n,
+}) {
+  const s = M.read(await t.arrayBuffer(), { type: "array", cellDates: !0 });
+  return O({
+    workbook: s,
+    supabase: e,
+    section: r,
+    students: o,
+    gradingPeriods: n,
+  });
+}
+export async function importGradeSheetFile({
+  file: t,
+  supabase: e,
+  userId: r,
+}) {
+  if (!r)
+    throw new Error(
+      "Your account session is not ready. Please sign in again before importing.",
+    );
+  const o = M.read(await t.arrayBuffer(), { type: "array", cellDates: !0 });
+  if (!o.Sheets.Settings)
+    throw new Error(
+      "This is a master list. Use Import master list for this file.",
+    );
+  const n = await re({ workbook: o, supabase: e, userId: r });
+  return {
+    ...(await O({ workbook: o, supabase: e, ...n })),
+    sectionId: n.section.id,
+    subjectCode: n.section.subject_code,
+    students: n.students,
+    rosterChanges: n.rosterChanges,
+    dedupSummary: n.dedupSummary,
+  };
+}

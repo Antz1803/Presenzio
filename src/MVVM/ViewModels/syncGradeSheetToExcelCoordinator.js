@@ -1,7 +1,13 @@
 import * as CFB from "cfb";
 import { fillAttendance } from "./syncGradeSheetToExcel/attendance";
-import { periodSheets, templateSheetNumbers } from "./syncGradeSheetToExcel/constants";
-import { formatFileTime, safeFilePart } from "./syncGradeSheetToExcel/formatters";
+import {
+  periodSheets,
+  templateSheetNumbers,
+} from "./syncGradeSheetToExcel/constants";
+import {
+  formatFileTime,
+  safeFilePart,
+} from "./syncGradeSheetToExcel/formatters";
 import { setMetadata } from "./syncGradeSheetToExcel/metadata";
 import { fillMonth } from "./syncGradeSheetToExcel/month";
 import {
@@ -13,7 +19,11 @@ import {
 import { fillPeriod } from "./syncGradeSheetToExcel/periodSheets";
 import { fillSummary } from "./syncGradeSheetToExcel/summary";
 import { validateExportSnapshot } from "./syncGradeSheetToExcel/validate";
-import { applySheetPatches, getTemplateFile, unshareFormulas } from "./syncGradeSheetToExcel/xml";
+import {
+  applySheetPatches,
+  getTemplateFile,
+  unshareFormulas,
+} from "./syncGradeSheetToExcel/xml";
 
 function sortStudents(students) {
   return [...students].sort((a, b) =>
@@ -49,16 +59,24 @@ function filterExportData({
 
 async function loadTemplate() {
   const response = await fetch("/grade-sheet-template.xlsm");
-  if (!response.ok) throw new Error("The Excel grade-sheet template could not be loaded.");
+  if (!response.ok)
+    throw new Error("The Excel grade-sheet template could not be loaded.");
   const bytes = new Uint8Array(await response.arrayBuffer());
   return CFB.read(bytes, { type: "array" });
 }
 
 function applyPatchesToWorkbook(cfb, patches) {
   Object.entries(patches).forEach(([sheetName, sheetPatches]) => {
-    const file = getTemplateFile(cfb, `sheet${templateSheetNumbers[sheetName]}.xml`);
+    const file = getTemplateFile(
+      cfb,
+      `sheet${templateSheetNumbers[sheetName]}.xml`,
+    );
     const xml = new TextDecoder().decode(file.content);
-    const updatedXml = applySheetPatches(unshareFormulas(xml), sheetPatches, sheetName);
+    const updatedXml = applySheetPatches(
+      unshareFormulas(xml),
+      sheetPatches,
+      sheetName,
+    );
     file.content = new TextEncoder().encode(updatedXml);
     file.size = file.content.length;
   });
@@ -70,7 +88,9 @@ function downloadWorkbook(cfb, section) {
   const end = formatFileTime(section?.time_end);
   const time = start && end ? `${start}${end}` : "Time";
   const filename = `${safeFilePart(section?.subject_code)}-${safeFilePart(section?.days || "Schedule")}-${time}.xlsm`;
-  const blob = new Blob([output], { type: "application/vnd.ms-excel.sheet.macroEnabled.12" });
+  const blob = new Blob([output], {
+    type: "application/vnd.ms-excel.sheet.macroEnabled.12",
+  });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;

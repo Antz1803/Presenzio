@@ -1,8 +1,603 @@
-import React,{useState as v}from"react";import{localDateTimeInputValue as ee}from"./actionUtils";import{ModalShell as V}from"./ActionModalShell";import{RichTextEditor as te}from"./Richtexteditor";import{assessmentCategories as z,assessmentPeriods as J,assessmentItemLimits as se,itemNoOptions as G}from"./assessmentConfig";const K=[{key:"sql",label:"SQL"},{key:"c",label:"C"},{key:"cpp",label:"C++"},{key:"csharp",label:"C#"},{key:"javascript",label:"JavaScript"}],L=["A","B","C","D"];function Q(g="multiple_choice"){return{type:g,prompt:"",points:"1",choices:["","","",""],correctAnswer:"A",language:"sql",starterCode:"",expectedOutput:"",nearMatchScorePercent:"50",incorrectScorePercent:"0"}}function ie(g){const u=String(g??"").replace(/\r/g,"").split(`
-`),w=[];let p=null,n=!1;const S=()=>{p?.prompt.trim()&&w.push(p),p=null};return u.forEach(d=>{const m=d.trim();if(!m){n=!!p;return}const E=m.match(/^(?:question\s*|q\s*)?(\d+)\s*[.):-]\s*(.+)$/i);if(E){S(),p={prompt:E[2].trim(),choices:{},correctAnswer:"A"},n=!1;return}const i=m.match(/^(?:correct\s*)?(?:answer|ans|choice)\s*[:-]?\s*([a-d1-4])\b/i),h=m.match(/^([a-d1-4])\s*[.):-]\s*(.+)$/i);if(i){if(p){const y=i[1].toUpperCase();p.correctAnswer=/[1-4]/.test(y)?String.fromCharCode(64+Number(y)):y}n=!1;return}if(h){p||(p={prompt:"",choices:{},correctAnswer:"A"});const y=h[1].toUpperCase(),D=/[1-4]/.test(y)?String.fromCharCode(64+Number(y)):y;p.choices[D]=h[2].trim(),n=!1;return}p?n&&Object.keys(p.choices).length>=2?(S(),p={prompt:m,choices:{},correctAnswer:"A"}):p.prompt=`${p.prompt} ${m}`.trim():p={prompt:m,choices:{},correctAnswer:"A"},n=!1}),S(),w.map(d=>({...Q(),prompt:d.prompt,choices:L.map(m=>d.choices[m]??""),correctAnswer:d.correctAnswer}))}function oe(g,{language:u}={}){const w=String(g??"").replace(/\r/g,"").split(`
-`),p=[];let n=null;const S=()=>{if(!n)return;const d=n.promptLines.join(`
-`).trim(),m=n.answerLines.join(`
-`).trim();d&&p.push({prompt:d,expectedOutput:m}),n=null};return w.forEach(d=>{const m=d.trim(),E=m.match(/^(?:question\s*|q\s*)?(\d+)\s*[.):-]\s*(.+)$/i);if(E){S(),n={promptLines:[E[2].trim()],answerLines:[],inAnswer:!1};return}if(n){if(!n.inAnswer){const i=m.match(/^answer\s*:?\s*(.*)$/i);if(i){n.inAnswer=!0,i[1]&&n.answerLines.push(i[1]);return}m&&n.promptLines.push(m);return}n.answerLines.push(d.trimEnd())}}),S(),p.map(({prompt:d,expectedOutput:m})=>({...Q("coding"),prompt:d,language:u||"sql",expectedOutput:m}))}function re({section:g,assessments:u=[],onSave:w,onClose:p}){const[n,S]=v({title:"",category:"quiz",itemNo:"1",period:"prelim",instructions:"",timeLimitMinutes:"",availableFrom:"",availableUntil:""}),[d,m]=v(()=>[Q()]),[E,i]=v(""),[h,y]=v("multiple_choice"),[D,R]=v("sql"),[C,M]=v(!1),[$,O]=v({status:"",text:""}),[F,U]=v({status:"",text:""}),[N,r]=v(null),[A,k]=v(!1),P=d.reduce((t,o)=>t+Number(o.points||0),0),b=u.find(t=>t.category===n.category&&t.period?.code===n.period&&Number(t.item_no)===Number(n.itemNo)),_=(t,o)=>S(l=>{if(t==="category"){const e=se[o]??4,s=Math.min(Math.max(Number(l.itemNo||1),1),e);return{...l,category:o,itemNo:String(s)}}return{...l,[t]:o}}),T=(t,o,l)=>{m(e=>e.map((s,a)=>a===t?{...s,[o]:l}:s))},q=(t,o,l)=>{m(e=>e.map((s,a)=>a===t?{...s,choices:s.choices.map((c,f)=>f===o?l:c)}:s))},I=(t,o)=>{m(l=>l.map((e,s)=>s===t?{...Q(o),prompt:e.prompt,points:e.points}:e))},Y=()=>{const t=h==="coding"?oe(E,{language:D}):ie(E);if(!t.length){U({status:"error",text:h==="coding"?'No questions found. Number each question and add an "Answer:" line with the code or query.':"No questions found. Number each question and add choices such as A. Choice text."});return}m(t),U({status:"success",text:`${t.length} question${t.length===1?"":"s"} generated. Review them below before saving.`})},W=()=>{if(!n.title.trim())return"Enter an assessment title.";if(!d.length)return"Add at least one question.";if(n.timeLimitMinutes&&(!Number.isInteger(Number(n.timeLimitMinutes))||Number(n.timeLimitMinutes)<1))return"Time limit must be a whole number of minutes.";if(n.availableFrom&&n.availableUntil&&n.availableFrom>=n.availableUntil)return"The answer window end must be after the start.";for(const[t,o]of d.entries()){if(!o.prompt.trim())return`Enter the prompt for question ${t+1}.`;if(!Number.isFinite(Number(o.points))||Number(o.points)<=0)return`Enter valid points for question ${t+1}.`;if(o.type==="multiple_choice"){if(o.choices.some(l=>!l.trim()))return`Complete all choices for question ${t+1}.`;if(!o.correctAnswer)return`Select the correct answer for question ${t+1}.`}else{const l=Number(o.nearMatchScorePercent);if(!Number.isFinite(l)||l<0||l>100)return`Enter a near-match score between 0 and 100 for question ${t+1}.`;const e=Number(o.incorrectScorePercent);if(!Number.isFinite(e)||e<0||e>100)return`Enter an incorrect score between 0 and 100 for question ${t+1}.`}}return""},B=async(t,o)=>{M(!0),O({status:"",text:""});try{const l=await w({...n,title:n.title.trim(),itemNo:Number(n.itemNo),instructions:n.instructions.trim(),timeLimitMinutes:n.timeLimitMinutes?Number(n.timeLimitMinutes):null,availableFrom:n.availableFrom,availableUntil:n.availableUntil,replaceAssessmentId:t,overwriteScores:o,questions:d.map(e=>({type:e.type,prompt:e.prompt.trim(),points:Number(e.points),choices:e.type==="multiple_choice"?e.choices:[],correctAnswer:e.type==="multiple_choice"?e.correctAnswer:null,language:e.type==="coding"?e.language:null,starterCode:e.type==="coding"?e.starterCode:null,expectedOutput:e.type==="coding"?e.expectedOutput:null,nearMatchScorePercent:e.type==="coding"?Number(e.nearMatchScorePercent):null,incorrectScorePercent:e.type==="coding"?Number(e.incorrectScorePercent):null}))});O({status:"success",text:`Assessment saved. Key ID: ${l?.access_key??"available in Supabase"}`}),S(e=>({...e,title:"",instructions:"",timeLimitMinutes:"",itemNo:"1"})),m([Q()])}catch(l){l?.conflict?r(l.conflict):l?.scoreConflict?k(!0):O({status:"error",text:l?.message||"Assessment could not be saved."})}finally{M(!1)}},j=async t=>{t.preventDefault();const o=W();if(o){O({status:"error",text:o});return}if(b){r(b);return}await B()},H=async()=>{if(!N)return;const t=N.id;r(null),await B(t)},X=async()=>{k(!1),await B(void 0,!0)};return React.createElement(V,{title:"Create Assessment",section:g,onClose:p,size:"wide"},React.createElement("form",{className:"assessment-builder",onSubmit:j},React.createElement("div",{className:"assessment-builder-intro"},React.createElement("div",null,React.createElement("span",{className:"assessment-builder-icon"},"\u{1F4DD}"),React.createElement("div",null,React.createElement("h3",null,"Build an assessment"),React.createElement("p",null,"Create questions for your class and grading period."))),React.createElement("div",{className:"assessment-builder-summary"},React.createElement("span",{className:"assessment-builder-count"},d.length," ",d.length===1?"question":"questions"),React.createElement("span",{className:"assessment-builder-max"},React.createElement("small",null,"MAXIMUM SCORE"),React.createElement("strong",null,P.toFixed(2))))),React.createElement("div",{className:"action-form-grid assessment-details-grid"},React.createElement("label",null,"Assessment title",React.createElement("input",{name:"assessmentTitle",required:!0,value:n.title,placeholder:"e.g. Introduction to SQL",onChange:t=>_("title",t.target.value)})),React.createElement("label",null,"Type",React.createElement("select",{name:"assessmentCategory",value:n.category,onChange:t=>_("category",t.target.value)},z.map(t=>React.createElement("option",{value:t.key,key:t.key},t.label)))),React.createElement("label",null,"Item number",React.createElement("select",{name:"assessmentItemNo",value:n.itemNo,onChange:t=>_("itemNo",t.target.value)},G(n.category).map(t=>{const o=u.find(l=>l.category===n.category&&l.period?.code===n.period&&Number(l.item_no)===Number(t.value));return React.createElement("option",{value:t.value,key:t.value},t.label,o?` \u2014 in use: ${o.title}`:"")}))),React.createElement("label",null,"Grading period",React.createElement("select",{name:"assessmentPeriod",value:n.period,onChange:t=>_("period",t.target.value)},J.map(t=>React.createElement("option",{value:t.key,key:t.key},t.label)))),React.createElement("label",null,"Available from ",React.createElement("span",null,"(optional)"),React.createElement("input",{name:"assessmentAvailableFrom",type:"datetime-local",value:n.availableFrom,onChange:t=>_("availableFrom",t.target.value)})),React.createElement("label",null,"Available until ",React.createElement("span",null,"(optional)"),React.createElement("input",{name:"assessmentAvailableUntil",type:"datetime-local",value:n.availableUntil,onChange:t=>_("availableUntil",t.target.value)})),React.createElement("label",null,"Time limit ",React.createElement("span",null,"(minutes, optional)"),React.createElement("input",{name:"assessmentTimeLimit",type:"number",min:"1",step:"1",value:n.timeLimitMinutes,placeholder:"e.g. 30",onChange:t=>_("timeLimitMinutes",t.target.value)}))),b&&React.createElement("p",{className:"assessment-field-hint assessment-slot-conflict",role:"status"},G(n.category).find(t=>t.value===n.itemNo)?.label," is currently assigned to \u201C",b.title,"\u201D. Saving will ask you to confirm replacing it."),React.createElement("p",{className:"action-help"},"Students can submit once by default. Grant another attempt to an individual student from Manage Assessments."),React.createElement("label",{className:"assessment-instructions-field"},"Instructions ",React.createElement("span",null,"(optional)"),React.createElement(te,{value:n.instructions,onChange:t=>_("instructions",t),placeholder:"Add instructions for your students...",uploadPathPrefix:`assessments/${g?.id??"new"}`})),React.createElement("section",{className:"question-generator"},React.createElement("div",{className:"question-generator-heading"},React.createElement("div",null,React.createElement("strong",null,"Generate questions from pasted text"),React.createElement("p",null,h==="coding"?'Paste numbered questions, each followed by an "Answer:" line with the code or query.':"Paste numbered questions with A\u2013D choices and optional answer lines.")),React.createElement("span",null,"PASTE & GENERATE")),React.createElement("div",{className:"assessment-question-controls"},React.createElement("button",{type:"button",className:h==="multiple_choice"?"active":"",onClick:()=>y("multiple_choice")},"Multiple choice"),React.createElement("button",{type:"button",className:h==="coding"?"active":"",onClick:()=>y("coding")},"Coding")),h==="coding"&&React.createElement("label",{className:"assessment-paste-language-field"},"Language for generated questions",React.createElement("select",{name:"pasteCodingLanguage",value:D,onChange:t=>R(t.target.value)},K.map(t=>React.createElement("option",{value:t.key,key:t.key},t.label)))),React.createElement("textarea",{name:"questionGeneratorText",rows:"7",value:E,placeholder:h==="coding"?`Example:
+import React, { useState as v } from "react";
+import { localDateTimeInputValue as ee } from "./actionUtils";
+import { ModalShell as V } from "./ActionModalShell";
+import { RichTextEditor as te } from "./Richtexteditor";
+import {
+  assessmentCategories as z,
+  assessmentPeriods as J,
+  assessmentItemLimits as se,
+  itemNoOptions as G,
+} from "./assessmentConfig";
+const K = [
+    { key: "sql", label: "SQL" },
+    { key: "c", label: "C" },
+    { key: "cpp", label: "C++" },
+    { key: "csharp", label: "C#" },
+    { key: "javascript", label: "JavaScript" },
+  ],
+  L = ["A", "B", "C", "D"];
+function Q(g = "multiple_choice") {
+  return {
+    type: g,
+    prompt: "",
+    points: "1",
+    choices: ["", "", "", ""],
+    correctAnswer: "A",
+    language: "sql",
+    starterCode: "",
+    expectedOutput: "",
+    nearMatchScorePercent: "50",
+    incorrectScorePercent: "0",
+  };
+}
+function ie(g) {
+  const u = String(g ?? "").replace(/\r/g, "").split(`
+`),
+    w = [];
+  let p = null,
+    n = !1;
+  const S = () => {
+    (p?.prompt.trim() && w.push(p), (p = null));
+  };
+  return (
+    u.forEach((d) => {
+      const m = d.trim();
+      if (!m) {
+        n = !!p;
+        return;
+      }
+      const E = m.match(/^(?:question\s*|q\s*)?(\d+)\s*[.):-]\s*(.+)$/i);
+      if (E) {
+        (S(),
+          (p = { prompt: E[2].trim(), choices: {}, correctAnswer: "A" }),
+          (n = !1));
+        return;
+      }
+      const i = m.match(
+          /^(?:correct\s*)?(?:answer|ans|choice)\s*[:-]?\s*([a-d1-4])\b/i,
+        ),
+        h = m.match(/^([a-d1-4])\s*[.):-]\s*(.+)$/i);
+      if (i) {
+        if (p) {
+          const y = i[1].toUpperCase();
+          p.correctAnswer = /[1-4]/.test(y)
+            ? String.fromCharCode(64 + Number(y))
+            : y;
+        }
+        n = !1;
+        return;
+      }
+      if (h) {
+        p || (p = { prompt: "", choices: {}, correctAnswer: "A" });
+        const y = h[1].toUpperCase(),
+          D = /[1-4]/.test(y) ? String.fromCharCode(64 + Number(y)) : y;
+        ((p.choices[D] = h[2].trim()), (n = !1));
+        return;
+      }
+      (p
+        ? n && Object.keys(p.choices).length >= 2
+          ? (S(), (p = { prompt: m, choices: {}, correctAnswer: "A" }))
+          : (p.prompt = `${p.prompt} ${m}`.trim())
+        : (p = { prompt: m, choices: {}, correctAnswer: "A" }),
+        (n = !1));
+    }),
+    S(),
+    w.map((d) => ({
+      ...Q(),
+      prompt: d.prompt,
+      choices: L.map((m) => d.choices[m] ?? ""),
+      correctAnswer: d.correctAnswer,
+    }))
+  );
+}
+function oe(g, { language: u } = {}) {
+  const w = String(g ?? "").replace(/\r/g, "").split(`
+`),
+    p = [];
+  let n = null;
+  const S = () => {
+    if (!n) return;
+    const d = n.promptLines
+        .join(
+          `
+`,
+        )
+        .trim(),
+      m = n.answerLines
+        .join(
+          `
+`,
+        )
+        .trim();
+    (d && p.push({ prompt: d, expectedOutput: m }), (n = null));
+  };
+  return (
+    w.forEach((d) => {
+      const m = d.trim(),
+        E = m.match(/^(?:question\s*|q\s*)?(\d+)\s*[.):-]\s*(.+)$/i);
+      if (E) {
+        (S(),
+          (n = { promptLines: [E[2].trim()], answerLines: [], inAnswer: !1 }));
+        return;
+      }
+      if (n) {
+        if (!n.inAnswer) {
+          const i = m.match(/^answer\s*:?\s*(.*)$/i);
+          if (i) {
+            ((n.inAnswer = !0), i[1] && n.answerLines.push(i[1]));
+            return;
+          }
+          m && n.promptLines.push(m);
+          return;
+        }
+        n.answerLines.push(d.trimEnd());
+      }
+    }),
+    S(),
+    p.map(({ prompt: d, expectedOutput: m }) => ({
+      ...Q("coding"),
+      prompt: d,
+      language: u || "sql",
+      expectedOutput: m,
+    }))
+  );
+}
+function re({ section: g, assessments: u = [], onSave: w, onClose: p }) {
+  const [n, S] = v({
+      title: "",
+      category: "quiz",
+      itemNo: "1",
+      period: "prelim",
+      instructions: "",
+      timeLimitMinutes: "",
+      availableFrom: "",
+      availableUntil: "",
+    }),
+    [d, m] = v(() => [Q()]),
+    [E, i] = v(""),
+    [h, y] = v("multiple_choice"),
+    [D, R] = v("sql"),
+    [C, M] = v(!1),
+    [$, O] = v({ status: "", text: "" }),
+    [F, U] = v({ status: "", text: "" }),
+    [N, r] = v(null),
+    [A, k] = v(!1),
+    P = d.reduce((t, o) => t + Number(o.points || 0), 0),
+    b = u.find(
+      (t) =>
+        t.category === n.category &&
+        t.period?.code === n.period &&
+        Number(t.item_no) === Number(n.itemNo),
+    ),
+    _ = (t, o) =>
+      S((l) => {
+        if (t === "category") {
+          const e = se[o] ?? 4,
+            s = Math.min(Math.max(Number(l.itemNo || 1), 1), e);
+          return { ...l, category: o, itemNo: String(s) };
+        }
+        return { ...l, [t]: o };
+      }),
+    T = (t, o, l) => {
+      m((e) => e.map((s, a) => (a === t ? { ...s, [o]: l } : s)));
+    },
+    q = (t, o, l) => {
+      m((e) =>
+        e.map((s, a) =>
+          a === t
+            ? { ...s, choices: s.choices.map((c, f) => (f === o ? l : c)) }
+            : s,
+        ),
+      );
+    },
+    I = (t, o) => {
+      m((l) =>
+        l.map((e, s) =>
+          s === t ? { ...Q(o), prompt: e.prompt, points: e.points } : e,
+        ),
+      );
+    },
+    Y = () => {
+      const t = h === "coding" ? oe(E, { language: D }) : ie(E);
+      if (!t.length) {
+        U({
+          status: "error",
+          text:
+            h === "coding"
+              ? 'No questions found. Number each question and add an "Answer:" line with the code or query.'
+              : "No questions found. Number each question and add choices such as A. Choice text.",
+        });
+        return;
+      }
+      (m(t),
+        U({
+          status: "success",
+          text: `${t.length} question${t.length === 1 ? "" : "s"} generated. Review them below before saving.`,
+        }));
+    },
+    W = () => {
+      if (!n.title.trim()) return "Enter an assessment title.";
+      if (!d.length) return "Add at least one question.";
+      if (
+        n.timeLimitMinutes &&
+        (!Number.isInteger(Number(n.timeLimitMinutes)) ||
+          Number(n.timeLimitMinutes) < 1)
+      )
+        return "Time limit must be a whole number of minutes.";
+      if (
+        n.availableFrom &&
+        n.availableUntil &&
+        n.availableFrom >= n.availableUntil
+      )
+        return "The answer window end must be after the start.";
+      for (const [t, o] of d.entries()) {
+        if (!o.prompt.trim()) return `Enter the prompt for question ${t + 1}.`;
+        if (!Number.isFinite(Number(o.points)) || Number(o.points) <= 0)
+          return `Enter valid points for question ${t + 1}.`;
+        if (o.type === "multiple_choice") {
+          if (o.choices.some((l) => !l.trim()))
+            return `Complete all choices for question ${t + 1}.`;
+          if (!o.correctAnswer)
+            return `Select the correct answer for question ${t + 1}.`;
+        } else {
+          const l = Number(o.nearMatchScorePercent);
+          if (!Number.isFinite(l) || l < 0 || l > 100)
+            return `Enter a near-match score between 0 and 100 for question ${t + 1}.`;
+          const e = Number(o.incorrectScorePercent);
+          if (!Number.isFinite(e) || e < 0 || e > 100)
+            return `Enter an incorrect score between 0 and 100 for question ${t + 1}.`;
+        }
+      }
+      return "";
+    },
+    B = async (t, o) => {
+      (M(!0), O({ status: "", text: "" }));
+      try {
+        const l = await w({
+          ...n,
+          title: n.title.trim(),
+          itemNo: Number(n.itemNo),
+          instructions: n.instructions.trim(),
+          timeLimitMinutes: n.timeLimitMinutes
+            ? Number(n.timeLimitMinutes)
+            : null,
+          availableFrom: n.availableFrom,
+          availableUntil: n.availableUntil,
+          replaceAssessmentId: t,
+          overwriteScores: o,
+          questions: d.map((e) => ({
+            type: e.type,
+            prompt: e.prompt.trim(),
+            points: Number(e.points),
+            choices: e.type === "multiple_choice" ? e.choices : [],
+            correctAnswer:
+              e.type === "multiple_choice" ? e.correctAnswer : null,
+            language: e.type === "coding" ? e.language : null,
+            starterCode: e.type === "coding" ? e.starterCode : null,
+            expectedOutput: e.type === "coding" ? e.expectedOutput : null,
+            nearMatchScorePercent:
+              e.type === "coding" ? Number(e.nearMatchScorePercent) : null,
+            incorrectScorePercent:
+              e.type === "coding" ? Number(e.incorrectScorePercent) : null,
+          })),
+        });
+        (O({
+          status: "success",
+          text: `Assessment saved. Key ID: ${l?.access_key ?? "available in Supabase"}`,
+        }),
+          S((e) => ({
+            ...e,
+            title: "",
+            instructions: "",
+            timeLimitMinutes: "",
+            itemNo: "1",
+          })),
+          m([Q()]));
+      } catch (l) {
+        l?.conflict
+          ? r(l.conflict)
+          : l?.scoreConflict
+            ? k(!0)
+            : O({
+                status: "error",
+                text: l?.message || "Assessment could not be saved.",
+              });
+      } finally {
+        M(!1);
+      }
+    },
+    j = async (t) => {
+      t.preventDefault();
+      const o = W();
+      if (o) {
+        O({ status: "error", text: o });
+        return;
+      }
+      if (b) {
+        r(b);
+        return;
+      }
+      await B();
+    },
+    H = async () => {
+      if (!N) return;
+      const t = N.id;
+      (r(null), await B(t));
+    },
+    X = async () => {
+      (k(!1), await B(void 0, !0));
+    };
+  return React.createElement(
+    V,
+    { title: "Create Assessment", section: g, onClose: p, size: "wide" },
+    React.createElement(
+      "form",
+      { className: "assessment-builder", onSubmit: j },
+      React.createElement(
+        "div",
+        { className: "assessment-builder-intro" },
+        React.createElement(
+          "div",
+          null,
+          React.createElement(
+            "span",
+            { className: "assessment-builder-icon" },
+            "\u{1F4DD}",
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("h3", null, "Build an assessment"),
+            React.createElement(
+              "p",
+              null,
+              "Create questions for your class and grading period.",
+            ),
+          ),
+        ),
+        React.createElement(
+          "div",
+          { className: "assessment-builder-summary" },
+          React.createElement(
+            "span",
+            { className: "assessment-builder-count" },
+            d.length,
+            " ",
+            d.length === 1 ? "question" : "questions",
+          ),
+          React.createElement(
+            "span",
+            { className: "assessment-builder-max" },
+            React.createElement("small", null, "MAXIMUM SCORE"),
+            React.createElement("strong", null, P.toFixed(2)),
+          ),
+        ),
+      ),
+      React.createElement(
+        "div",
+        { className: "action-form-grid assessment-details-grid" },
+        React.createElement(
+          "label",
+          null,
+          "Assessment title",
+          React.createElement("input", {
+            name: "assessmentTitle",
+            required: !0,
+            value: n.title,
+            placeholder: "e.g. Introduction to SQL",
+            onChange: (t) => _("title", t.target.value),
+          }),
+        ),
+        React.createElement(
+          "label",
+          null,
+          "Type",
+          React.createElement(
+            "select",
+            {
+              name: "assessmentCategory",
+              value: n.category,
+              onChange: (t) => _("category", t.target.value),
+            },
+            z.map((t) =>
+              React.createElement(
+                "option",
+                { value: t.key, key: t.key },
+                t.label,
+              ),
+            ),
+          ),
+        ),
+        React.createElement(
+          "label",
+          null,
+          "Item number",
+          React.createElement(
+            "select",
+            {
+              name: "assessmentItemNo",
+              value: n.itemNo,
+              onChange: (t) => _("itemNo", t.target.value),
+            },
+            G(n.category).map((t) => {
+              const o = u.find(
+                (l) =>
+                  l.category === n.category &&
+                  l.period?.code === n.period &&
+                  Number(l.item_no) === Number(t.value),
+              );
+              return React.createElement(
+                "option",
+                { value: t.value, key: t.value },
+                t.label,
+                o ? ` \u2014 in use: ${o.title}` : "",
+              );
+            }),
+          ),
+        ),
+        React.createElement(
+          "label",
+          null,
+          "Grading period",
+          React.createElement(
+            "select",
+            {
+              name: "assessmentPeriod",
+              value: n.period,
+              onChange: (t) => _("period", t.target.value),
+            },
+            J.map((t) =>
+              React.createElement(
+                "option",
+                { value: t.key, key: t.key },
+                t.label,
+              ),
+            ),
+          ),
+        ),
+        React.createElement(
+          "label",
+          null,
+          "Available from ",
+          React.createElement("span", null, "(optional)"),
+          React.createElement("input", {
+            name: "assessmentAvailableFrom",
+            type: "datetime-local",
+            value: n.availableFrom,
+            onChange: (t) => _("availableFrom", t.target.value),
+          }),
+        ),
+        React.createElement(
+          "label",
+          null,
+          "Available until ",
+          React.createElement("span", null, "(optional)"),
+          React.createElement("input", {
+            name: "assessmentAvailableUntil",
+            type: "datetime-local",
+            value: n.availableUntil,
+            onChange: (t) => _("availableUntil", t.target.value),
+          }),
+        ),
+        React.createElement(
+          "label",
+          null,
+          "Time limit ",
+          React.createElement("span", null, "(minutes, optional)"),
+          React.createElement("input", {
+            name: "assessmentTimeLimit",
+            type: "number",
+            min: "1",
+            step: "1",
+            value: n.timeLimitMinutes,
+            placeholder: "e.g. 30",
+            onChange: (t) => _("timeLimitMinutes", t.target.value),
+          }),
+        ),
+      ),
+      b &&
+        React.createElement(
+          "p",
+          {
+            className: "assessment-field-hint assessment-slot-conflict",
+            role: "status",
+          },
+          G(n.category).find((t) => t.value === n.itemNo)?.label,
+          " is currently assigned to \u201C",
+          b.title,
+          "\u201D. Saving will ask you to confirm replacing it.",
+        ),
+      React.createElement(
+        "p",
+        { className: "action-help" },
+        "Students can submit once by default. Grant another attempt to an individual student from Manage Assessments.",
+      ),
+      React.createElement(
+        "label",
+        { className: "assessment-instructions-field" },
+        "Instructions ",
+        React.createElement("span", null, "(optional)"),
+        React.createElement(te, {
+          value: n.instructions,
+          onChange: (t) => _("instructions", t),
+          placeholder: "Add instructions for your students...",
+          uploadPathPrefix: `assessments/${g?.id ?? "new"}`,
+        }),
+      ),
+      React.createElement(
+        "section",
+        { className: "question-generator" },
+        React.createElement(
+          "div",
+          { className: "question-generator-heading" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement(
+              "strong",
+              null,
+              "Generate questions from pasted text",
+            ),
+            React.createElement(
+              "p",
+              null,
+              h === "coding"
+                ? 'Paste numbered questions, each followed by an "Answer:" line with the code or query.'
+                : "Paste numbered questions with A\u2013D choices and optional answer lines.",
+            ),
+          ),
+          React.createElement("span", null, "PASTE & GENERATE"),
+        ),
+        React.createElement(
+          "div",
+          { className: "assessment-question-controls" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              className: h === "multiple_choice" ? "active" : "",
+              onClick: () => y("multiple_choice"),
+            },
+            "Multiple choice",
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              className: h === "coding" ? "active" : "",
+              onClick: () => y("coding"),
+            },
+            "Coding",
+          ),
+        ),
+        h === "coding" &&
+          React.createElement(
+            "label",
+            { className: "assessment-paste-language-field" },
+            "Language for generated questions",
+            React.createElement(
+              "select",
+              {
+                name: "pasteCodingLanguage",
+                value: D,
+                onChange: (t) => R(t.target.value),
+              },
+              K.map((t) =>
+                React.createElement(
+                  "option",
+                  { value: t.key, key: t.key },
+                  t.label,
+                ),
+              ),
+            ),
+          ),
+        React.createElement("textarea", {
+          name: "questionGeneratorText",
+          rows: "7",
+          value: E,
+          placeholder:
+            h === "coding"
+              ? `Example:
 1. Write a query to list all students and their enrolled courses.
 Answer: SELECT s.Name, e.CourseID
 FROM Students s
@@ -13,10 +608,1710 @@ LEFT JOIN Enrollment e
 Answer: SELECT s.Name, c.CourseName
 FROM Students s
 INNER JOIN Enrollment e ON s.StudentID = e.StudentID
-INNER JOIN Courses c ON e.CourseID = c.CourseID;`:`Example:
+INNER JOIN Courses c ON e.CourseID = c.CourseID;`
+              : `Example:
 1. What is 2 + 2?
 A. 3
 B. 4
 C. 5
 D. 6
-Answer: B`,onChange:t=>i(t.target.value)}),React.createElement("div",{className:"question-generator-footer"},React.createElement("small",null,"Generated questions remain editable below."),React.createElement("button",{type:"button",className:"outline-button",onClick:Y},"Generate questions")),F.text&&React.createElement("p",{className:`question-generator-message ${F.status}`,role:"status"},F.text)),React.createElement("div",{className:"assessment-question-list"},d.map((t,o)=>React.createElement("article",{className:"assessment-question-card",key:o},React.createElement("div",{className:"assessment-question-header"},React.createElement("div",null,React.createElement("span",null,"QUESTION ",o+1),React.createElement("strong",null,t.type==="multiple_choice"?"Multiple choice":"Coding question")),d.length>1&&React.createElement("button",{type:"button",className:"assessment-remove-button",onClick:()=>m(l=>l.filter((e,s)=>s!==o))},"Remove")),React.createElement("div",{className:"assessment-question-controls"},React.createElement("button",{type:"button",className:t.type==="multiple_choice"?"active":"",onClick:()=>I(o,"multiple_choice")},"Multiple choice"),React.createElement("button",{type:"button",className:t.type==="coding"?"active":"",onClick:()=>I(o,"coding")},"Coding")),React.createElement("div",{className:"action-form-grid assessment-question-grid"},React.createElement("label",{className:"assessment-prompt-field"},"Question prompt",React.createElement("textarea",{name:`question-${o}-prompt`,required:!0,rows:"3",value:t.prompt,placeholder:"Write your question here...",onChange:l=>T(o,"prompt",l.target.value)})),React.createElement("label",null,"Points",React.createElement("input",{name:`question-${o}-points`,type:"number",min:"0.01",step:"0.01",value:t.points,onChange:l=>T(o,"points",l.target.value)}))),t.type==="multiple_choice"?React.createElement("div",{className:"assessment-choices-grid"},t.choices.map((l,e)=>React.createElement("label",{key:L[e]},React.createElement("span",{className:"choice-letter"},L[e]),React.createElement("input",{name:`question-${o}-choice-${e}`,required:!0,value:l,placeholder:`Choice ${L[e]}`,onChange:s=>q(o,e,s.target.value)}),React.createElement("input",{className:"choice-radio",type:"radio",name:`correct-answer-${o}`,checked:t.correctAnswer===L[e],onChange:()=>T(o,"correctAnswer",L[e]),"aria-label":`Mark choice ${L[e]} as correct`}))),React.createElement("p",{className:"assessment-field-hint"},"Select the radio button beside the correct answer.")):React.createElement("div",{className:"coding-question-fields"},React.createElement("label",null,"Programming language",React.createElement("select",{name:`question-${o}-language`,value:t.language,onChange:l=>T(o,"language",l.target.value)},K.map(l=>React.createElement("option",{value:l.key,key:l.key},l.label)))),React.createElement("label",null,"Starter code ",React.createElement("span",null,"(optional)"),React.createElement("textarea",{name:`question-${o}-starterCode`,rows:"4",value:t.starterCode,placeholder:"Provide starter code or a code template...",onChange:l=>T(o,"starterCode",l.target.value)})),React.createElement("label",null,"Expected output / answer criteria ",React.createElement("span",null,"(optional)"),React.createElement("textarea",{name:`question-${o}-expectedOutput`,rows:"3",value:t.expectedOutput,placeholder:"Describe the expected result...",onChange:l=>T(o,"expectedOutput",l.target.value)})),React.createElement("label",null,"Near-match score ",React.createElement("span",null,"(% of points, optional)"),React.createElement("input",{name:`question-${o}-nearMatchScorePercent`,type:"number",min:"0",max:"100",step:"1",value:t.nearMatchScorePercent,placeholder:"e.g. 50",onChange:l=>T(o,"nearMatchScorePercent",l.target.value)})),React.createElement("label",null,"Incorrect score ",React.createElement("span",null,"(% of points, optional)"),React.createElement("input",{name:`question-${o}-incorrectScorePercent`,type:"number",min:"0",max:"100",step:"1",value:t.incorrectScorePercent,placeholder:"e.g. 0",onChange:l=>T(o,"incorrectScorePercent",l.target.value)})),React.createElement("p",{className:"assessment-field-hint"},"An answer close to the expected output (but not exact) earns the near-match score; anything else earns the incorrect score. Both are a percentage of this question's points."))))),React.createElement("button",{type:"button",className:"assessment-add-question",onClick:()=>m(t=>[...t,Q()])},"+ Add another question"),$.text&&React.createElement("p",{className:`record-save-message ${$.status}`,role:"status"},$.text),React.createElement("div",{className:"action-modal-footer"},React.createElement("button",{type:"button",className:"outline-button",onClick:p,disabled:C},"Cancel"),React.createElement("button",{type:"submit",className:"primary-button",disabled:C},C?"Saving\u2026":"Save assessment"))),N&&React.createElement("div",{className:"assessment-confirm-overlay",onMouseDown:t=>{t.target===t.currentTarget&&r(null)}},React.createElement("section",{className:"assessment-confirm-dialog",role:"alertdialog","aria-modal":"true","aria-labelledby":"assessment-replace-title"},React.createElement("div",{className:"assessment-confirm-icon"},"!"),React.createElement("p",null,"REPLACE ASSESSMENT"),React.createElement("h3",{id:"assessment-replace-title"},G(n.category).find(t=>t.value===n.itemNo)?.label," is already assigned to \u201C",N.title,"\u201D"),React.createElement("span",null,"Saving will delete \u201C",N.title,"\u201D (its questions and any recorded scores for this item) and put this new assessment in its place. This can't be undone."),React.createElement("div",null,React.createElement("button",{type:"button",className:"outline-button",onClick:()=>r(null),disabled:C},"Cancel"),React.createElement("button",{type:"button",className:"danger-button",onClick:H,disabled:C},C?"Replacing\u2026":"Replace assessment")))),A&&React.createElement("div",{className:"assessment-confirm-overlay",onMouseDown:t=>{t.target===t.currentTarget&&k(!1)}},React.createElement("section",{className:"assessment-confirm-dialog",role:"alertdialog","aria-modal":"true","aria-labelledby":"assessment-score-overwrite-title"},React.createElement("div",{className:"assessment-confirm-icon"},"!"),React.createElement("p",null,"EXISTING SCORES FOUND"),React.createElement("h3",{id:"assessment-score-overwrite-title"},G(n.category).find(t=>t.value===n.itemNo)?.label," already has recorded scores"),React.createElement("span",null,"No assessment is attached to this column yet, but scores have already been entered for it. Saving will reset those scores to 0 for every student so they line up with this new assessment. This can't be undone."),React.createElement("div",null,React.createElement("button",{type:"button",className:"outline-button",onClick:()=>k(!1),disabled:C},"Cancel"),React.createElement("button",{type:"button",className:"danger-button",onClick:X,disabled:C},C?"Saving\u2026":"Overwrite scores")))))}function Z(g){return{itemNo:String(g.item_no??"1"),title:g.title??"",category:g.category??"quiz",period:g.period?.code??"prelim",instructions:g.instructions??"",timeLimitMinutes:g.time_limit_minutes?String(g.time_limit_minutes):"",availableFrom:ee(g.available_from),availableUntil:ee(g.available_until),questions:[...g.questions??[]].sort((u,w)=>Number(u.question_no)-Number(w.question_no)).map(u=>({type:u.question_type,prompt:u.prompt??"",points:String(u.points??"1"),choices:Array.isArray(u.choices)?u.choices:["","","",""],correctAnswer:u.correct_answer??"A",language:u.language??"sql",starterCode:u.starter_code??"",expectedOutput:u.expected_output??"",nearMatchScorePercent:String(u.near_match_score_percent??"50"),incorrectScorePercent:String(u.incorrect_score_percent??"0")}))}}function le({section:g,assessments:u,students:w,onUpdate:p,onDelete:n,onGrantAttempt:S,onClose:d}){const[m,E]=v(u[0]?.id??""),[i,h]=v(()=>u[0]?Z(u[0]):null),[y,D]=v(!1),[R,C]=v(""),[M,$]=v(null),[O,F]=v(""),[U,N]=v({status:"",text:""}),[r,A]=v(""),[k,P]=v(null),b=u.find(e=>e.id===m),_=i?u.find(e=>e.id!==b?.id&&e.category===i.category&&e.period?.code===i.period&&Number(e.item_no)===Number(i.itemNo)):null,T=e=>{E(e.id),h(Z(e)),N({status:"",text:""})},q=(e,s)=>h(a=>{if(e==="category"){const c=se[s]??4,f=Math.min(Math.max(Number(a.itemNo||1),1),c);return{...a,category:s,itemNo:String(f)}}return{...a,[e]:s}}),I=(e,s,a)=>{h(c=>({...c,questions:c.questions.map((f,x)=>x===e?{...f,[s]:a}:f)}))},Y=(e,s,a)=>{h(c=>({...c,questions:c.questions.map((f,x)=>x===e?{...f,choices:f.choices.map((ae,ne)=>ne===s?a:ae)}:f)}))},W=(e,s)=>{h(a=>({...a,questions:a.questions.map((c,f)=>f===e?{...Q(s),prompt:c.prompt,points:c.points}:c)}))},B=()=>{if(!i||!b)return"Select an assessment to edit.";if(!i.title.trim())return"Enter an assessment title.";if(i.timeLimitMinutes&&(!Number.isInteger(Number(i.timeLimitMinutes))||Number(i.timeLimitMinutes)<1))return"Time limit must be a whole number of minutes.";if(i.availableFrom&&i.availableUntil&&i.availableFrom>=i.availableUntil)return"The answer window end must be after the start.";if(!i.questions.length||i.questions.some(e=>!e.prompt.trim()))return"Every question needs a prompt.";if(i.questions.some(e=>e.type==="multiple_choice"&&e.choices.some(s=>!s.trim())))return"Complete all multiple-choice options.";for(const e of i.questions){if(e.type==="multiple_choice")continue;const s=Number(e.nearMatchScorePercent);if(!Number.isFinite(s)||s<0||s>100)return"Enter a near-match score between 0 and 100 for every coding question.";const a=Number(e.incorrectScorePercent);if(!Number.isFinite(a)||a<0||a>100)return"Enter an incorrect score between 0 and 100 for every coding question."}return""},j=async e=>{D(!0),N({status:"",text:""});try{const s=await p({assessmentId:b.id,...i,itemNo:Number(i.itemNo),title:i.title.trim(),instructions:i.instructions.trim(),replaceAssessmentId:e});N({status:"success",text:`Assessment updated. Key ID: ${s?.access_key??b.access_key}`})}catch(s){s?.conflict?P(s.conflict):N({status:"error",text:s?.message||"Assessment could not be updated."})}finally{D(!1)}},H=async e=>{e.preventDefault();const s=B();if(s){N({status:"error",text:s});return}if(_){P(_);return}await j()},X=async()=>{if(!k)return;const e=k.id;P(null),await j(e)},t=async e=>{const s=e.studentId;if(!(!s||!S)){A(s),N({status:"",text:""});try{const a=await S({assessmentId:b.id,studentId:s});N({status:"success",text:`${e.name} can now take this assessment again (${a.extra_attempts} extra attempt${Number(a.extra_attempts)===1?"":"s"}).`})}catch(a){N({status:"error",text:a?.message||"The extra attempt could not be granted."})}finally{A("")}}},o=(e,s)=>{e.stopPropagation(),$(s)},l=async()=>{if(!M)return;const e=M;$(null),C(e.id),N({status:"",text:""});try{await n(e.id);const a=u.filter(c=>c.id!==e.id)[0];E(a?.id??""),h(a?Z(a):null),N({status:"success",text:"Assessment deleted successfully."}),F(`\u201C${e.title}\u201D was deleted successfully.`)}catch(s){N({status:"error",text:s?.message||"Assessment could not be deleted."})}finally{C("")}};return u.length?React.createElement(V,{title:"Manage Assessments",section:g,onClose:d,size:"wide"},React.createElement("div",{className:"assessment-manager"},React.createElement("aside",{className:"assessment-manager-list"},React.createElement("div",{className:"assessment-manager-list-heading"},React.createElement("span",null,"YOUR ASSESSMENTS"),React.createElement("strong",null,u.length)),u.map(e=>React.createElement("div",{className:`assessment-manager-item ${e.id===m?"selected":""}`,key:e.id},React.createElement("button",{type:"button",onClick:()=>T(e),disabled:R===e.id},React.createElement("strong",null,e.title),React.createElement("span",null,z.find(s=>s.key===e.category)?.label," \xB7 ",e.period?.code?J.find(s=>s.key===e.period.code)?.label:"Assessment"),React.createElement("small",null,"Key: ",e.access_key)),React.createElement("button",{type:"button",className:"assessment-delete-button","aria-label":`Delete ${e.title}`,disabled:R===e.id,onClick:s=>o(s,e)},"\xD7")))),i&&React.createElement("form",{className:"assessment-manager-editor",onSubmit:H},React.createElement("div",{className:"assessment-manager-editor-heading"},React.createElement("div",null,React.createElement("span",null,"EDIT ASSESSMENT"),React.createElement("h3",null,b?.title)),React.createElement("div",{className:"flex items-center gap-2"},React.createElement("code",null,b?.access_key),b?.access_key&&React.createElement("button",{type:"button",title:"Copy key","aria-label":"Copy key",className:"rounded p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700",onClick:e=>{navigator.clipboard.writeText(b.access_key);const s=e.currentTarget;s.classList.add("text-emerald-600"),setTimeout(()=>s.classList.remove("text-emerald-600"),1e3)}},React.createElement("svg",{className:"h-4 w-4",fill:"none",stroke:"currentColor",viewBox:"0 0 24 24"},React.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",strokeWidth:"2",d:"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"}))))),React.createElement("div",{className:"action-form-grid assessment-details-grid"},React.createElement("label",null,"Assessment title",React.createElement("input",{name:"editAssessmentTitle",required:!0,value:i.title,onChange:e=>q("title",e.target.value)})),React.createElement("label",null,"Type",React.createElement("select",{name:"editAssessmentCategory",value:i.category,onChange:e=>q("category",e.target.value)},z.map(e=>React.createElement("option",{value:e.key,key:e.key},e.label)))),React.createElement("label",null,"Item number",React.createElement("select",{name:"editAssessmentItemNo",value:i.itemNo,onChange:e=>q("itemNo",e.target.value)},G(i.category).map(e=>{const s=u.find(a=>a.id!==b?.id&&a.category===i.category&&a.period?.code===i.period&&Number(a.item_no)===Number(e.value));return React.createElement("option",{value:e.value,key:e.value},e.label,s?` \u2014 in use: ${s.title}`:"")}))),React.createElement("label",null,"Grading period",React.createElement("select",{name:"editAssessmentPeriod",value:i.period,onChange:e=>q("period",e.target.value)},J.map(e=>React.createElement("option",{value:e.key,key:e.key},e.label)))),React.createElement("label",null,"Available from ",React.createElement("span",null,"(optional)"),React.createElement("input",{name:"editAssessmentAvailableFrom",type:"datetime-local",value:i.availableFrom,onChange:e=>q("availableFrom",e.target.value)})),React.createElement("label",null,"Available until ",React.createElement("span",null,"(optional)"),React.createElement("input",{name:"editAssessmentAvailableUntil",type:"datetime-local",value:i.availableUntil,onChange:e=>q("availableUntil",e.target.value)})),React.createElement("label",null,"Time limit ",React.createElement("span",null,"(minutes, optional)"),React.createElement("input",{name:"editAssessmentTimeLimit",type:"number",min:"1",step:"1",value:i.timeLimitMinutes,placeholder:"e.g. 30",onChange:e=>q("timeLimitMinutes",e.target.value)}))),_&&React.createElement("p",{className:"assessment-field-hint assessment-slot-conflict",role:"status"},G(i.category).find(e=>e.value===i.itemNo)?.label," is currently assigned to \u201C",_.title,"\u201D. Saving will ask you to confirm replacing it."),React.createElement("label",{className:"assessment-instructions-field"},"Instructions ",React.createElement("span",null,"(optional)"),React.createElement(te,{value:i.instructions,onChange:e=>q("instructions",e),uploadPathPrefix:`assessments/${b?.id??"edit"}`})),React.createElement("section",{className:"assessment-retry-panel"},React.createElement("div",null,React.createElement("span",null,"INDIVIDUAL RETRY ACCESS"),React.createElement("h4",null,"Allow another attempt for a specific student"),React.createElement("p",null,"Students get one attempt by default. Use the button beside a student to add one more attempt for that student only.")),React.createElement("div",{className:"assessment-retry-list"},w.length?w.map(e=>{const s=(b?.attempts??[]).filter(c=>c.student_id===e.studentId).length,a=Number((b?.attemptGrants??[]).find(c=>c.student_id===e.studentId)?.extra_attempts||0);return React.createElement("div",{className:"assessment-retry-row",key:e.studentId},React.createElement("div",null,React.createElement("strong",null,e.name),React.createElement("small",null,e.number," \xB7 ",s," used \xB7 ",a," extra granted")),React.createElement("button",{type:"button",className:"outline-button",disabled:r===e.studentId,onClick:()=>t(e)},r===e.studentId?"Granting\u2026":"Allow another"))}):React.createElement("p",{className:"assessment-field-hint"},"No students are enrolled in this class."))),React.createElement("section",{className:"assessment-violation-panel"},React.createElement("div",null,React.createElement("span",null,"VIOLATION LIST"),React.createElement("h4",null,"Student security events"),React.createElement("p",null,"These events are recorded with the student attempt. Pressing Escape automatically submits the attempt.")),React.createElement("div",{className:"assessment-violation-list"},(()=>{const e=b?.violations??[];if(!e.length)return React.createElement("p",{className:"assessment-field-hint"},"No violations recorded for this assessment.");const s=e.reduce((a,c)=>{const f=c.student_id;return a[f]||(a[f]=[]),a[f].push(c),a},{});return Object.entries(s).map(([a,c])=>{const f=w.find(x=>x.studentId===a);return React.createElement("div",{className:"assessment-violation-group",key:a},React.createElement("div",{className:"assessment-violation-student-header"},React.createElement("strong",null,f?.name??"Unknown student"),React.createElement("small",null,f?.number??a," \xB7 ",c.length," total violation(s)")),React.createElement("div",{className:"assessment-violation-details-list"},c.map(x=>React.createElement("div",{className:"assessment-violation-row",key:x.id},React.createElement("b",null,String(x.violation_type||"security event").replaceAll("_"," ")),React.createElement("small",null,"Attempt ",x.attempt_no," \xB7 ",x.details||"Detected by student portal"," \xB7 ",new Date(x.occurred_at).toLocaleString())))))})})())),React.createElement("div",{className:"assessment-question-list"},i.questions.map((e,s)=>React.createElement("article",{className:"assessment-question-card",key:s},React.createElement("div",{className:"assessment-question-header"},React.createElement("div",null,React.createElement("span",null,"QUESTION ",s+1),React.createElement("strong",null,e.type==="multiple_choice"?"Multiple choice":"Coding question")),i.questions.length>1&&React.createElement("button",{type:"button",className:"assessment-remove-button",onClick:()=>q("questions",i.questions.filter((a,c)=>c!==s))},"Remove")),React.createElement("div",{className:"assessment-question-controls"},React.createElement("button",{type:"button",className:e.type==="multiple_choice"?"active":"",onClick:()=>W(s,"multiple_choice")},"Multiple choice"),React.createElement("button",{type:"button",className:e.type==="coding"?"active":"",onClick:()=>W(s,"coding")},"Coding")),React.createElement("div",{className:"action-form-grid assessment-question-grid"},React.createElement("label",{className:"assessment-prompt-field"},"Question prompt",React.createElement("textarea",{name:`edit-question-${s}-prompt`,required:!0,rows:"3",value:e.prompt,onChange:a=>I(s,"prompt",a.target.value)})),React.createElement("label",null,"Points",React.createElement("input",{name:`edit-question-${s}-points`,type:"number",min:"0.01",step:"0.01",value:e.points,onChange:a=>I(s,"points",a.target.value)}))),e.type==="multiple_choice"?React.createElement("div",{className:"assessment-choices-grid"},e.choices.map((a,c)=>React.createElement("label",{key:L[c]},React.createElement("span",{className:"choice-letter"},L[c]),React.createElement("input",{name:`edit-question-${s}-choice-${c}`,required:!0,value:a,onChange:f=>Y(s,c,f.target.value)}),React.createElement("input",{className:"choice-radio",type:"radio",name:`edit-correct-${s}`,checked:e.correctAnswer===L[c],onChange:()=>I(s,"correctAnswer",L[c]),"aria-label":`Mark ${L[c]} correct`})))):React.createElement("div",{className:"coding-question-fields"},React.createElement("label",null,"Programming language",React.createElement("select",{name:`edit-question-${s}-language`,value:e.language,onChange:a=>I(s,"language",a.target.value)},K.map(a=>React.createElement("option",{value:a.key,key:a.key},a.label)))),React.createElement("label",null,"Starter code",React.createElement("textarea",{name:`edit-question-${s}-starterCode`,rows:"4",value:e.starterCode,onChange:a=>I(s,"starterCode",a.target.value)})),React.createElement("label",null,"Expected output",React.createElement("textarea",{name:`edit-question-${s}-expectedOutput`,rows:"3",value:e.expectedOutput,onChange:a=>I(s,"expectedOutput",a.target.value)})),React.createElement("label",null,"Near-match score ",React.createElement("span",null,"(% of points)"),React.createElement("input",{name:`edit-question-${s}-nearMatchScorePercent`,type:"number",min:"0",max:"100",step:"1",value:e.nearMatchScorePercent,placeholder:"e.g. 50",onChange:a=>I(s,"nearMatchScorePercent",a.target.value)})),React.createElement("label",null,"Incorrect score ",React.createElement("span",null,"(% of points)"),React.createElement("input",{name:`edit-question-${s}-incorrectScorePercent`,type:"number",min:"0",max:"100",step:"1",value:e.incorrectScorePercent,placeholder:"e.g. 0",onChange:a=>I(s,"incorrectScorePercent",a.target.value)})))))),React.createElement("button",{type:"button",className:"assessment-add-question",onClick:()=>q("questions",[...i.questions,Q()])},"+ Add another question"),U.text&&React.createElement("p",{className:`record-save-message ${U.status}`,role:"status"},U.text),React.createElement("div",{className:"action-modal-footer"},React.createElement("button",{type:"button",className:"outline-button",onClick:d,disabled:y},"Close"),React.createElement("button",{type:"submit",className:"primary-button",disabled:y},y?"Saving\u2026":"Save changes")))),O&&React.createElement("div",{className:"assessment-toast",role:"status"},React.createElement("span",null,"\u2713"),React.createElement("div",null,React.createElement("strong",null,"Assessment deleted"),React.createElement("small",null,O)),React.createElement("button",{type:"button","aria-label":"Dismiss notification",onClick:()=>F("")},"\xD7")),M&&React.createElement("div",{className:"assessment-confirm-overlay",onMouseDown:e=>{e.target===e.currentTarget&&$(null)}},React.createElement("section",{className:"assessment-confirm-dialog",role:"alertdialog","aria-modal":"true","aria-labelledby":"assessment-delete-title"},React.createElement("div",{className:"assessment-confirm-icon"},"!"),React.createElement("p",null,"DELETE ASSESSMENT"),React.createElement("h3",{id:"assessment-delete-title"},"Delete \u201C",M.title,"\u201D?"),React.createElement("span",null,"This will permanently remove the assessment, its questions, and all student submissions."),React.createElement("div",null,React.createElement("button",{type:"button",className:"outline-button",onClick:()=>$(null)},"Cancel"),React.createElement("button",{type:"button",className:"danger-button",onClick:l},"Delete assessment")))),k&&React.createElement("div",{className:"assessment-confirm-overlay",onMouseDown:e=>{e.target===e.currentTarget&&P(null)}},React.createElement("section",{className:"assessment-confirm-dialog",role:"alertdialog","aria-modal":"true","aria-labelledby":"assessment-manager-replace-title"},React.createElement("div",{className:"assessment-confirm-icon"},"!"),React.createElement("p",null,"REPLACE ASSESSMENT"),React.createElement("h3",{id:"assessment-manager-replace-title"},i&&G(i.category).find(e=>e.value===i.itemNo)?.label," is already assigned to \u201C",k.title,"\u201D"),React.createElement("span",null,"Saving will delete \u201C",k.title,"\u201D (its questions and any recorded scores for this item) and put this assessment in its place. This can't be undone."),React.createElement("div",null,React.createElement("button",{type:"button",className:"outline-button",onClick:()=>P(null),disabled:y},"Cancel"),React.createElement("button",{type:"button",className:"danger-button",onClick:X,disabled:y},y?"Replacing\u2026":"Replace assessment"))))):React.createElement(V,{title:"Manage Assessments",section:g,onClose:d},React.createElement("div",{className:"student-viewer-empty"},React.createElement("span",{className:"assessment-builder-icon"},"\u2726"),React.createElement("h3",null,"No assessments created yet"),React.createElement("p",null,"Create an assessment first, then edit its questions here.")))}function ce({section:g,students:u,assessments:w,onSubmit:p,onClose:n}){const[S,d]=v(u[0]?.id??""),[m,E]=v(w[0]?.id??""),[i,h]=v({}),[y,D]=v(!1),[R,C]=v({status:"",text:""}),M=w.find(r=>r.id===m),$=[...M?.questions??[]].sort((r,A)=>Number(r.question_no)-Number(A.question_no)),O=z.find(r=>r.key===M?.category)?.label,F=J.find(r=>r.key===M?.period?.code)?.label,U=r=>{E(r),h({}),C({status:"",text:""})},N=async r=>{if(r.preventDefault(),!S||!m){C({status:"error",text:"Select a student and assessment."});return}D(!0),C({status:"",text:""});try{const A=await p({assessmentId:m,studentId:S,answers:i});C({status:"success",text:A.needsReview?"Answer submitted. Your coding response is waiting for review.":`Answer submitted. Score: ${A.score}/${A.maxScore}.`})}catch(A){C({status:"error",text:A?.message||"Answer could not be submitted."})}finally{D(!1)}};return React.createElement(V,{title:"Student Viewer",section:g,onClose:n,size:"wide"},w.length?React.createElement("form",{className:"student-viewer",onSubmit:N},React.createElement("div",{className:"student-viewer-toolbar"},React.createElement("label",null,"Student",React.createElement("select",{name:"viewerStudent",value:S,onChange:r=>d(r.target.value)},u.map(r=>React.createElement("option",{value:r.id,key:r.id},r.name," \xB7 ",r.number)))),React.createElement("label",null,"Assessment",React.createElement("select",{name:"viewerAssessment",value:m,onChange:r=>U(r.target.value)},w.map(r=>React.createElement("option",{value:r.id,key:r.id},r.title," \xB7 ",z.find(A=>A.key===r.category)?.label))))),M&&React.createElement("div",{className:"student-assessment-heading"},React.createElement("div",null,React.createElement("span",null,O," \xB7 ",F||"Assessment"),React.createElement("h3",null,M.title),M.instructions&&React.createElement("div",{className:"student-assessment-instructions",dangerouslySetInnerHTML:{__html:M.instructions}})),React.createElement("strong",null,$.length," ",$.length===1?"question":"questions")),React.createElement("div",{className:"student-question-list"},$.map((r,A)=>React.createElement("article",{className:"student-question-card",key:r.id},React.createElement("div",{className:"student-question-meta"},React.createElement("span",null,"QUESTION ",A+1),React.createElement("small",null,r.points," ",Number(r.points)===1?"point":"points")),React.createElement("h4",null,r.prompt),r.question_type==="multiple_choice"?React.createElement("div",{className:"student-choice-list"},(Array.isArray(r.choices)?r.choices:[]).map((k,P)=>{const b=L[P];return React.createElement("label",{className:i[r.id]===b?"selected":"",key:b},React.createElement("input",{type:"radio",name:`answer-${r.id}`,value:b,checked:i[r.id]===b,onChange:_=>h(T=>({...T,[r.id]:_.target.value}))}),React.createElement("span",{className:"choice-letter"},b),React.createElement("span",null,k))})):React.createElement("div",{className:"student-code-answer"},React.createElement("div",{className:"student-code-label"},React.createElement("span",null,K.find(k=>k.key===r.language)?.label||"Code"),React.createElement("small",null,"Write your solution below")),React.createElement("textarea",{name:`viewer-answer-${r.id}`,rows:"8",spellCheck:"false",value:i[r.id]??"",placeholder:r.starter_code||"Write your code here...",onChange:k=>h(P=>({...P,[r.id]:k.target.value}))}))))),R.text&&React.createElement("p",{className:`record-save-message ${R.status}`,role:"status"},R.text),React.createElement("div",{className:"action-modal-footer"},React.createElement("button",{type:"button",className:"outline-button",onClick:n,disabled:y},"Close"),React.createElement("button",{type:"submit",className:"primary-button",disabled:y||!$.length},y?"Submitting\u2026":"Submit answers"))):React.createElement("div",{className:"student-viewer-empty"},React.createElement("span",{className:"assessment-builder-icon"},"\u2726"),React.createElement("h3",null,"No assessments available"),React.createElement("p",null,"Create a quiz, assignment, graded activity, or exam first.")))}export{re as AssessmentBuilder,le as AssessmentManager,ce as StudentViewer};
+Answer: B`,
+          onChange: (t) => i(t.target.value),
+        }),
+        React.createElement(
+          "div",
+          { className: "question-generator-footer" },
+          React.createElement(
+            "small",
+            null,
+            "Generated questions remain editable below.",
+          ),
+          React.createElement(
+            "button",
+            { type: "button", className: "outline-button", onClick: Y },
+            "Generate questions",
+          ),
+        ),
+        F.text &&
+          React.createElement(
+            "p",
+            {
+              className: `question-generator-message ${F.status}`,
+              role: "status",
+            },
+            F.text,
+          ),
+      ),
+      React.createElement(
+        "div",
+        { className: "assessment-question-list" },
+        d.map((t, o) =>
+          React.createElement(
+            "article",
+            { className: "assessment-question-card", key: o },
+            React.createElement(
+              "div",
+              { className: "assessment-question-header" },
+              React.createElement(
+                "div",
+                null,
+                React.createElement("span", null, "QUESTION ", o + 1),
+                React.createElement(
+                  "strong",
+                  null,
+                  t.type === "multiple_choice"
+                    ? "Multiple choice"
+                    : "Coding question",
+                ),
+              ),
+              d.length > 1 &&
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    className: "assessment-remove-button",
+                    onClick: () => m((l) => l.filter((e, s) => s !== o)),
+                  },
+                  "Remove",
+                ),
+            ),
+            React.createElement(
+              "div",
+              { className: "assessment-question-controls" },
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  className: t.type === "multiple_choice" ? "active" : "",
+                  onClick: () => I(o, "multiple_choice"),
+                },
+                "Multiple choice",
+              ),
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  className: t.type === "coding" ? "active" : "",
+                  onClick: () => I(o, "coding"),
+                },
+                "Coding",
+              ),
+            ),
+            React.createElement(
+              "div",
+              { className: "action-form-grid assessment-question-grid" },
+              React.createElement(
+                "label",
+                { className: "assessment-prompt-field" },
+                "Question prompt",
+                React.createElement("textarea", {
+                  name: `question-${o}-prompt`,
+                  required: !0,
+                  rows: "3",
+                  value: t.prompt,
+                  placeholder: "Write your question here...",
+                  onChange: (l) => T(o, "prompt", l.target.value),
+                }),
+              ),
+              React.createElement(
+                "label",
+                null,
+                "Points",
+                React.createElement("input", {
+                  name: `question-${o}-points`,
+                  type: "number",
+                  min: "0.01",
+                  step: "0.01",
+                  value: t.points,
+                  onChange: (l) => T(o, "points", l.target.value),
+                }),
+              ),
+            ),
+            t.type === "multiple_choice"
+              ? React.createElement(
+                  "div",
+                  { className: "assessment-choices-grid" },
+                  t.choices.map((l, e) =>
+                    React.createElement(
+                      "label",
+                      { key: L[e] },
+                      React.createElement(
+                        "span",
+                        { className: "choice-letter" },
+                        L[e],
+                      ),
+                      React.createElement("input", {
+                        name: `question-${o}-choice-${e}`,
+                        required: !0,
+                        value: l,
+                        placeholder: `Choice ${L[e]}`,
+                        onChange: (s) => q(o, e, s.target.value),
+                      }),
+                      React.createElement("input", {
+                        className: "choice-radio",
+                        type: "radio",
+                        name: `correct-answer-${o}`,
+                        checked: t.correctAnswer === L[e],
+                        onChange: () => T(o, "correctAnswer", L[e]),
+                        "aria-label": `Mark choice ${L[e]} as correct`,
+                      }),
+                    ),
+                  ),
+                  React.createElement(
+                    "p",
+                    { className: "assessment-field-hint" },
+                    "Select the radio button beside the correct answer.",
+                  ),
+                )
+              : React.createElement(
+                  "div",
+                  { className: "coding-question-fields" },
+                  React.createElement(
+                    "label",
+                    null,
+                    "Programming language",
+                    React.createElement(
+                      "select",
+                      {
+                        name: `question-${o}-language`,
+                        value: t.language,
+                        onChange: (l) => T(o, "language", l.target.value),
+                      },
+                      K.map((l) =>
+                        React.createElement(
+                          "option",
+                          { value: l.key, key: l.key },
+                          l.label,
+                        ),
+                      ),
+                    ),
+                  ),
+                  React.createElement(
+                    "label",
+                    null,
+                    "Starter code ",
+                    React.createElement("span", null, "(optional)"),
+                    React.createElement("textarea", {
+                      name: `question-${o}-starterCode`,
+                      rows: "4",
+                      value: t.starterCode,
+                      placeholder: "Provide starter code or a code template...",
+                      onChange: (l) => T(o, "starterCode", l.target.value),
+                    }),
+                  ),
+                  React.createElement(
+                    "label",
+                    null,
+                    "Expected output / answer criteria ",
+                    React.createElement("span", null, "(optional)"),
+                    React.createElement("textarea", {
+                      name: `question-${o}-expectedOutput`,
+                      rows: "3",
+                      value: t.expectedOutput,
+                      placeholder: "Describe the expected result...",
+                      onChange: (l) => T(o, "expectedOutput", l.target.value),
+                    }),
+                  ),
+                  React.createElement(
+                    "label",
+                    null,
+                    "Near-match score ",
+                    React.createElement(
+                      "span",
+                      null,
+                      "(% of points, optional)",
+                    ),
+                    React.createElement("input", {
+                      name: `question-${o}-nearMatchScorePercent`,
+                      type: "number",
+                      min: "0",
+                      max: "100",
+                      step: "1",
+                      value: t.nearMatchScorePercent,
+                      placeholder: "e.g. 50",
+                      onChange: (l) =>
+                        T(o, "nearMatchScorePercent", l.target.value),
+                    }),
+                  ),
+                  React.createElement(
+                    "label",
+                    null,
+                    "Incorrect score ",
+                    React.createElement(
+                      "span",
+                      null,
+                      "(% of points, optional)",
+                    ),
+                    React.createElement("input", {
+                      name: `question-${o}-incorrectScorePercent`,
+                      type: "number",
+                      min: "0",
+                      max: "100",
+                      step: "1",
+                      value: t.incorrectScorePercent,
+                      placeholder: "e.g. 0",
+                      onChange: (l) =>
+                        T(o, "incorrectScorePercent", l.target.value),
+                    }),
+                  ),
+                  React.createElement(
+                    "p",
+                    { className: "assessment-field-hint" },
+                    "An answer close to the expected output (but not exact) earns the near-match score; anything else earns the incorrect score. Both are a percentage of this question's points.",
+                  ),
+                ),
+          ),
+        ),
+      ),
+      React.createElement(
+        "button",
+        {
+          type: "button",
+          className: "assessment-add-question",
+          onClick: () => m((t) => [...t, Q()]),
+        },
+        "+ Add another question",
+      ),
+      $.text &&
+        React.createElement(
+          "p",
+          { className: `record-save-message ${$.status}`, role: "status" },
+          $.text,
+        ),
+      React.createElement(
+        "div",
+        { className: "action-modal-footer" },
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            className: "outline-button",
+            onClick: p,
+            disabled: C,
+          },
+          "Cancel",
+        ),
+        React.createElement(
+          "button",
+          { type: "submit", className: "primary-button", disabled: C },
+          C ? "Saving\u2026" : "Save assessment",
+        ),
+      ),
+    ),
+    N &&
+      React.createElement(
+        "div",
+        {
+          className: "assessment-confirm-overlay",
+          onMouseDown: (t) => {
+            t.target === t.currentTarget && r(null);
+          },
+        },
+        React.createElement(
+          "section",
+          {
+            className: "assessment-confirm-dialog",
+            role: "alertdialog",
+            "aria-modal": "true",
+            "aria-labelledby": "assessment-replace-title",
+          },
+          React.createElement(
+            "div",
+            { className: "assessment-confirm-icon" },
+            "!",
+          ),
+          React.createElement("p", null, "REPLACE ASSESSMENT"),
+          React.createElement(
+            "h3",
+            { id: "assessment-replace-title" },
+            G(n.category).find((t) => t.value === n.itemNo)?.label,
+            " is already assigned to \u201C",
+            N.title,
+            "\u201D",
+          ),
+          React.createElement(
+            "span",
+            null,
+            "Saving will delete \u201C",
+            N.title,
+            "\u201D (its questions and any recorded scores for this item) and put this new assessment in its place. This can't be undone.",
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                className: "outline-button",
+                onClick: () => r(null),
+                disabled: C,
+              },
+              "Cancel",
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                className: "danger-button",
+                onClick: H,
+                disabled: C,
+              },
+              C ? "Replacing\u2026" : "Replace assessment",
+            ),
+          ),
+        ),
+      ),
+    A &&
+      React.createElement(
+        "div",
+        {
+          className: "assessment-confirm-overlay",
+          onMouseDown: (t) => {
+            t.target === t.currentTarget && k(!1);
+          },
+        },
+        React.createElement(
+          "section",
+          {
+            className: "assessment-confirm-dialog",
+            role: "alertdialog",
+            "aria-modal": "true",
+            "aria-labelledby": "assessment-score-overwrite-title",
+          },
+          React.createElement(
+            "div",
+            { className: "assessment-confirm-icon" },
+            "!",
+          ),
+          React.createElement("p", null, "EXISTING SCORES FOUND"),
+          React.createElement(
+            "h3",
+            { id: "assessment-score-overwrite-title" },
+            G(n.category).find((t) => t.value === n.itemNo)?.label,
+            " already has recorded scores",
+          ),
+          React.createElement(
+            "span",
+            null,
+            "No assessment is attached to this column yet, but scores have already been entered for it. Saving will reset those scores to 0 for every student so they line up with this new assessment. This can't be undone.",
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                className: "outline-button",
+                onClick: () => k(!1),
+                disabled: C,
+              },
+              "Cancel",
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                className: "danger-button",
+                onClick: X,
+                disabled: C,
+              },
+              C ? "Saving\u2026" : "Overwrite scores",
+            ),
+          ),
+        ),
+      ),
+  );
+}
+function Z(g) {
+  return {
+    itemNo: String(g.item_no ?? "1"),
+    title: g.title ?? "",
+    category: g.category ?? "quiz",
+    period: g.period?.code ?? "prelim",
+    instructions: g.instructions ?? "",
+    timeLimitMinutes: g.time_limit_minutes ? String(g.time_limit_minutes) : "",
+    availableFrom: ee(g.available_from),
+    availableUntil: ee(g.available_until),
+    questions: [...(g.questions ?? [])]
+      .sort((u, w) => Number(u.question_no) - Number(w.question_no))
+      .map((u) => ({
+        type: u.question_type,
+        prompt: u.prompt ?? "",
+        points: String(u.points ?? "1"),
+        choices: Array.isArray(u.choices) ? u.choices : ["", "", "", ""],
+        correctAnswer: u.correct_answer ?? "A",
+        language: u.language ?? "sql",
+        starterCode: u.starter_code ?? "",
+        expectedOutput: u.expected_output ?? "",
+        nearMatchScorePercent: String(u.near_match_score_percent ?? "50"),
+        incorrectScorePercent: String(u.incorrect_score_percent ?? "0"),
+      })),
+  };
+}
+function le({
+  section: g,
+  assessments: u,
+  students: w,
+  onUpdate: p,
+  onDelete: n,
+  onGrantAttempt: S,
+  onClose: d,
+}) {
+  const [m, E] = v(u[0]?.id ?? ""),
+    [i, h] = v(() => (u[0] ? Z(u[0]) : null)),
+    [y, D] = v(!1),
+    [R, C] = v(""),
+    [M, $] = v(null),
+    [O, F] = v(""),
+    [U, N] = v({ status: "", text: "" }),
+    [r, A] = v(""),
+    [k, P] = v(null),
+    b = u.find((e) => e.id === m),
+    _ = i
+      ? u.find(
+          (e) =>
+            e.id !== b?.id &&
+            e.category === i.category &&
+            e.period?.code === i.period &&
+            Number(e.item_no) === Number(i.itemNo),
+        )
+      : null,
+    T = (e) => {
+      (E(e.id), h(Z(e)), N({ status: "", text: "" }));
+    },
+    q = (e, s) =>
+      h((a) => {
+        if (e === "category") {
+          const c = se[s] ?? 4,
+            f = Math.min(Math.max(Number(a.itemNo || 1), 1), c);
+          return { ...a, category: s, itemNo: String(f) };
+        }
+        return { ...a, [e]: s };
+      }),
+    I = (e, s, a) => {
+      h((c) => ({
+        ...c,
+        questions: c.questions.map((f, x) => (x === e ? { ...f, [s]: a } : f)),
+      }));
+    },
+    Y = (e, s, a) => {
+      h((c) => ({
+        ...c,
+        questions: c.questions.map((f, x) =>
+          x === e
+            ? { ...f, choices: f.choices.map((ae, ne) => (ne === s ? a : ae)) }
+            : f,
+        ),
+      }));
+    },
+    W = (e, s) => {
+      h((a) => ({
+        ...a,
+        questions: a.questions.map((c, f) =>
+          f === e ? { ...Q(s), prompt: c.prompt, points: c.points } : c,
+        ),
+      }));
+    },
+    B = () => {
+      if (!i || !b) return "Select an assessment to edit.";
+      if (!i.title.trim()) return "Enter an assessment title.";
+      if (
+        i.timeLimitMinutes &&
+        (!Number.isInteger(Number(i.timeLimitMinutes)) ||
+          Number(i.timeLimitMinutes) < 1)
+      )
+        return "Time limit must be a whole number of minutes.";
+      if (
+        i.availableFrom &&
+        i.availableUntil &&
+        i.availableFrom >= i.availableUntil
+      )
+        return "The answer window end must be after the start.";
+      if (!i.questions.length || i.questions.some((e) => !e.prompt.trim()))
+        return "Every question needs a prompt.";
+      if (
+        i.questions.some(
+          (e) =>
+            e.type === "multiple_choice" && e.choices.some((s) => !s.trim()),
+        )
+      )
+        return "Complete all multiple-choice options.";
+      for (const e of i.questions) {
+        if (e.type === "multiple_choice") continue;
+        const s = Number(e.nearMatchScorePercent);
+        if (!Number.isFinite(s) || s < 0 || s > 100)
+          return "Enter a near-match score between 0 and 100 for every coding question.";
+        const a = Number(e.incorrectScorePercent);
+        if (!Number.isFinite(a) || a < 0 || a > 100)
+          return "Enter an incorrect score between 0 and 100 for every coding question.";
+      }
+      return "";
+    },
+    j = async (e) => {
+      (D(!0), N({ status: "", text: "" }));
+      try {
+        const s = await p({
+          assessmentId: b.id,
+          ...i,
+          itemNo: Number(i.itemNo),
+          title: i.title.trim(),
+          instructions: i.instructions.trim(),
+          replaceAssessmentId: e,
+        });
+        N({
+          status: "success",
+          text: `Assessment updated. Key ID: ${s?.access_key ?? b.access_key}`,
+        });
+      } catch (s) {
+        s?.conflict
+          ? P(s.conflict)
+          : N({
+              status: "error",
+              text: s?.message || "Assessment could not be updated.",
+            });
+      } finally {
+        D(!1);
+      }
+    },
+    H = async (e) => {
+      e.preventDefault();
+      const s = B();
+      if (s) {
+        N({ status: "error", text: s });
+        return;
+      }
+      if (_) {
+        P(_);
+        return;
+      }
+      await j();
+    },
+    X = async () => {
+      if (!k) return;
+      const e = k.id;
+      (P(null), await j(e));
+    },
+    t = async (e) => {
+      const s = e.studentId;
+      if (!(!s || !S)) {
+        (A(s), N({ status: "", text: "" }));
+        try {
+          const a = await S({ assessmentId: b.id, studentId: s });
+          N({
+            status: "success",
+            text: `${e.name} can now take this assessment again (${a.extra_attempts} extra attempt${Number(a.extra_attempts) === 1 ? "" : "s"}).`,
+          });
+        } catch (a) {
+          N({
+            status: "error",
+            text: a?.message || "The extra attempt could not be granted.",
+          });
+        } finally {
+          A("");
+        }
+      }
+    },
+    o = (e, s) => {
+      (e.stopPropagation(), $(s));
+    },
+    l = async () => {
+      if (!M) return;
+      const e = M;
+      ($(null), C(e.id), N({ status: "", text: "" }));
+      try {
+        await n(e.id);
+        const a = u.filter((c) => c.id !== e.id)[0];
+        (E(a?.id ?? ""),
+          h(a ? Z(a) : null),
+          N({ status: "success", text: "Assessment deleted successfully." }),
+          F(`\u201C${e.title}\u201D was deleted successfully.`));
+      } catch (s) {
+        N({
+          status: "error",
+          text: s?.message || "Assessment could not be deleted.",
+        });
+      } finally {
+        C("");
+      }
+    };
+  return u.length
+    ? React.createElement(
+        V,
+        { title: "Manage Assessments", section: g, onClose: d, size: "wide" },
+        React.createElement(
+          "div",
+          { className: "assessment-manager" },
+          React.createElement(
+            "aside",
+            { className: "assessment-manager-list" },
+            React.createElement(
+              "div",
+              { className: "assessment-manager-list-heading" },
+              React.createElement("span", null, "YOUR ASSESSMENTS"),
+              React.createElement("strong", null, u.length),
+            ),
+            u.map((e) =>
+              React.createElement(
+                "div",
+                {
+                  className: `assessment-manager-item ${e.id === m ? "selected" : ""}`,
+                  key: e.id,
+                },
+                React.createElement(
+                  "button",
+                  { type: "button", onClick: () => T(e), disabled: R === e.id },
+                  React.createElement("strong", null, e.title),
+                  React.createElement(
+                    "span",
+                    null,
+                    z.find((s) => s.key === e.category)?.label,
+                    " \xB7 ",
+                    e.period?.code
+                      ? J.find((s) => s.key === e.period.code)?.label
+                      : "Assessment",
+                  ),
+                  React.createElement("small", null, "Key: ", e.access_key),
+                ),
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    className: "assessment-delete-button",
+                    "aria-label": `Delete ${e.title}`,
+                    disabled: R === e.id,
+                    onClick: (s) => o(s, e),
+                  },
+                  "\xD7",
+                ),
+              ),
+            ),
+          ),
+          i &&
+            React.createElement(
+              "form",
+              { className: "assessment-manager-editor", onSubmit: H },
+              React.createElement(
+                "div",
+                { className: "assessment-manager-editor-heading" },
+                React.createElement(
+                  "div",
+                  null,
+                  React.createElement("span", null, "EDIT ASSESSMENT"),
+                  React.createElement("h3", null, b?.title),
+                ),
+                React.createElement(
+                  "div",
+                  { className: "flex items-center gap-2" },
+                  React.createElement("code", null, b?.access_key),
+                  b?.access_key &&
+                    React.createElement(
+                      "button",
+                      {
+                        type: "button",
+                        title: "Copy key",
+                        "aria-label": "Copy key",
+                        className:
+                          "rounded p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700",
+                        onClick: (e) => {
+                          navigator.clipboard.writeText(b.access_key);
+                          const s = e.currentTarget;
+                          (s.classList.add("text-emerald-600"),
+                            setTimeout(
+                              () => s.classList.remove("text-emerald-600"),
+                              1e3,
+                            ));
+                        },
+                      },
+                      React.createElement(
+                        "svg",
+                        {
+                          className: "h-4 w-4",
+                          fill: "none",
+                          stroke: "currentColor",
+                          viewBox: "0 0 24 24",
+                        },
+                        React.createElement("path", {
+                          strokeLinecap: "round",
+                          strokeLinejoin: "round",
+                          strokeWidth: "2",
+                          d: "M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z",
+                        }),
+                      ),
+                    ),
+                ),
+              ),
+              React.createElement(
+                "div",
+                { className: "action-form-grid assessment-details-grid" },
+                React.createElement(
+                  "label",
+                  null,
+                  "Assessment title",
+                  React.createElement("input", {
+                    name: "editAssessmentTitle",
+                    required: !0,
+                    value: i.title,
+                    onChange: (e) => q("title", e.target.value),
+                  }),
+                ),
+                React.createElement(
+                  "label",
+                  null,
+                  "Type",
+                  React.createElement(
+                    "select",
+                    {
+                      name: "editAssessmentCategory",
+                      value: i.category,
+                      onChange: (e) => q("category", e.target.value),
+                    },
+                    z.map((e) =>
+                      React.createElement(
+                        "option",
+                        { value: e.key, key: e.key },
+                        e.label,
+                      ),
+                    ),
+                  ),
+                ),
+                React.createElement(
+                  "label",
+                  null,
+                  "Item number",
+                  React.createElement(
+                    "select",
+                    {
+                      name: "editAssessmentItemNo",
+                      value: i.itemNo,
+                      onChange: (e) => q("itemNo", e.target.value),
+                    },
+                    G(i.category).map((e) => {
+                      const s = u.find(
+                        (a) =>
+                          a.id !== b?.id &&
+                          a.category === i.category &&
+                          a.period?.code === i.period &&
+                          Number(a.item_no) === Number(e.value),
+                      );
+                      return React.createElement(
+                        "option",
+                        { value: e.value, key: e.value },
+                        e.label,
+                        s ? ` \u2014 in use: ${s.title}` : "",
+                      );
+                    }),
+                  ),
+                ),
+                React.createElement(
+                  "label",
+                  null,
+                  "Grading period",
+                  React.createElement(
+                    "select",
+                    {
+                      name: "editAssessmentPeriod",
+                      value: i.period,
+                      onChange: (e) => q("period", e.target.value),
+                    },
+                    J.map((e) =>
+                      React.createElement(
+                        "option",
+                        { value: e.key, key: e.key },
+                        e.label,
+                      ),
+                    ),
+                  ),
+                ),
+                React.createElement(
+                  "label",
+                  null,
+                  "Available from ",
+                  React.createElement("span", null, "(optional)"),
+                  React.createElement("input", {
+                    name: "editAssessmentAvailableFrom",
+                    type: "datetime-local",
+                    value: i.availableFrom,
+                    onChange: (e) => q("availableFrom", e.target.value),
+                  }),
+                ),
+                React.createElement(
+                  "label",
+                  null,
+                  "Available until ",
+                  React.createElement("span", null, "(optional)"),
+                  React.createElement("input", {
+                    name: "editAssessmentAvailableUntil",
+                    type: "datetime-local",
+                    value: i.availableUntil,
+                    onChange: (e) => q("availableUntil", e.target.value),
+                  }),
+                ),
+                React.createElement(
+                  "label",
+                  null,
+                  "Time limit ",
+                  React.createElement("span", null, "(minutes, optional)"),
+                  React.createElement("input", {
+                    name: "editAssessmentTimeLimit",
+                    type: "number",
+                    min: "1",
+                    step: "1",
+                    value: i.timeLimitMinutes,
+                    placeholder: "e.g. 30",
+                    onChange: (e) => q("timeLimitMinutes", e.target.value),
+                  }),
+                ),
+              ),
+              _ &&
+                React.createElement(
+                  "p",
+                  {
+                    className: "assessment-field-hint assessment-slot-conflict",
+                    role: "status",
+                  },
+                  G(i.category).find((e) => e.value === i.itemNo)?.label,
+                  " is currently assigned to \u201C",
+                  _.title,
+                  "\u201D. Saving will ask you to confirm replacing it.",
+                ),
+              React.createElement(
+                "label",
+                { className: "assessment-instructions-field" },
+                "Instructions ",
+                React.createElement("span", null, "(optional)"),
+                React.createElement(te, {
+                  value: i.instructions,
+                  onChange: (e) => q("instructions", e),
+                  uploadPathPrefix: `assessments/${b?.id ?? "edit"}`,
+                }),
+              ),
+              React.createElement(
+                "section",
+                { className: "assessment-retry-panel" },
+                React.createElement(
+                  "div",
+                  null,
+                  React.createElement("span", null, "INDIVIDUAL RETRY ACCESS"),
+                  React.createElement(
+                    "h4",
+                    null,
+                    "Allow another attempt for a specific student",
+                  ),
+                  React.createElement(
+                    "p",
+                    null,
+                    "Students get one attempt by default. Use the button beside a student to add one more attempt for that student only.",
+                  ),
+                ),
+                React.createElement(
+                  "div",
+                  { className: "assessment-retry-list" },
+                  w.length
+                    ? w.map((e) => {
+                        const s = (b?.attempts ?? []).filter(
+                            (c) => c.student_id === e.studentId,
+                          ).length,
+                          a = Number(
+                            (b?.attemptGrants ?? []).find(
+                              (c) => c.student_id === e.studentId,
+                            )?.extra_attempts || 0,
+                          );
+                        return React.createElement(
+                          "div",
+                          {
+                            className: "assessment-retry-row",
+                            key: e.studentId,
+                          },
+                          React.createElement(
+                            "div",
+                            null,
+                            React.createElement("strong", null, e.name),
+                            React.createElement(
+                              "small",
+                              null,
+                              e.number,
+                              " \xB7 ",
+                              s,
+                              " used \xB7 ",
+                              a,
+                              " extra granted",
+                            ),
+                          ),
+                          React.createElement(
+                            "button",
+                            {
+                              type: "button",
+                              className: "outline-button",
+                              disabled: r === e.studentId,
+                              onClick: () => t(e),
+                            },
+                            r === e.studentId
+                              ? "Granting\u2026"
+                              : "Allow another",
+                          ),
+                        );
+                      })
+                    : React.createElement(
+                        "p",
+                        { className: "assessment-field-hint" },
+                        "No students are enrolled in this class.",
+                      ),
+                ),
+              ),
+              React.createElement(
+                "section",
+                { className: "assessment-violation-panel" },
+                React.createElement(
+                  "div",
+                  null,
+                  React.createElement("span", null, "VIOLATION LIST"),
+                  React.createElement("h4", null, "Student security events"),
+                  React.createElement(
+                    "p",
+                    null,
+                    "These events are recorded with the student attempt. Pressing Escape automatically submits the attempt.",
+                  ),
+                ),
+                React.createElement(
+                  "div",
+                  { className: "assessment-violation-list" },
+                  (() => {
+                    const e = b?.violations ?? [];
+                    if (!e.length)
+                      return React.createElement(
+                        "p",
+                        { className: "assessment-field-hint" },
+                        "No violations recorded for this assessment.",
+                      );
+                    const s = e.reduce((a, c) => {
+                      const f = c.student_id;
+                      return (a[f] || (a[f] = []), a[f].push(c), a);
+                    }, {});
+                    return Object.entries(s).map(([a, c]) => {
+                      const f = w.find((x) => x.studentId === a);
+                      return React.createElement(
+                        "div",
+                        { className: "assessment-violation-group", key: a },
+                        React.createElement(
+                          "div",
+                          { className: "assessment-violation-student-header" },
+                          React.createElement(
+                            "strong",
+                            null,
+                            f?.name ?? "Unknown student",
+                          ),
+                          React.createElement(
+                            "small",
+                            null,
+                            f?.number ?? a,
+                            " \xB7 ",
+                            c.length,
+                            " total violation(s)",
+                          ),
+                        ),
+                        React.createElement(
+                          "div",
+                          { className: "assessment-violation-details-list" },
+                          c.map((x) =>
+                            React.createElement(
+                              "div",
+                              {
+                                className: "assessment-violation-row",
+                                key: x.id,
+                              },
+                              React.createElement(
+                                "b",
+                                null,
+                                String(
+                                  x.violation_type || "security event",
+                                ).replaceAll("_", " "),
+                              ),
+                              React.createElement(
+                                "small",
+                                null,
+                                "Attempt ",
+                                x.attempt_no,
+                                " \xB7 ",
+                                x.details || "Detected by student portal",
+                                " \xB7 ",
+                                new Date(x.occurred_at).toLocaleString(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    });
+                  })(),
+                ),
+              ),
+              React.createElement(
+                "div",
+                { className: "assessment-question-list" },
+                i.questions.map((e, s) =>
+                  React.createElement(
+                    "article",
+                    { className: "assessment-question-card", key: s },
+                    React.createElement(
+                      "div",
+                      { className: "assessment-question-header" },
+                      React.createElement(
+                        "div",
+                        null,
+                        React.createElement("span", null, "QUESTION ", s + 1),
+                        React.createElement(
+                          "strong",
+                          null,
+                          e.type === "multiple_choice"
+                            ? "Multiple choice"
+                            : "Coding question",
+                        ),
+                      ),
+                      i.questions.length > 1 &&
+                        React.createElement(
+                          "button",
+                          {
+                            type: "button",
+                            className: "assessment-remove-button",
+                            onClick: () =>
+                              q(
+                                "questions",
+                                i.questions.filter((a, c) => c !== s),
+                              ),
+                          },
+                          "Remove",
+                        ),
+                    ),
+                    React.createElement(
+                      "div",
+                      { className: "assessment-question-controls" },
+                      React.createElement(
+                        "button",
+                        {
+                          type: "button",
+                          className:
+                            e.type === "multiple_choice" ? "active" : "",
+                          onClick: () => W(s, "multiple_choice"),
+                        },
+                        "Multiple choice",
+                      ),
+                      React.createElement(
+                        "button",
+                        {
+                          type: "button",
+                          className: e.type === "coding" ? "active" : "",
+                          onClick: () => W(s, "coding"),
+                        },
+                        "Coding",
+                      ),
+                    ),
+                    React.createElement(
+                      "div",
+                      {
+                        className: "action-form-grid assessment-question-grid",
+                      },
+                      React.createElement(
+                        "label",
+                        { className: "assessment-prompt-field" },
+                        "Question prompt",
+                        React.createElement("textarea", {
+                          name: `edit-question-${s}-prompt`,
+                          required: !0,
+                          rows: "3",
+                          value: e.prompt,
+                          onChange: (a) => I(s, "prompt", a.target.value),
+                        }),
+                      ),
+                      React.createElement(
+                        "label",
+                        null,
+                        "Points",
+                        React.createElement("input", {
+                          name: `edit-question-${s}-points`,
+                          type: "number",
+                          min: "0.01",
+                          step: "0.01",
+                          value: e.points,
+                          onChange: (a) => I(s, "points", a.target.value),
+                        }),
+                      ),
+                    ),
+                    e.type === "multiple_choice"
+                      ? React.createElement(
+                          "div",
+                          { className: "assessment-choices-grid" },
+                          e.choices.map((a, c) =>
+                            React.createElement(
+                              "label",
+                              { key: L[c] },
+                              React.createElement(
+                                "span",
+                                { className: "choice-letter" },
+                                L[c],
+                              ),
+                              React.createElement("input", {
+                                name: `edit-question-${s}-choice-${c}`,
+                                required: !0,
+                                value: a,
+                                onChange: (f) => Y(s, c, f.target.value),
+                              }),
+                              React.createElement("input", {
+                                className: "choice-radio",
+                                type: "radio",
+                                name: `edit-correct-${s}`,
+                                checked: e.correctAnswer === L[c],
+                                onChange: () => I(s, "correctAnswer", L[c]),
+                                "aria-label": `Mark ${L[c]} correct`,
+                              }),
+                            ),
+                          ),
+                        )
+                      : React.createElement(
+                          "div",
+                          { className: "coding-question-fields" },
+                          React.createElement(
+                            "label",
+                            null,
+                            "Programming language",
+                            React.createElement(
+                              "select",
+                              {
+                                name: `edit-question-${s}-language`,
+                                value: e.language,
+                                onChange: (a) =>
+                                  I(s, "language", a.target.value),
+                              },
+                              K.map((a) =>
+                                React.createElement(
+                                  "option",
+                                  { value: a.key, key: a.key },
+                                  a.label,
+                                ),
+                              ),
+                            ),
+                          ),
+                          React.createElement(
+                            "label",
+                            null,
+                            "Starter code",
+                            React.createElement("textarea", {
+                              name: `edit-question-${s}-starterCode`,
+                              rows: "4",
+                              value: e.starterCode,
+                              onChange: (a) =>
+                                I(s, "starterCode", a.target.value),
+                            }),
+                          ),
+                          React.createElement(
+                            "label",
+                            null,
+                            "Expected output",
+                            React.createElement("textarea", {
+                              name: `edit-question-${s}-expectedOutput`,
+                              rows: "3",
+                              value: e.expectedOutput,
+                              onChange: (a) =>
+                                I(s, "expectedOutput", a.target.value),
+                            }),
+                          ),
+                          React.createElement(
+                            "label",
+                            null,
+                            "Near-match score ",
+                            React.createElement("span", null, "(% of points)"),
+                            React.createElement("input", {
+                              name: `edit-question-${s}-nearMatchScorePercent`,
+                              type: "number",
+                              min: "0",
+                              max: "100",
+                              step: "1",
+                              value: e.nearMatchScorePercent,
+                              placeholder: "e.g. 50",
+                              onChange: (a) =>
+                                I(s, "nearMatchScorePercent", a.target.value),
+                            }),
+                          ),
+                          React.createElement(
+                            "label",
+                            null,
+                            "Incorrect score ",
+                            React.createElement("span", null, "(% of points)"),
+                            React.createElement("input", {
+                              name: `edit-question-${s}-incorrectScorePercent`,
+                              type: "number",
+                              min: "0",
+                              max: "100",
+                              step: "1",
+                              value: e.incorrectScorePercent,
+                              placeholder: "e.g. 0",
+                              onChange: (a) =>
+                                I(s, "incorrectScorePercent", a.target.value),
+                            }),
+                          ),
+                        ),
+                  ),
+                ),
+              ),
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  className: "assessment-add-question",
+                  onClick: () => q("questions", [...i.questions, Q()]),
+                },
+                "+ Add another question",
+              ),
+              U.text &&
+                React.createElement(
+                  "p",
+                  {
+                    className: `record-save-message ${U.status}`,
+                    role: "status",
+                  },
+                  U.text,
+                ),
+              React.createElement(
+                "div",
+                { className: "action-modal-footer" },
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    className: "outline-button",
+                    onClick: d,
+                    disabled: y,
+                  },
+                  "Close",
+                ),
+                React.createElement(
+                  "button",
+                  { type: "submit", className: "primary-button", disabled: y },
+                  y ? "Saving\u2026" : "Save changes",
+                ),
+              ),
+            ),
+        ),
+        O &&
+          React.createElement(
+            "div",
+            { className: "assessment-toast", role: "status" },
+            React.createElement("span", null, "\u2713"),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("strong", null, "Assessment deleted"),
+              React.createElement("small", null, O),
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                "aria-label": "Dismiss notification",
+                onClick: () => F(""),
+              },
+              "\xD7",
+            ),
+          ),
+        M &&
+          React.createElement(
+            "div",
+            {
+              className: "assessment-confirm-overlay",
+              onMouseDown: (e) => {
+                e.target === e.currentTarget && $(null);
+              },
+            },
+            React.createElement(
+              "section",
+              {
+                className: "assessment-confirm-dialog",
+                role: "alertdialog",
+                "aria-modal": "true",
+                "aria-labelledby": "assessment-delete-title",
+              },
+              React.createElement(
+                "div",
+                { className: "assessment-confirm-icon" },
+                "!",
+              ),
+              React.createElement("p", null, "DELETE ASSESSMENT"),
+              React.createElement(
+                "h3",
+                { id: "assessment-delete-title" },
+                "Delete \u201C",
+                M.title,
+                "\u201D?",
+              ),
+              React.createElement(
+                "span",
+                null,
+                "This will permanently remove the assessment, its questions, and all student submissions.",
+              ),
+              React.createElement(
+                "div",
+                null,
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    className: "outline-button",
+                    onClick: () => $(null),
+                  },
+                  "Cancel",
+                ),
+                React.createElement(
+                  "button",
+                  { type: "button", className: "danger-button", onClick: l },
+                  "Delete assessment",
+                ),
+              ),
+            ),
+          ),
+        k &&
+          React.createElement(
+            "div",
+            {
+              className: "assessment-confirm-overlay",
+              onMouseDown: (e) => {
+                e.target === e.currentTarget && P(null);
+              },
+            },
+            React.createElement(
+              "section",
+              {
+                className: "assessment-confirm-dialog",
+                role: "alertdialog",
+                "aria-modal": "true",
+                "aria-labelledby": "assessment-manager-replace-title",
+              },
+              React.createElement(
+                "div",
+                { className: "assessment-confirm-icon" },
+                "!",
+              ),
+              React.createElement("p", null, "REPLACE ASSESSMENT"),
+              React.createElement(
+                "h3",
+                { id: "assessment-manager-replace-title" },
+                i && G(i.category).find((e) => e.value === i.itemNo)?.label,
+                " is already assigned to \u201C",
+                k.title,
+                "\u201D",
+              ),
+              React.createElement(
+                "span",
+                null,
+                "Saving will delete \u201C",
+                k.title,
+                "\u201D (its questions and any recorded scores for this item) and put this assessment in its place. This can't be undone.",
+              ),
+              React.createElement(
+                "div",
+                null,
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    className: "outline-button",
+                    onClick: () => P(null),
+                    disabled: y,
+                  },
+                  "Cancel",
+                ),
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    className: "danger-button",
+                    onClick: X,
+                    disabled: y,
+                  },
+                  y ? "Replacing\u2026" : "Replace assessment",
+                ),
+              ),
+            ),
+          ),
+      )
+    : React.createElement(
+        V,
+        { title: "Manage Assessments", section: g, onClose: d },
+        React.createElement(
+          "div",
+          { className: "student-viewer-empty" },
+          React.createElement(
+            "span",
+            { className: "assessment-builder-icon" },
+            "\u2726",
+          ),
+          React.createElement("h3", null, "No assessments created yet"),
+          React.createElement(
+            "p",
+            null,
+            "Create an assessment first, then edit its questions here.",
+          ),
+        ),
+      );
+}
+function ce({
+  section: g,
+  students: u,
+  assessments: w,
+  onSubmit: p,
+  onClose: n,
+}) {
+  const [S, d] = v(u[0]?.id ?? ""),
+    [m, E] = v(w[0]?.id ?? ""),
+    [i, h] = v({}),
+    [y, D] = v(!1),
+    [R, C] = v({ status: "", text: "" }),
+    M = w.find((r) => r.id === m),
+    $ = [...(M?.questions ?? [])].sort(
+      (r, A) => Number(r.question_no) - Number(A.question_no),
+    ),
+    O = z.find((r) => r.key === M?.category)?.label,
+    F = J.find((r) => r.key === M?.period?.code)?.label,
+    U = (r) => {
+      (E(r), h({}), C({ status: "", text: "" }));
+    },
+    N = async (r) => {
+      if ((r.preventDefault(), !S || !m)) {
+        C({ status: "error", text: "Select a student and assessment." });
+        return;
+      }
+      (D(!0), C({ status: "", text: "" }));
+      try {
+        const A = await p({ assessmentId: m, studentId: S, answers: i });
+        C({
+          status: "success",
+          text: A.needsReview
+            ? "Answer submitted. Your coding response is waiting for review."
+            : `Answer submitted. Score: ${A.score}/${A.maxScore}.`,
+        });
+      } catch (A) {
+        C({
+          status: "error",
+          text: A?.message || "Answer could not be submitted.",
+        });
+      } finally {
+        D(!1);
+      }
+    };
+  return React.createElement(
+    V,
+    { title: "Student Viewer", section: g, onClose: n, size: "wide" },
+    w.length
+      ? React.createElement(
+          "form",
+          { className: "student-viewer", onSubmit: N },
+          React.createElement(
+            "div",
+            { className: "student-viewer-toolbar" },
+            React.createElement(
+              "label",
+              null,
+              "Student",
+              React.createElement(
+                "select",
+                {
+                  name: "viewerStudent",
+                  value: S,
+                  onChange: (r) => d(r.target.value),
+                },
+                u.map((r) =>
+                  React.createElement(
+                    "option",
+                    { value: r.id, key: r.id },
+                    r.name,
+                    " \xB7 ",
+                    r.number,
+                  ),
+                ),
+              ),
+            ),
+            React.createElement(
+              "label",
+              null,
+              "Assessment",
+              React.createElement(
+                "select",
+                {
+                  name: "viewerAssessment",
+                  value: m,
+                  onChange: (r) => U(r.target.value),
+                },
+                w.map((r) =>
+                  React.createElement(
+                    "option",
+                    { value: r.id, key: r.id },
+                    r.title,
+                    " \xB7 ",
+                    z.find((A) => A.key === r.category)?.label,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          M &&
+            React.createElement(
+              "div",
+              { className: "student-assessment-heading" },
+              React.createElement(
+                "div",
+                null,
+                React.createElement(
+                  "span",
+                  null,
+                  O,
+                  " \xB7 ",
+                  F || "Assessment",
+                ),
+                React.createElement("h3", null, M.title),
+                M.instructions &&
+                  React.createElement("div", {
+                    className: "student-assessment-instructions",
+                    dangerouslySetInnerHTML: { __html: M.instructions },
+                  }),
+              ),
+              React.createElement(
+                "strong",
+                null,
+                $.length,
+                " ",
+                $.length === 1 ? "question" : "questions",
+              ),
+            ),
+          React.createElement(
+            "div",
+            { className: "student-question-list" },
+            $.map((r, A) =>
+              React.createElement(
+                "article",
+                { className: "student-question-card", key: r.id },
+                React.createElement(
+                  "div",
+                  { className: "student-question-meta" },
+                  React.createElement("span", null, "QUESTION ", A + 1),
+                  React.createElement(
+                    "small",
+                    null,
+                    r.points,
+                    " ",
+                    Number(r.points) === 1 ? "point" : "points",
+                  ),
+                ),
+                React.createElement("h4", null, r.prompt),
+                r.question_type === "multiple_choice"
+                  ? React.createElement(
+                      "div",
+                      { className: "student-choice-list" },
+                      (Array.isArray(r.choices) ? r.choices : []).map(
+                        (k, P) => {
+                          const b = L[P];
+                          return React.createElement(
+                            "label",
+                            {
+                              className: i[r.id] === b ? "selected" : "",
+                              key: b,
+                            },
+                            React.createElement("input", {
+                              type: "radio",
+                              name: `answer-${r.id}`,
+                              value: b,
+                              checked: i[r.id] === b,
+                              onChange: (_) =>
+                                h((T) => ({ ...T, [r.id]: _.target.value })),
+                            }),
+                            React.createElement(
+                              "span",
+                              { className: "choice-letter" },
+                              b,
+                            ),
+                            React.createElement("span", null, k),
+                          );
+                        },
+                      ),
+                    )
+                  : React.createElement(
+                      "div",
+                      { className: "student-code-answer" },
+                      React.createElement(
+                        "div",
+                        { className: "student-code-label" },
+                        React.createElement(
+                          "span",
+                          null,
+                          K.find((k) => k.key === r.language)?.label || "Code",
+                        ),
+                        React.createElement(
+                          "small",
+                          null,
+                          "Write your solution below",
+                        ),
+                      ),
+                      React.createElement("textarea", {
+                        name: `viewer-answer-${r.id}`,
+                        rows: "8",
+                        spellCheck: "false",
+                        value: i[r.id] ?? "",
+                        placeholder:
+                          r.starter_code || "Write your code here...",
+                        onChange: (k) =>
+                          h((P) => ({ ...P, [r.id]: k.target.value })),
+                      }),
+                    ),
+              ),
+            ),
+          ),
+          R.text &&
+            React.createElement(
+              "p",
+              { className: `record-save-message ${R.status}`, role: "status" },
+              R.text,
+            ),
+          React.createElement(
+            "div",
+            { className: "action-modal-footer" },
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                className: "outline-button",
+                onClick: n,
+                disabled: y,
+              },
+              "Close",
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "submit",
+                className: "primary-button",
+                disabled: y || !$.length,
+              },
+              y ? "Submitting\u2026" : "Submit answers",
+            ),
+          ),
+        )
+      : React.createElement(
+          "div",
+          { className: "student-viewer-empty" },
+          React.createElement(
+            "span",
+            { className: "assessment-builder-icon" },
+            "\u2726",
+          ),
+          React.createElement("h3", null, "No assessments available"),
+          React.createElement(
+            "p",
+            null,
+            "Create a quiz, assignment, graded activity, or exam first.",
+          ),
+        ),
+  );
+}
+export {
+  re as AssessmentBuilder,
+  le as AssessmentManager,
+  ce as StudentViewer,
+};

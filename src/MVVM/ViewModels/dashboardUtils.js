@@ -1,4 +1,4 @@
-const LAN_API_BASE_URL = "https://presenzio-api.onrender.com";
+const LAN_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 import { transmutationBreakpoints } from "./dashboardConstants";
 export function transmutePercentage(value) {
@@ -31,16 +31,23 @@ export function formatShortDate(value) {
   const [year, month, day] = String(value).split("-");
   return `${month}-${day}-${String(year).slice(-2)}`;
 }
-export function resolvePeriodCodeForSession({ sessionDate, periodId, periods }) {
+export function resolvePeriodCodeForSession({
+  sessionDate,
+  periodId,
+  periods,
+}) {
   const dateMatch = (periods ?? [])
     .filter((periodItem) => periodItem.start_date && periodItem.end_date)
     .sort((first, second) => first.sort_order - second.sort_order)
     .find(
       (periodItem) =>
-        sessionDate >= periodItem.start_date && sessionDate <= periodItem.end_date,
+        sessionDate >= periodItem.start_date &&
+        sessionDate <= periodItem.end_date,
     );
   if (dateMatch) return dateMatch.code;
-  return (periods ?? []).find((periodItem) => periodItem.id === periodId)?.code ?? "";
+  return (
+    (periods ?? []).find((periodItem) => periodItem.id === periodId)?.code ?? ""
+  );
 }
 export function average(values) {
   const valid = values.filter((value) => Number.isFinite(value));
@@ -62,7 +69,8 @@ export function toGradeRows(roster) {
 }
 
 export function createAssessmentAccessKey() {
-  const randomPart = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+  const randomPart =
+    globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
   return `ASM-${randomPart.replaceAll("-", "").slice(0, 10).toUpperCase()}`;
 }
 
@@ -72,15 +80,22 @@ export function browserIsOffline() {
 
 export function createLocalId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
-    const random = Math.random() * 16 | 0;
-    const value = character === "x" ? random : (random & 0x3) | 0x8;
-    return value.toString(16);
-  });
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+    /[xy]/g,
+    (character) => {
+      const random = (Math.random() * 16) | 0;
+      const value = character === "x" ? random : (random & 0x3) | 0x8;
+      return value.toString(16);
+    },
+  );
 }
 
 export function isNetworkError(error) {
-  return browserIsOffline(error) || error?.status === 0 || error?.name === "TypeError";
+  return (
+    browserIsOffline(error) ||
+    error?.status === 0 ||
+    error?.name === "TypeError"
+  );
 }
 
 // Default timeout for LAN API calls. Callers that hit heavier endpoints
@@ -107,9 +122,7 @@ export async function callLanApi(path, options = {}) {
     });
   } catch (error) {
     const reason =
-      error?.name === "AbortError"
-        ? `timed out after ${timeoutMs}ms`
-        : error;
+      error?.name === "AbortError" ? `timed out after ${timeoutMs}ms` : error;
     console.warn(`LAN API call to ${path} failed:`, reason);
     return null;
   } finally {
@@ -174,7 +187,8 @@ export function answerSimilarity(firstValue, secondValue) {
       current[secondIndex] = Math.min(
         current[secondIndex - 1] + 1,
         previous[secondIndex] + 1,
-        previous[secondIndex - 1] + (first[firstIndex - 1] === second[secondIndex - 1] ? 0 : 1),
+        previous[secondIndex - 1] +
+          (first[firstIndex - 1] === second[secondIndex - 1] ? 0 : 1),
       );
     }
     previous = current;

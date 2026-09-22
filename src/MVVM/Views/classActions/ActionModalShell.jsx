@@ -1,4 +1,10 @@
-export function ModalShell({ title, section, onClose, children, size = "default" }) {
+export function ModalShell({
+  title,
+  section,
+  onClose,
+  children,
+  size = "default",
+}) {
   return (
     <div
       className="modal-backdrop action-modal-backdrop"
@@ -29,4 +35,3 @@ export function ModalShell({ title, section, onClose, children, size = "default"
     </div>
   );
 }
-

@@ -77,5 +77,3 @@ export const transmutationBreakpoints = [
   [98, 1.1],
   [100, 1],
 ];
-
-

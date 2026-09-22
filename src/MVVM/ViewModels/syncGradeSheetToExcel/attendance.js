@@ -11,10 +11,13 @@ function groupSessionsByPeriod(attendanceSessions) {
     Object.keys(attendanceLayout).map((periodCode) => [periodCode, []]),
   );
   attendanceSessions.forEach((session) => {
-    if (sessionsByPeriod[session.periodCode]) sessionsByPeriod[session.periodCode].push(session);
+    if (sessionsByPeriod[session.periodCode])
+      sessionsByPeriod[session.periodCode].push(session);
   });
   Object.entries(sessionsByPeriod).forEach(([periodCode, sessions]) => {
-    sessions.sort((a, b) => String(a.sessionDate).localeCompare(String(b.sessionDate)));
+    sessions.sort((a, b) =>
+      String(a.sessionDate).localeCompare(String(b.sessionDate)),
+    );
     if (sessions.length > maxAttendanceDatesPerPeriod) {
       throw new Error(
         `${periodCode} has more than ${maxAttendanceDatesPerPeriod} attendance dates, which the Excel template cannot display.`,
@@ -29,7 +32,14 @@ function clearAttendanceSheet(patches) {
   clearRange(patches, "Attendance", 6, attendanceRosterRows + 5, 0, 2);
   Object.values(attendanceLayout).forEach(({ startColumn, totalColumn }) => {
     clearRange(patches, "Attendance", 5, 5, startColumn, totalColumn);
-    clearRange(patches, "Attendance", 6, attendanceRosterRows + 5, startColumn, totalColumn);
+    clearRange(
+      patches,
+      "Attendance",
+      6,
+      attendanceRosterRows + 5,
+      startColumn,
+      totalColumn,
+    );
   });
 }
 
@@ -39,7 +49,13 @@ function writeAttendanceHeaders(patches, sessionsByPeriod) {
   });
   Object.entries(attendanceLayout).forEach(([periodCode, layout]) => {
     sessionsByPeriod[periodCode].forEach((session, index) => {
-      patchCell(patches, "Attendance", 5, layout.startColumn + index, formatDate(session.sessionDate));
+      patchCell(
+        patches,
+        "Attendance",
+        5,
+        layout.startColumn + index,
+        formatDate(session.sessionDate),
+      );
     });
     patchCell(
       patches,
@@ -54,7 +70,13 @@ function writeAttendanceHeaders(patches, sessionsByPeriod) {
 function writeStudentAttendance(patches, student, index, sessionsByPeriod) {
   const row = 6 + index;
   patchCell(patches, "Attendance", row, 0, index + 1);
-  patchCell(patches, "Attendance", row, 1, ["M", "F"].includes(student.gender) ? student.gender : "");
+  patchCell(
+    patches,
+    "Attendance",
+    row,
+    1,
+    ["M", "F"].includes(student.gender) ? student.gender : "",
+  );
   patchCell(patches, "Attendance", row, 2, student.name);
 
   Object.entries(attendanceLayout).forEach(([periodCode, layout]) => {
@@ -78,5 +100,7 @@ export function fillAttendance(patches, students, attendanceSessions) {
   const sessionsByPeriod = groupSessionsByPeriod(attendanceSessions);
   clearAttendanceSheet(patches);
   writeAttendanceHeaders(patches, sessionsByPeriod);
-  students.forEach((student, index) => writeStudentAttendance(patches, student, index, sessionsByPeriod));
+  students.forEach((student, index) =>
+    writeStudentAttendance(patches, student, index, sessionsByPeriod),
+  );
 }

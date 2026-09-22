@@ -10,7 +10,6 @@ const titles = {
   "add-student": "Add Student",
 };
 
-
 export const gradePeriods = [
   { key: "prelim", label: "Prelim" },
   { key: "midterm", label: "Midterm" },
@@ -23,9 +22,7 @@ export function getGradeRemark(student) {
   // earlier passing period must not make an unfinished Final appear passed.
   const finalGrade = student.grades?.final;
   if (finalGrade == null || !Number.isFinite(Number(finalGrade))) return "—";
-  return Number(finalGrade) <= 3.05
-    ? "Passed"
-    : "Failed";
+  return Number(finalGrade) <= 3.05 ? "Passed" : "Failed";
 }
 
 function formatRecordNumber(value) {
@@ -86,13 +83,17 @@ export function getAssessmentItem(
     : formatRecordNumber(score);
 }
 
-export function getAttendanceTotal(studentId, period, attendanceSessions, periodDates) {
+export function getAttendanceTotal(
+  studentId,
+  period,
+  attendanceSessions,
+  periodDates,
+) {
   const hasDateRange = Boolean(periodDates?.start || periodDates?.end);
-  const periodSessions = attendanceSessions.filter(
-    (session) =>
-      hasDateRange
-        ? isDateInPeriodRange(session.sessionDate, periodDates)
-        : !session.periodCode || session.periodCode === period,
+  const periodSessions = attendanceSessions.filter((session) =>
+    hasDateRange
+      ? isDateInPeriodRange(session.sessionDate, periodDates)
+      : !session.periodCode || session.periodCode === period,
   );
   const attended = periodSessions.filter((session) => {
     const status = session.statuses[studentId];

@@ -38,7 +38,10 @@ export function unshareFormulas(xml) {
       /<f t="shared" ref="[^"]*" si="(\d+)"[^>]*>([^<]*)<\/f>/,
     );
     if (masterMatch) {
-      masters.set(masterMatch[1], { formula: masterMatch[2], anchorAddress: address });
+      masters.set(masterMatch[1], {
+        formula: masterMatch[2],
+        anchorAddress: address,
+      });
     }
   }
   if (!masters.size) return xml;
@@ -61,12 +64,15 @@ export function unshareFormulas(xml) {
 
 function cellXml(address, value, original = "") {
   const isLiteralPatch =
-    value && typeof value === "object" && Object.prototype.hasOwnProperty.call(value, "literal");
+    value &&
+    typeof value === "object" &&
+    Object.prototype.hasOwnProperty.call(value, "literal");
   if (/<f\b/.test(original) && !isLiteralPatch) return original;
 
   const cellValue = isLiteralPatch ? value.literal : value;
   const openingEnd = original.indexOf(">");
-  let opening = openingEnd >= 0 ? original.slice(0, openingEnd + 1) : `<c r="${address}">`;
+  let opening =
+    openingEnd >= 0 ? original.slice(0, openingEnd + 1) : `<c r="${address}">`;
   opening = opening.replace(/\s+t="[^"]*"/g, "").replace(/\s*\/?>(?=$)/, ">");
 
   if (cellValue && typeof cellValue === "object" && cellValue.formula) {
@@ -84,7 +90,9 @@ export function applySheetPatches(xml, patches, sheetName) {
   const updated = xml.replace(rowPattern, (rowXml, rowNumber) => {
     const row = Number(rowNumber);
     const isSelfClosing = /\/>\s*$/.test(rowXml);
-    let nextRow = isSelfClosing ? rowXml.replace(/\s*\/>\s*$/, "></row>") : rowXml;
+    let nextRow = isSelfClosing
+      ? rowXml.replace(/\s*\/>\s*$/, "></row>")
+      : rowXml;
     nextRow = nextRow.replace(cellPattern, (original, address) => {
       if (!patches.has(address)) return original;
       seen.add(address);
@@ -111,7 +119,8 @@ export function applySheetPatches(xml, patches, sheetName) {
       });
       const extensionPoint = nextRow.indexOf("<extLst");
       const insertionPoint =
-        nextCell?.index ?? (extensionPoint >= 0 ? extensionPoint : nextRow.lastIndexOf("</row>"));
+        nextCell?.index ??
+        (extensionPoint >= 0 ? extensionPoint : nextRow.lastIndexOf("</row>"));
       nextRow = `${nextRow.slice(0, insertionPoint)}${missingCell}${nextRow.slice(insertionPoint)}`;
     });
     return nextRow;

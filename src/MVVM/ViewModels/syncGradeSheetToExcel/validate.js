@@ -8,7 +8,9 @@ export function validateExportSnapshot({
   gradingPeriods,
 }) {
   if (!Array.isArray(students) || !students.length) {
-    throw new Error("Excel sync stopped: no students were loaded from the database.");
+    throw new Error(
+      "Excel sync stopped: no students were loaded from the database.",
+    );
   }
   if (students.length > maxStudents) {
     throw new Error(
@@ -19,12 +21,16 @@ export function validateExportSnapshot({
   const studentIds = new Set();
   students.forEach((student) => {
     if (!student?.id || studentIds.has(student.id)) {
-      throw new Error("Excel sync stopped: duplicate or missing enrollment IDs were found.");
+      throw new Error(
+        "Excel sync stopped: duplicate or missing enrollment IDs were found.",
+      );
     }
     studentIds.add(student.id);
   });
 
-  const periodsById = new Map((gradingPeriods ?? []).map((period) => [period.id, period]));
+  const periodsById = new Map(
+    (gradingPeriods ?? []).map((period) => [period.id, period]),
+  );
   const periodCodes = new Set(Object.keys(periodSheets));
   const itemLimits = { quiz: 4, assignment: 4, activity: 4, exam: 1 };
   const invalidScores = (assessmentScores ?? []).filter((row) => {
@@ -53,7 +59,9 @@ export function validateExportSnapshot({
   }
 
   const invalidAttendance = (attendanceSessions ?? []).flatMap((session) =>
-    Object.keys(session.statuses ?? {}).filter((enrollmentId) => !studentIds.has(enrollmentId)),
+    Object.keys(session.statuses ?? {}).filter(
+      (enrollmentId) => !studentIds.has(enrollmentId),
+    ),
   );
   if (invalidAttendance.length) {
     throw new Error(

@@ -1,7 +1,9 @@
 import { periodSheets, summaryPeriodOrder } from "./constants";
 
 export function getActivePeriodCodes(gradingPeriods) {
-  const byCode = new Map((gradingPeriods ?? []).map((period) => [period.code, period]));
+  const byCode = new Map(
+    (gradingPeriods ?? []).map((period) => [period.code, period]),
+  );
   return summaryPeriodOrder.filter((code) => {
     const period = byCode.get(code);
     return Boolean(period?.start_date && period?.end_date);
@@ -12,7 +14,10 @@ export function buildPeriodDateRanges(gradingPeriods) {
   const ranges = new Map();
   (gradingPeriods ?? []).forEach((period) => {
     if (period?.code && period.start_date && period.end_date) {
-      ranges.set(period.code, { start: period.start_date, end: period.end_date });
+      ranges.set(period.code, {
+        start: period.start_date,
+        end: period.end_date,
+      });
     }
   });
   return ranges;

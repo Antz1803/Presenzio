@@ -15,8 +15,10 @@ function sanitizePastedHtml(html) {
   return container.innerHTML;
 }
 function buildTableHtml(rows, columns) {
-  const cell = () => `<td style="border:1px solid #cbd5e1;padding:6px 8px;min-width:60px;">&nbsp;</td>`;
-  const headerCell = (index) => `<th style="border:1px solid #cbd5e1;padding:6px 8px;background:#f1f5f9;text-align:left;">Column ${index + 1}</th>`;
+  const cell = () =>
+    `<td style="border:1px solid #cbd5e1;padding:6px 8px;min-width:60px;">&nbsp;</td>`;
+  const headerCell = (index) =>
+    `<th style="border:1px solid #cbd5e1;padding:6px 8px;background:#f1f5f9;text-align:left;">Column ${index + 1}</th>`;
   const headerRow = `<tr>${Array.from({ length: columns }, (_, index) => headerCell(index)).join("")}</tr>`;
   const bodyRows = Array.from(
     { length: Math.max(rows - 1, 1) },
@@ -24,7 +26,12 @@ function buildTableHtml(rows, columns) {
   ).join("");
   return `<table style="border-collapse:collapse;width:100%;margin:8px 0;">${headerRow}${bodyRows}</table><p><br></p>`;
 }
-function RichTextEditor({ value, onChange, placeholder, uploadPathPrefix = "instructions" }) {
+function RichTextEditor({
+  value,
+  onChange,
+  placeholder,
+  uploadPathPrefix = "instructions",
+}) {
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -43,7 +50,10 @@ function RichTextEditor({ value, onChange, placeholder, uploadPathPrefix = "inst
     emitChange();
   };
   const insertTable = () => {
-    const dimensions = window.prompt("Table size as rows x columns (e.g. 3x4):", "3x3");
+    const dimensions = window.prompt(
+      "Table size as rows x columns (e.g. 3x4):",
+      "3x3",
+    );
     if (!dimensions) return;
     const match = dimensions.match(/^\s*(\d+)\s*[xÃƒ]\s*(\d+)\s*$/i);
     if (!match) {
@@ -75,8 +85,12 @@ function RichTextEditor({ value, onChange, placeholder, uploadPathPrefix = "inst
           .from(INSTRUCTIONS_IMAGE_BUCKET)
           .getPublicUrl(path);
         const imageUrl = publicUrlData?.publicUrl;
-        if (!imageUrl) throw new Error("Could not resolve the uploaded image URL.");
-        runCommand("insertHTML", `<img src="${imageUrl}" alt="Screenshot" style="max-width:100%;border-radius:6px;margin:8px 0;" />`);
+        if (!imageUrl)
+          throw new Error("Could not resolve the uploaded image URL.");
+        runCommand(
+          "insertHTML",
+          `<img src="${imageUrl}" alt="Screenshot" style="max-width:100%;border-radius:6px;margin:8px 0;" />`,
+        );
       } catch (uploadFailure) {
         setError(uploadFailure?.message || "Screenshot could not be uploaded.");
       } finally {
@@ -118,25 +132,66 @@ function RichTextEditor({ value, onChange, placeholder, uploadPathPrefix = "inst
     color: "#334155",
   };
   return (
-    <div className="rich-text-editor" style={{ border: "1px solid #cbd5e1", borderRadius: "8px", overflow: "hidden" }}>
+    <div
+      className="rich-text-editor"
+      style={{
+        border: "1px solid #cbd5e1",
+        borderRadius: "8px",
+        overflow: "hidden",
+      }}
+    >
       <div
         className="rich-text-toolbar"
         role="toolbar"
         aria-label="Formatting"
-        style={{ display: "flex", flexWrap: "wrap", gap: "6px", padding: "8px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "6px",
+          padding: "8px",
+          background: "#f8fafc",
+          borderBottom: "1px solid #e2e8f0",
+        }}
       >
-        <button type="button" style={toolbarButtonStyle} onMouseDown={(event) => event.preventDefault()} onClick={() => runCommand("bold")} title="Bold">
+        <button
+          type="button"
+          style={toolbarButtonStyle}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => runCommand("bold")}
+          title="Bold"
+        >
           <strong>B</strong>
         </button>
-        <button type="button" style={toolbarButtonStyle} onMouseDown={(event) => event.preventDefault()} onClick={() => runCommand("italic")} title="Italic">
+        <button
+          type="button"
+          style={toolbarButtonStyle}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => runCommand("italic")}
+          title="Italic"
+        >
           <em>I</em>
         </button>
-        <button type="button" style={toolbarButtonStyle} onMouseDown={(event) => event.preventDefault()} onClick={() => runCommand("underline")} title="Underline">
+        <button
+          type="button"
+          style={toolbarButtonStyle}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => runCommand("underline")}
+          title="Underline"
+        >
           <span style={{ textDecoration: "underline" }}>U</span>
         </button>
-        <span className="rich-text-toolbar-divider" style={{ width: "1px", background: "#e2e8f0", margin: "0 2px" }} />
-        <button type="button" style={toolbarButtonStyle} onMouseDown={(event) => event.preventDefault()} onClick={insertTable} title="Insert table">
-          Ã¢Â¦ Table
+        <span
+          className="rich-text-toolbar-divider"
+          style={{ width: "1px", background: "#e2e8f0", margin: "0 2px" }}
+        />
+        <button
+          type="button"
+          style={toolbarButtonStyle}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={insertTable}
+          title="Insert table"
+        >
+          📊 Table
         </button>
         <button
           type="button"
@@ -146,7 +201,7 @@ function RichTextEditor({ value, onChange, placeholder, uploadPathPrefix = "inst
           disabled={uploading}
           title="Insert screenshot"
         >
-          {uploading ? "UploadingÃ¢â‚¬Â¦" : "Ã°Å¸Â¼ Screenshot"}
+          {uploading ? "Uploading..." : "📸 Screenshot"}
         </button>
         <input
           ref={fileInputRef}
@@ -169,15 +224,41 @@ function RichTextEditor({ value, onChange, placeholder, uploadPathPrefix = "inst
         onBlur={emitChange}
         onPaste={handlePaste}
         suppressContentEditableWarning
-        style={{ minHeight: "120px", padding: "10px 12px", fontSize: "14px", lineHeight: 1.5, outline: "none" }}
+        style={{
+          minHeight: "120px",
+          padding: "10px 12px",
+          fontSize: "14px",
+          lineHeight: 1.5,
+          outline: "none",
+        }}
       />
       {error && (
-        <p className="rich-text-error" role="status" style={{ margin: 0, padding: "6px 12px", background: "#fef2f2", color: "#b91c1c", fontSize: "12px" }}>
+        <p
+          className="rich-text-error"
+          role="status"
+          style={{
+            margin: 0,
+            padding: "6px 12px",
+            background: "#fef2f2",
+            color: "#b91c1c",
+            fontSize: "12px",
+          }}
+        >
           {error}
         </p>
       )}
-      <p className="rich-text-hint" style={{ margin: 0, padding: "6px 12px", fontSize: "12px", color: "#64748b", borderTop: "1px solid #e2e8f0" }}>
-        Paste a screenshot directly, or use the Screenshot button. Tables are editable inline.
+      <p
+        className="rich-text-hint"
+        style={{
+          margin: 0,
+          padding: "6px 12px",
+          fontSize: "12px",
+          color: "#64748b",
+          borderTop: "1px solid #e2e8f0",
+        }}
+      >
+        Paste a screenshot directly, or use the Screenshot button. Tables are
+        editable inline.
       </p>
     </div>
   );

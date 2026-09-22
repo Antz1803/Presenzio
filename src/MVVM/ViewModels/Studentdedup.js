@@ -10,14 +10,31 @@ export function normalizeName(value) {
     .filter((token) => !NAME_SUFFIXES.has(token));
   return tokens.sort().join("|");
 }
-const PROFILE_FIELDS = ["gender", "student_no", "course", "year_level", "contact_no", "email"];
+const PROFILE_FIELDS = [
+  "gender",
+  "student_no",
+  "course",
+  "year_level",
+  "contact_no",
+  "email",
+];
 function filledFieldCount(student) {
   return PROFILE_FIELDS.filter(
     (field) => student?.[field] != null && String(student[field]).trim() !== "",
   ).length;
 }
-async function moveRows({ supabase, table, matchColumn, fromValue, toValue, conflictColumns }) {
-  const { data: rows, error } = await supabase.from(table).select("*").eq(matchColumn, fromValue);
+async function moveRows({
+  supabase,
+  table,
+  matchColumn,
+  fromValue,
+  toValue,
+  conflictColumns,
+}) {
+  const { data: rows, error } = await supabase
+    .from(table)
+    .select("*")
+    .eq(matchColumn, fromValue);
   if (error) throw error;
   if (!rows?.length) return;
   let existingKeys = null;
@@ -28,15 +45,22 @@ async function moveRows({ supabase, table, matchColumn, fromValue, toValue, conf
       .eq(matchColumn, toValue);
     if (existingError) throw existingError;
     existingKeys = new Set(
-      (existingRows ?? []).map((row) => conflictColumns.map((column) => row[column]).join("::")),
+      (existingRows ?? []).map((row) =>
+        conflictColumns.map((column) => row[column]).join("::"),
+      ),
     );
   }
   for (const row of rows) {
     const key = conflictColumns?.length
-      ? conflictColumns.map((column) => (column === matchColumn ? toValue : row[column])).join("::")
+      ? conflictColumns
+          .map((column) => (column === matchColumn ? toValue : row[column]))
+          .join("::")
       : null;
     if (key && existingKeys.has(key)) {
-      const { error: deleteError } = await supabase.from(table).delete().eq("id", row.id);
+      const { error: deleteError } = await supabase
+        .from(table)
+        .delete()
+        .eq("id", row.id);
       if (deleteError) throw deleteError;
       continue;
     }
@@ -48,7 +72,11 @@ async function moveRows({ supabase, table, matchColumn, fromValue, toValue, conf
     if (key) existingKeys.add(key);
   }
 }
-async function moveEnrollmentOwnedRecords({ supabase, fromEnrollmentId, toEnrollmentId }) {
+async function moveEnrollmentOwnedRecords({
+  supabase,
+  fromEnrollmentId,
+  toEnrollmentId,
+}) {
   await moveRows({
     supabase,
     table: "period_grades",
@@ -63,7 +91,13 @@ async function moveEnrollmentOwnedRecords({ supabase, fromEnrollmentId, toEnroll
     matchColumn: "enrollment_id",
     fromValue: fromEnrollmentId,
     toValue: toEnrollmentId,
-    conflictColumns: ["section_id", "period_id", "enrollment_id", "category", "item_no"],
+    conflictColumns: [
+      "section_id",
+      "period_id",
+      "enrollment_id",
+      "category",
+      "item_no",
+    ],
   });
   await moveRows({
     supabase,
@@ -74,7 +108,11 @@ async function moveEnrollmentOwnedRecords({ supabase, fromEnrollmentId, toEnroll
     conflictColumns: ["session_id", "enrollment_id"],
   });
 }
-async function moveStudentOwnedRecords({ supabase, fromStudentId, toStudentId }) {
+async function moveStudentOwnedRecords({
+  supabase,
+  fromStudentId,
+  toStudentId,
+}) {
   await moveRows({
     supabase,
     table: "assessment_attempts",
@@ -98,7 +136,12 @@ async function moveStudentOwnedRecords({ supabase, fromStudentId, toStudentId })
     toValue: toStudentId,
   });
 }
-async function mergeStudentInto({ supabase, canonical, duplicate, enrollmentsByStudent }) {
+async function mergeStudentInto({
+  supabase,
+  canonical,
+  duplicate,
+  enrollmentsByStudent,
+}) {
   const duplicateEnrollments = enrollmentsByStudent.get(duplicate.id) ?? [];
   const canonicalEnrollments = enrollmentsByStudent.get(canonical.id) ?? [];
   for (const duplicateEnrollment of duplicateEnrollments) {
@@ -111,7 +154,10 @@ async function mergeStudentInto({ supabase, canonical, duplicate, enrollmentsByS
         fromEnrollmentId: duplicateEnrollment.id,
         toEnrollmentId: canonicalEnrollment.id,
       });
-      const { error } = await supabase.from("enrollments").delete().eq("id", duplicateEnrollment.id);
+      const { error } = await supabase
+        .from("enrollments")
+        .delete()
+        .eq("id", duplicateEnrollment.id);
       if (error) throw error;
     } else {
       const { error } = await supabase
@@ -119,24 +165,42 @@ async function mergeStudentInto({ supabase, canonical, duplicate, enrollmentsByS
         .update({ student_id: canonical.id })
         .eq("id", duplicateEnrollment.id);
       if (error) throw error;
-      canonicalEnrollments.push({ ...duplicateEnrollment, student_id: canonical.id });
+      canonicalEnrollments.push({
+        ...duplicateEnrollment,
+        student_id: canonical.id,
+      });
     }
   }
-  await moveStudentOwnedRecords({ supabase, fromStudentId: duplicate.id, toStudentId: canonical.id });
+  await moveStudentOwnedRecords({
+    supabase,
+    fromStudentId: duplicate.id,
+    toStudentId: canonical.id,
+  });
   const profileUpdate = {};
   PROFILE_FIELDS.forEach((field) => {
-    const hasCanonicalValue = canonical[field] != null && String(canonical[field]).trim() !== "";
+    const hasCanonicalValue =
+      canonical[field] != null && String(canonical[field]).trim() !== "";
     const duplicateValue = duplicate[field];
-    if (!hasCanonicalValue && duplicateValue != null && String(duplicateValue).trim() !== "") {
+    if (
+      !hasCanonicalValue &&
+      duplicateValue != null &&
+      String(duplicateValue).trim() !== ""
+    ) {
       profileUpdate[field] = duplicateValue;
     }
   });
   if (Object.keys(profileUpdate).length) {
-    const { error } = await supabase.from("students").update(profileUpdate).eq("id", canonical.id);
+    const { error } = await supabase
+      .from("students")
+      .update(profileUpdate)
+      .eq("id", canonical.id);
     if (error) throw error;
     Object.assign(canonical, profileUpdate);
   }
-  const { error: deleteError } = await supabase.from("students").delete().eq("id", duplicate.id);
+  const { error: deleteError } = await supabase
+    .from("students")
+    .delete()
+    .eq("id", duplicate.id);
   if (deleteError) throw deleteError;
 }
 export async function mergeDuplicateStudentRecords(supabase) {
@@ -144,7 +208,9 @@ export async function mergeDuplicateStudentRecords(supabase) {
   if (!supabase) return summary;
   const { data: allStudents, error: studentsError } = await supabase
     .from("students")
-    .select("id, full_name, gender, student_no, course, year_level, contact_no, email");
+    .select(
+      "id, full_name, gender, student_no, course, year_level, contact_no, email",
+    );
   if (studentsError) throw studentsError;
   if (!allStudents?.length) return summary;
   const groups = new Map();
@@ -155,7 +221,9 @@ export async function mergeDuplicateStudentRecords(supabase) {
     bucket.push(student);
     groups.set(key, bucket);
   });
-  const duplicateGroups = [...groups.values()].filter((group) => group.length > 1);
+  const duplicateGroups = [...groups.values()].filter(
+    (group) => group.length > 1,
+  );
   if (!duplicateGroups.length) return summary;
   const studentIds = duplicateGroups.flat().map((student) => student.id);
   const { data: enrollmentRows, error: enrollmentsError } = await supabase
@@ -181,7 +249,12 @@ export async function mergeDuplicateStudentRecords(supabase) {
       });
       const [canonical, ...duplicates] = ranked;
       for (const duplicate of duplicates) {
-        await mergeStudentInto({ supabase, canonical, duplicate, enrollmentsByStudent });
+        await mergeStudentInto({
+          supabase,
+          canonical,
+          duplicate,
+          enrollmentsByStudent,
+        });
         summary.studentsMerged += 1;
       }
     } catch (error) {

@@ -20,7 +20,13 @@ function parseDayCodes(daysString) {
   if (shortcuts[str]) return shortcuts[str];
 
   const matches = str.match(/TTH|TH|TU|SU|SA|MWF|MW|FS|M|T|W|F|S/gi) || [];
-  const parsed = matches.flatMap((t) => shortcuts[t.toUpperCase()] || (dayCodeMap[t.toUpperCase()] !== undefined ? [dayCodeMap[t.toUpperCase()]] : []));
+  const parsed = matches.flatMap(
+    (t) =>
+      shortcuts[t.toUpperCase()] ||
+      (dayCodeMap[t.toUpperCase()] !== undefined
+        ? [dayCodeMap[t.toUpperCase()]]
+        : []),
+  );
   return [...new Set(parsed)];
 }
 
@@ -29,8 +35,13 @@ function parseTimeToMinutes(timeStr) {
   const str = String(timeStr).trim();
   const isPM = /pm/i.test(str);
   const isAM = /am/i.test(str);
-  let [hour, minute] = str.replace(/(am|pm)/gi, "").trim().split(":").map(Number);
-  hour = hour || 0; minute = minute || 0;
+  let [hour, minute] = str
+    .replace(/(am|pm)/gi, "")
+    .trim()
+    .split(":")
+    .map(Number);
+  hour = hour || 0;
+  minute = minute || 0;
   if (isPM && hour < 12) hour += 12;
   if (isAM && hour === 12) hour = 0;
   return hour * 60 + minute;
@@ -48,7 +59,13 @@ function getSectionMeta(s) {
   return {
     code: s?.subject_code || s?.code || "",
     name: s?.subject_name || s?.title || s?.name || "",
-    sec: s?.section_no || s?.section_name || s?.section || s?.course_section || s?.sectionCode || "N/A",
+    sec:
+      s?.section_no ||
+      s?.section_name ||
+      s?.section ||
+      s?.course_section ||
+      s?.sectionCode ||
+      "N/A",
     room: s?.room || "TBA",
   };
 }
@@ -70,7 +87,9 @@ function buildWeeklySchedule(sections) {
       });
     });
   });
-  const timeSlots = [...new Set(entries.map((e) => e.timeStart))].filter(Boolean).sort((a, b) => parseTimeToMinutes(a) - parseTimeToMinutes(b));
+  const timeSlots = [...new Set(entries.map((e) => e.timeStart))]
+    .filter(Boolean)
+    .sort((a, b) => parseTimeToMinutes(a) - parseTimeToMinutes(b));
   return { entries, timeSlots };
 }
 
@@ -80,7 +99,10 @@ function getLiveClassInfo(sections) {
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const live = (sections || []).find((item) => {
     if (!parseDayCodes(item?.days).includes(dayIndex)) return false;
-    return currentMinutes >= parseTimeToMinutes(item.time_start) && currentMinutes <= parseTimeToMinutes(item.time_end);
+    return (
+      currentMinutes >= parseTimeToMinutes(item.time_start) &&
+      currentMinutes <= parseTimeToMinutes(item.time_end)
+    );
   });
   if (!live) return null;
   const meta = getSectionMeta(live);
@@ -98,4 +120,3 @@ export {
   buildWeeklySchedule,
   getLiveClassInfo,
 };
-

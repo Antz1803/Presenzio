@@ -1,33 +1,38 @@
-﻿import { createClient } from '@supabase/supabase-js'
+﻿import { createClient } from "@supabase/supabase-js";
 
-const configuredSupabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim().replace(/\/$/, "")
-const supabaseUrl = configuredSupabaseUrl
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
+const configuredSupabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim().replace(
+  /\/$/,
+  "",
+);
+const supabaseUrl = configuredSupabaseUrl;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 
 function isTransientFetchError(error) {
-  return error?.name === "TypeError" && /failed to fetch/i.test(error.message || "")
+  return (
+    error?.name === "TypeError" && /failed to fetch/i.test(error.message || "")
+  );
 }
 
 async function fetchWithRetry(input, init) {
-  let lastError
+  let lastError;
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      return await fetch(input, init)
+      return await fetch(input, init);
     } catch (error) {
-      lastError = error
-      if (!isTransientFetchError(error) || attempt === 2) throw error
-      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)))
+      lastError = error;
+      if (!isTransientFetchError(error) || attempt === 2) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
     }
   }
 
-  throw lastError
+  throw lastError;
 }
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
       global: { fetch: fetchWithRetry },
     })
-  : null
+  : null;

@@ -67,7 +67,9 @@ export default function ProfileDetailsModal({ onClose }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm print:hidden"
-      onMouseDown={(event) => event.target === event.currentTarget && !saving && onClose()}
+      onMouseDown={(event) =>
+        event.target === event.currentTarget && !saving && onClose()
+      }
     >
       <section
         className="max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"
@@ -77,11 +79,18 @@ export default function ProfileDetailsModal({ onClose }) {
       >
         <div className="mb-5 flex items-start justify-between border-b border-slate-100 pb-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Account Settings</p>
-            <h2 id="profile-details-title" className="mt-1 text-lg font-bold text-slate-900">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">
+              Account Settings
+            </p>
+            <h2
+              id="profile-details-title"
+              className="mt-1 text-lg font-bold text-slate-900"
+            >
               Edit Profile Details
             </h2>
-            <p className="mt-0.5 text-xs text-slate-500">Update your teacher account information.</p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Update your teacher account information.
+            </p>
           </div>
           <button
             className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
@@ -122,13 +131,16 @@ export default function ProfileDetailsModal({ onClose }) {
               required
             />
             <span className="mt-1.5 block text-[11px] font-normal text-slate-400">
-              Changing your email may require confirmation from both email addresses.
+              Changing your email may require confirmation from both email
+              addresses.
             </span>
           </label>
 
           <div className="border-t border-slate-100 pt-4">
             <p className="text-xs font-bold text-slate-600">Change password</p>
-            <p className="mt-1 text-[11px] text-slate-400">Leave these fields blank to keep your current password.</p>
+            <p className="mt-1 text-[11px] text-slate-400">
+              Leave these fields blank to keep your current password.
+            </p>
           </div>
 
           <label className="block text-xs font-bold text-slate-600">
@@ -159,8 +171,16 @@ export default function ProfileDetailsModal({ onClose }) {
             />
           </label>
 
-          {error && <p className="rounded-xl bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-600">{error}</p>}
-          {notice && <p className="rounded-xl bg-emerald-50 px-3.5 py-2.5 text-xs font-medium text-emerald-700">{notice}</p>}
+          {error && (
+            <p className="rounded-xl bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-600">
+              {error}
+            </p>
+          )}
+          {notice && (
+            <p className="rounded-xl bg-emerald-50 px-3.5 py-2.5 text-xs font-medium text-emerald-700">
+              {notice}
+            </p>
+          )}
 
           <div className="flex justify-end gap-3 pt-2">
             <button

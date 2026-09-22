@@ -1,1 +1,429 @@
-import React,{useState as y}from"react";import{formatDisplayDate as D}from"./actionUtils";const C=[{key:"quiz",label:"Quiz",prefix:"Q",count:4},{key:"assignment",label:"Assignment",prefix:"A",count:4},{key:"activity",label:"Graded activity",prefix:"G",count:4},{key:"exam",label:"Exam",prefix:"E",count:1}],Y=[[0,5],[1,4],[6,3.9],[12,3.8],[18,3.7],[24,3.6],[30,3.5],[36,3.4],[42,3.3],[48,3.2],[54,3.1],[60,3],[62,2.9],[64,2.8],[66,2.7],[68,2.6],[70,2.5],[72,2.4],[74,2.3],[76,2.2],[78,2.1],[80,2],[82,1.9],[84,1.8],[86,1.7],[88,1.6],[90,1.5],[92,1.4],[94,1.3],[96,1.2],[98,1.1],[100,1]];function Z(i){if(!Number.isFinite(Number(i)))return null;const u=Math.max(0,Math.min(100,Number(i)));let g=5;return Y.forEach(([s,t])=>{u>=s&&(g=t)}),g}function G(i,u,g){const s=Object.fromEntries(C.map(t=>[t.key,Object.fromEntries(i.flatMap(b=>Array.from({length:t.count},(h,m)=>[b.id+":"+(m+1),""])))]));return u.filter(t=>t.period?.code===g).forEach(t=>{const b=t.enrollment_id+":"+t.item_no;s[t.category]&&(s[t.category][b]=t.score===0?"":String(t.score??""))}),s}function L(i,u,g=[]){const s=Object.fromEntries(C.map(t=>[t.key,Object.fromEntries(Array.from({length:t.count},(b,h)=>[String(h+1),""]))]));return i.filter(t=>t.period?.code===u).forEach(t=>{s[t.category]&&t.max_score!=null&&(s[t.category][String(t.item_no)]=String(t.max_score))}),g.filter(t=>t.period?.code===u).forEach(t=>{if(!s[t.category]||!t.item_no)return;const b=(t.questions??[]).reduce((h,m)=>h+Number(m.points||0),0);b>0&&(s[t.category][String(t.item_no)]=String(b))}),s}function w({students:i,assessmentScores:u,assessmentDefinitions:g,gradingPeriods:s,onSave:t,onAutoSave:b,onClose:h}){const[m,Q]=y("prelim"),[n,V]=y("quiz"),[E,M]=y(()=>L(u,m,g)),[d,_]=y(()=>G(i,u,m)),[N,$]=y(!1),[F,O]=y(!1),[A,p]=y({status:"",text:""}),[P,T]=y(""),j=s.find(e=>e.code===m),x={start:j?.start_date??"",end:j?.end_date??""},c=C.find(e=>e.key===n),v=E[n],q=i.filter(e=>{const r=P.trim().toLowerCase();return!r||e.name.toLowerCase().includes(r)||String(e.number).toLowerCase().includes(r)}),k=Array.from({length:c.count},(e,r)=>r+1).filter(e=>Object.entries(d[n]).some(([r,a])=>r.endsWith(`:${e}`)&&a!==""&&Number.isFinite(Number(a)))).every(e=>Number(v[String(e)])>0),I=Object.values(v).some(e=>Number(e)>0),z=async()=>{if(!k)return p({status:"error",text:"Enter a maximum score for every column that has a score before switching."}),!1;O(!0),p({status:"",text:`Saving ${c.label} scores...`});try{return await b({period:m,category:n,scores:d[n],maxScores:v}),p({status:"success",text:`${c.label} scores auto-saved.`}),!0}catch(e){return p({status:"error",text:e?.message||`${c.label} scores could not be saved.`}),!1}finally{O(!1)}},R=e=>{e===n||N||(V(e),z())},B=e=>{e===m||N||(z(),Q(e),M(L(u,e,g)),_(G(i,u,e)))},U=(e,r,a)=>{if(a===""){_({...d,[n]:{...d[n],[e+":"+r]:""}});return}const o=Number(a),f=Number(v[String(r)]),l=Number.isFinite(o)?Math.max(0,f>0?Math.min(o,f):o):"";_({...d,[n]:{...d[n],[e+":"+r]:l}})},W=(e,r)=>M({...E,[n]:{...E[n],[String(e)]:r}}),H=e=>{const r=Array.from({length:c.count},(a,o)=>d[n][e.id+":"+(o+1)]).filter(a=>a!=="").map(Number).filter(Number.isFinite);return r.length?r.reduce((a,o)=>a+o,0)/r.length:0},J=async()=>{if(!k){p({status:"error",text:"Enter a maximum score for every column that has a score."});return}$(!0),p({status:"",text:""});try{await t({period:m,category:n,scores:d[n],maxScores:v}),p({status:"success",text:"Scores saved successfully."})}catch(e){p({status:"error",text:e?.message||"Scores could not be saved to Supabase."})}finally{$(!1)}},K=e=>{if(!k)return 0;const r=Array.from({length:c.count},(a,o)=>{const f=d[n][e.id+":"+(o+1)],l=Number(v[String(o+1)]);if(!Number.isFinite(l)||l<=0||f==="")return null;const S=Number(f);return Number.isFinite(S)?Z(S/l*100):null}).filter(a=>a!==null);return r.length?r.reduce((a,o)=>a+o,0)/r.length:0};return React.createElement("div",{className:"record-score-panel"},React.createElement("div",{className:"record-score-toolbar"},React.createElement("label",{className:"record-score-search"},React.createElement("span",null,"Search student"),React.createElement("input",{name:"studentSearch",type:"search",value:P,placeholder:"Search name...","aria-label":"Search student name",onChange:e=>T(e.target.value)})),React.createElement("div",{className:"category-tabs"},C.map(e=>React.createElement("button",{key:e.key,className:n===e.key?"active":"",onClick:()=>R(e.key),disabled:N},e.label,React.createElement("span",null,e.count)))),React.createElement("select",{name:"gradingPeriod",className:"record-period-select",value:m,disabled:N,onChange:e=>B(e.target.value)},React.createElement("option",{value:"prelim"},"Prelim"),React.createElement("option",{value:"midterm"},"Midterm"),React.createElement("option",{value:"semifinal"},"Semi-final"),React.createElement("option",{value:"final"},"Final")),React.createElement("span",{className:"record-period-range"},x.start&&x.end?`${D(x.start)} \u2013 ${D(x.end)}`:"No date range set")),A.text&&React.createElement("p",{className:`record-save-message ${A.status}`,role:"status"},A.text),React.createElement("div",{className:"table-wrap record-score-table"},React.createElement("table",null,React.createElement("thead",null,React.createElement("tr",null,React.createElement("th",{className:"record-student-col"},"STUDENT"),Array.from({length:c.count},(e,r)=>{const a=r+1,o=c.key==="exam"?c.prefix:`${c.prefix}${a}`;return React.createElement("th",{key:a},React.createElement("div",{className:"record-score-heading"},React.createElement("span",null,o," /"),React.createElement("input",{name:`max-score-${c.key}-${a}`,className:"record-max-input","aria-label":c.label+" "+a+" maximum score",type:"number",min:"1",step:"0.01",value:v[String(a)],onChange:f=>W(a,f.target.value)})))}),React.createElement("th",null,"AVERAGE"),React.createElement("th",null,"GRADE POINT"))),React.createElement("tbody",null,q.map(e=>{const r=H(e),a=I&&k&&Number.isFinite(r)?K(e).toFixed(2):"\u2014";return React.createElement("tr",{key:e.id},React.createElement("td",null,React.createElement("div",{className:"table-student"},React.createElement("span",{className:"record-avatar"},e.initials),React.createElement("span",null,e.name))),Array.from({length:c.count},(o,f)=>{const l=f+1,S=Number(v[String(l)]);return React.createElement("td",{key:l},React.createElement("input",{name:`score-${n}-${e.id}-${l}`,"aria-label":e.name+" item "+l,type:"number",min:"0",max:S>0?S:void 0,step:"0.01",value:d[n][e.id+":"+l],disabled:!S,onChange:X=>U(e.id,l,X.target.value)}))}),React.createElement("td",{className:"record-average"},r.toFixed(1)),React.createElement("td",null,React.createElement("span",{className:"record-grade-pill"},a)))}))),!i.length&&React.createElement("div",{className:"empty-state"},"No students are enrolled in this class."),i.length>0&&!q.length&&React.createElement("div",{className:"empty-state"},"No students match your search.")),React.createElement("div",{className:"action-modal-footer"},React.createElement("button",{className:"outline-button",onClick:h},"Cancel"),React.createElement("button",{className:"primary-button",onClick:J,disabled:N||F},N||F?"Saving\u2026":"Save scores")))}export{w as ScoreForm};
+import React, { useState as y } from "react";
+import { formatDisplayDate as D } from "./actionUtils";
+const C = [
+    { key: "quiz", label: "Quiz", prefix: "Q", count: 4 },
+    { key: "assignment", label: "Assignment", prefix: "A", count: 4 },
+    { key: "activity", label: "Graded activity", prefix: "G", count: 4 },
+    { key: "exam", label: "Exam", prefix: "E", count: 1 },
+  ],
+  Y = [
+    [0, 5],
+    [1, 4],
+    [6, 3.9],
+    [12, 3.8],
+    [18, 3.7],
+    [24, 3.6],
+    [30, 3.5],
+    [36, 3.4],
+    [42, 3.3],
+    [48, 3.2],
+    [54, 3.1],
+    [60, 3],
+    [62, 2.9],
+    [64, 2.8],
+    [66, 2.7],
+    [68, 2.6],
+    [70, 2.5],
+    [72, 2.4],
+    [74, 2.3],
+    [76, 2.2],
+    [78, 2.1],
+    [80, 2],
+    [82, 1.9],
+    [84, 1.8],
+    [86, 1.7],
+    [88, 1.6],
+    [90, 1.5],
+    [92, 1.4],
+    [94, 1.3],
+    [96, 1.2],
+    [98, 1.1],
+    [100, 1],
+  ];
+function Z(i) {
+  if (!Number.isFinite(Number(i))) return null;
+  const u = Math.max(0, Math.min(100, Number(i)));
+  let g = 5;
+  return (
+    Y.forEach(([s, t]) => {
+      u >= s && (g = t);
+    }),
+    g
+  );
+}
+function G(i, u, g) {
+  const s = Object.fromEntries(
+    C.map((t) => [
+      t.key,
+      Object.fromEntries(
+        i.flatMap((b) =>
+          Array.from({ length: t.count }, (h, m) => [b.id + ":" + (m + 1), ""]),
+        ),
+      ),
+    ]),
+  );
+  return (
+    u
+      .filter((t) => t.period?.code === g)
+      .forEach((t) => {
+        const b = t.enrollment_id + ":" + t.item_no;
+        s[t.category] &&
+          (s[t.category][b] = t.score === 0 ? "" : String(t.score ?? ""));
+      }),
+    s
+  );
+}
+function L(i, u, g = []) {
+  const s = Object.fromEntries(
+    C.map((t) => [
+      t.key,
+      Object.fromEntries(
+        Array.from({ length: t.count }, (b, h) => [String(h + 1), ""]),
+      ),
+    ]),
+  );
+  return (
+    i
+      .filter((t) => t.period?.code === u)
+      .forEach((t) => {
+        s[t.category] &&
+          t.max_score != null &&
+          (s[t.category][String(t.item_no)] = String(t.max_score));
+      }),
+    g
+      .filter((t) => t.period?.code === u)
+      .forEach((t) => {
+        if (!s[t.category] || !t.item_no) return;
+        const b = (t.questions ?? []).reduce(
+          (h, m) => h + Number(m.points || 0),
+          0,
+        );
+        b > 0 && (s[t.category][String(t.item_no)] = String(b));
+      }),
+    s
+  );
+}
+function w({
+  students: i,
+  assessmentScores: u,
+  assessmentDefinitions: g,
+  gradingPeriods: s,
+  onSave: t,
+  onAutoSave: b,
+  onClose: h,
+}) {
+  const [m, Q] = y("prelim"),
+    [n, V] = y("quiz"),
+    [E, M] = y(() => L(u, m, g)),
+    [d, _] = y(() => G(i, u, m)),
+    [N, $] = y(!1),
+    [F, O] = y(!1),
+    [A, p] = y({ status: "", text: "" }),
+    [P, T] = y(""),
+    j = s.find((e) => e.code === m),
+    x = { start: j?.start_date ?? "", end: j?.end_date ?? "" },
+    c = C.find((e) => e.key === n),
+    v = E[n],
+    q = i.filter((e) => {
+      const r = P.trim().toLowerCase();
+      return (
+        !r ||
+        e.name.toLowerCase().includes(r) ||
+        String(e.number).toLowerCase().includes(r)
+      );
+    }),
+    k = Array.from({ length: c.count }, (e, r) => r + 1)
+      .filter((e) =>
+        Object.entries(d[n]).some(
+          ([r, a]) =>
+            r.endsWith(`:${e}`) && a !== "" && Number.isFinite(Number(a)),
+        ),
+      )
+      .every((e) => Number(v[String(e)]) > 0),
+    I = Object.values(v).some((e) => Number(e) > 0),
+    z = async () => {
+      if (!k)
+        return (
+          p({
+            status: "error",
+            text: "Enter a maximum score for every column that has a score before switching.",
+          }),
+          !1
+        );
+      (O(!0), p({ status: "", text: `Saving ${c.label} scores...` }));
+      try {
+        return (
+          await b({ period: m, category: n, scores: d[n], maxScores: v }),
+          p({ status: "success", text: `${c.label} scores auto-saved.` }),
+          !0
+        );
+      } catch (e) {
+        return (
+          p({
+            status: "error",
+            text: e?.message || `${c.label} scores could not be saved.`,
+          }),
+          !1
+        );
+      } finally {
+        O(!1);
+      }
+    },
+    R = (e) => {
+      e === n || N || (V(e), z());
+    },
+    B = (e) => {
+      e === m || N || (z(), Q(e), M(L(u, e, g)), _(G(i, u, e)));
+    },
+    U = (e, r, a) => {
+      if (a === "") {
+        _({ ...d, [n]: { ...d[n], [e + ":" + r]: "" } });
+        return;
+      }
+      const o = Number(a),
+        f = Number(v[String(r)]),
+        l = Number.isFinite(o) ? Math.max(0, f > 0 ? Math.min(o, f) : o) : "";
+      _({ ...d, [n]: { ...d[n], [e + ":" + r]: l } });
+    },
+    W = (e, r) => M({ ...E, [n]: { ...E[n], [String(e)]: r } }),
+    H = (e) => {
+      const r = Array.from(
+        { length: c.count },
+        (a, o) => d[n][e.id + ":" + (o + 1)],
+      )
+        .filter((a) => a !== "")
+        .map(Number)
+        .filter(Number.isFinite);
+      return r.length ? r.reduce((a, o) => a + o, 0) / r.length : 0;
+    },
+    J = async () => {
+      if (!k) {
+        p({
+          status: "error",
+          text: "Enter a maximum score for every column that has a score.",
+        });
+        return;
+      }
+      ($(!0), p({ status: "", text: "" }));
+      try {
+        (await t({ period: m, category: n, scores: d[n], maxScores: v }),
+          p({ status: "success", text: "Scores saved successfully." }));
+      } catch (e) {
+        p({
+          status: "error",
+          text: e?.message || "Scores could not be saved to Supabase.",
+        });
+      } finally {
+        $(!1);
+      }
+    },
+    K = (e) => {
+      if (!k) return 0;
+      const r = Array.from({ length: c.count }, (a, o) => {
+        const f = d[n][e.id + ":" + (o + 1)],
+          l = Number(v[String(o + 1)]);
+        if (!Number.isFinite(l) || l <= 0 || f === "") return null;
+        const S = Number(f);
+        return Number.isFinite(S) ? Z((S / l) * 100) : null;
+      }).filter((a) => a !== null);
+      return r.length ? r.reduce((a, o) => a + o, 0) / r.length : 0;
+    };
+  return React.createElement(
+    "div",
+    { className: "record-score-panel" },
+    React.createElement(
+      "div",
+      { className: "record-score-toolbar" },
+      React.createElement(
+        "label",
+        { className: "record-score-search" },
+        React.createElement("span", null, "Search student"),
+        React.createElement("input", {
+          name: "studentSearch",
+          type: "search",
+          value: P,
+          placeholder: "Search name...",
+          "aria-label": "Search student name",
+          onChange: (e) => T(e.target.value),
+        }),
+      ),
+      React.createElement(
+        "div",
+        { className: "category-tabs" },
+        C.map((e) =>
+          React.createElement(
+            "button",
+            {
+              key: e.key,
+              className: n === e.key ? "active" : "",
+              onClick: () => R(e.key),
+              disabled: N,
+            },
+            e.label,
+            React.createElement("span", null, e.count),
+          ),
+        ),
+      ),
+      React.createElement(
+        "select",
+        {
+          name: "gradingPeriod",
+          className: "record-period-select",
+          value: m,
+          disabled: N,
+          onChange: (e) => B(e.target.value),
+        },
+        React.createElement("option", { value: "prelim" }, "Prelim"),
+        React.createElement("option", { value: "midterm" }, "Midterm"),
+        React.createElement("option", { value: "semifinal" }, "Semi-final"),
+        React.createElement("option", { value: "final" }, "Final"),
+      ),
+      React.createElement(
+        "span",
+        { className: "record-period-range" },
+        x.start && x.end
+          ? `${D(x.start)} \u2013 ${D(x.end)}`
+          : "No date range set",
+      ),
+    ),
+    A.text &&
+      React.createElement(
+        "p",
+        { className: `record-save-message ${A.status}`, role: "status" },
+        A.text,
+      ),
+    React.createElement(
+      "div",
+      { className: "table-wrap record-score-table" },
+      React.createElement(
+        "table",
+        null,
+        React.createElement(
+          "thead",
+          null,
+          React.createElement(
+            "tr",
+            null,
+            React.createElement(
+              "th",
+              { className: "record-student-col" },
+              "STUDENT",
+            ),
+            Array.from({ length: c.count }, (e, r) => {
+              const a = r + 1,
+                o = c.key === "exam" ? c.prefix : `${c.prefix}${a}`;
+              return React.createElement(
+                "th",
+                { key: a },
+                React.createElement(
+                  "div",
+                  { className: "record-score-heading" },
+                  React.createElement("span", null, o, " /"),
+                  React.createElement("input", {
+                    name: `max-score-${c.key}-${a}`,
+                    className: "record-max-input",
+                    "aria-label": c.label + " " + a + " maximum score",
+                    type: "number",
+                    min: "1",
+                    step: "0.01",
+                    value: v[String(a)],
+                    onChange: (f) => W(a, f.target.value),
+                  }),
+                ),
+              );
+            }),
+            React.createElement("th", null, "AVERAGE"),
+            React.createElement("th", null, "GRADE POINT"),
+          ),
+        ),
+        React.createElement(
+          "tbody",
+          null,
+          q.map((e) => {
+            const r = H(e),
+              a = I && k && Number.isFinite(r) ? K(e).toFixed(2) : "\u2014";
+            return React.createElement(
+              "tr",
+              { key: e.id },
+              React.createElement(
+                "td",
+                null,
+                React.createElement(
+                  "div",
+                  { className: "table-student" },
+                  React.createElement(
+                    "span",
+                    { className: "record-avatar" },
+                    e.initials,
+                  ),
+                  React.createElement("span", null, e.name),
+                ),
+              ),
+              Array.from({ length: c.count }, (o, f) => {
+                const l = f + 1,
+                  S = Number(v[String(l)]);
+                return React.createElement(
+                  "td",
+                  { key: l },
+                  React.createElement("input", {
+                    name: `score-${n}-${e.id}-${l}`,
+                    "aria-label": e.name + " item " + l,
+                    type: "number",
+                    min: "0",
+                    max: S > 0 ? S : void 0,
+                    step: "0.01",
+                    value: d[n][e.id + ":" + l],
+                    disabled: !S,
+                    onChange: (X) => U(e.id, l, X.target.value),
+                  }),
+                );
+              }),
+              React.createElement(
+                "td",
+                { className: "record-average" },
+                r.toFixed(1),
+              ),
+              React.createElement(
+                "td",
+                null,
+                React.createElement(
+                  "span",
+                  { className: "record-grade-pill" },
+                  a,
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
+      !i.length &&
+        React.createElement(
+          "div",
+          { className: "empty-state" },
+          "No students are enrolled in this class.",
+        ),
+      i.length > 0 &&
+        !q.length &&
+        React.createElement(
+          "div",
+          { className: "empty-state" },
+          "No students match your search.",
+        ),
+    ),
+    React.createElement(
+      "div",
+      { className: "action-modal-footer" },
+      React.createElement(
+        "button",
+        { className: "outline-button", onClick: h },
+        "Cancel",
+      ),
+      React.createElement(
+        "button",
+        { className: "primary-button", onClick: J, disabled: N || F },
+        N || F ? "Saving\u2026" : "Save scores",
+      ),
+    ),
+  );
+}
+export { w as ScoreForm };

@@ -4,7 +4,9 @@ import { AuthContext } from "./context";
 import { storeInstructorAvatar } from "./profileStorage";
 
 function configurationError() {
-  return new Error("Authentication is not configured. Add the Supabase environment variables first.");
+  return new Error(
+    "Authentication is not configured. Add the Supabase environment variables first.",
+  );
 }
 
 function instructorMetadata(profile = {}) {
@@ -36,7 +38,8 @@ export function AuthProvider({ children }) {
     let mounted = true;
     supabase.auth.getSession().then(({ data, error }) => {
       if (!mounted) return;
-      if (error) console.error("Could not restore the authentication session:", error);
+      if (error)
+        console.error("Could not restore the authentication session:", error);
       setUser(data.session?.user ?? null);
       setLoading(false);
     });
@@ -51,89 +54,101 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const value = useMemo(() => ({
-    user,
-    loading,
-    configured: isSupabaseConfigured,
-    async login(email, password) {
-      if (!supabase) throw configurationError();
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      return data.user;
-    },
-    async register(name, email, password) {
-      if (!supabase) throw configurationError();
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: name.trim() } },
-      });
-      if (error) throw error;
-      return data;
-    },
-    async updateProfile({ name, email, password }) {
-      if (!supabase) throw configurationError();
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      configured: isSupabaseConfigured,
+      async login(email, password) {
+        if (!supabase) throw configurationError();
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        return data.user;
+      },
+      async register(name, email, password) {
+        if (!supabase) throw configurationError();
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: name.trim() } },
+        });
+        if (error) throw error;
+        return data;
+      },
+      async updateProfile({ name, email, password }) {
+        if (!supabase) throw configurationError();
 
-      const normalizedName = name.trim();
-      const normalizedEmail = email.trim().toLowerCase();
-      const emailChanged = normalizedEmail !== (user?.email || "").toLowerCase();
-      const currentInstructorProfile = instructorMetadata(
-        user?.user_metadata?.instructor_profile,
-      );
-      const { data, error } = await supabase.auth.updateUser({
-        ...(emailChanged ? { email: normalizedEmail } : {}),
-        ...(password ? { password } : {}),
-        data: {
-          full_name: normalizedName,
-          ...(Object.keys(currentInstructorProfile).length
-            ? { instructor_profile: { ...currentInstructorProfile, name: normalizedName } }
-            : {}),
-        },
-      });
+        const normalizedName = name.trim();
+        const normalizedEmail = email.trim().toLowerCase();
+        const emailChanged =
+          normalizedEmail !== (user?.email || "").toLowerCase();
+        const currentInstructorProfile = instructorMetadata(
+          user?.user_metadata?.instructor_profile,
+        );
+        const { data, error } = await supabase.auth.updateUser({
+          ...(emailChanged ? { email: normalizedEmail } : {}),
+          ...(password ? { password } : {}),
+          data: {
+            full_name: normalizedName,
+            ...(Object.keys(currentInstructorProfile).length
+              ? {
+                  instructor_profile: {
+                    ...currentInstructorProfile,
+                    name: normalizedName,
+                  },
+                }
+              : {}),
+          },
+        });
 
-      if (error) throw error;
-      if (data.user) setUser(data.user);
+        if (error) throw error;
+        if (data.user) setUser(data.user);
 
-      return {
-        user: data.user,
-        emailChangeRequested: emailChanged,
-      };
-    },
-    async updateInstructorProfile(profile) {
-      if (!supabase) throw configurationError();
+        return {
+          user: data.user,
+          emailChangeRequested: emailChanged,
+        };
+      },
+      async updateInstructorProfile(profile) {
+        if (!supabase) throw configurationError();
 
-      const normalizedProfile = {
-        name: profile.name.trim(),
-        position: profile.position.trim(),
-        gmail: profile.gmail.trim(),
-        facebook: profile.facebook.trim(),
-        courses: Array.isArray(profile.courses) ? profile.courses : [],
-        initials: profile.initials.trim(),
-        color: profile.color,
-        avatarUrl: profile.avatarUrl || "",
-      };
-      const metadataProfile = instructorMetadata(normalizedProfile);
-      const { data, error } = await supabase.auth.updateUser({
-        data: {
-          full_name: normalizedProfile.name,
-          instructor_profile: metadataProfile,
-        },
-      });
+        const normalizedProfile = {
+          name: profile.name.trim(),
+          position: profile.position.trim(),
+          gmail: profile.gmail.trim(),
+          facebook: profile.facebook.trim(),
+          courses: Array.isArray(profile.courses) ? profile.courses : [],
+          initials: profile.initials.trim(),
+          color: profile.color,
+          avatarUrl: profile.avatarUrl || "",
+        };
+        const metadataProfile = instructorMetadata(normalizedProfile);
+        const { data, error } = await supabase.auth.updateUser({
+          data: {
+            full_name: normalizedProfile.name,
+            instructor_profile: metadataProfile,
+          },
+        });
 
-      if (error) throw error;
-      storeInstructorAvatar(user?.id, normalizedProfile.avatarUrl);
-      if (data.user) setUser(data.user);
-      return normalizedProfile;
-    },
-    async logout() {
-      if (!supabase) {
-        setUser(null);
-        return;
-      }
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    },
-  }), [loading, user]);
+        if (error) throw error;
+        storeInstructorAvatar(user?.id, normalizedProfile.avatarUrl);
+        if (data.user) setUser(data.user);
+        return normalizedProfile;
+      },
+      async logout() {
+        if (!supabase) {
+          setUser(null);
+          return;
+        }
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+      },
+    }),
+    [loading, user],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
