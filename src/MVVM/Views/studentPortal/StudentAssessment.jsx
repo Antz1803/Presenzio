@@ -1,3 +1,4 @@
+import React from "react";
 import L from "../../../assets/Icon.png";
 import {
   categoryLabels as _,
