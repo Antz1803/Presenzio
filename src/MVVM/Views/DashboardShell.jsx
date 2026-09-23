@@ -1,12 +1,12 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { useState as a, useMemo as B } from "react";
 import { useDashboardViewModel as F } from "../ViewModels/useDashboardViewModel";
 import { navItems as J } from "../Models/dashboardModel";
-import Q from "./ClassActionModal";
-import X from "./ClassesView";
-import Y from "./OverviewView";
-import Z from "./ReportsView";
-import ee from "./PrintReportModal";
+const Q = lazy(() => import("./ClassActionModal"));
+const X = lazy(() => import("./ClassesView"));
+const Y = lazy(() => import("./OverviewView"));
+const Z = lazy(() => import("./ReportsView"));
+const ee = lazy(() => import("./PrintReportModal"));
 import { Avatar as D, Icon as G } from "./DashboardShared";
 import {
   ClassOptionsModal as se,
@@ -163,6 +163,9 @@ export default function ce() {
       onSaveAttendance: async (s) => {
         (await e.saveAttendance(s), c());
       },
+      onDeleteAttendance: async (s) => {
+        await e.deleteAttendance(s);
+      },
       onSaveAssessmentScores: async (s) => {
         (await e.saveAssessmentScores(s), c());
       },
@@ -183,167 +186,222 @@ export default function ce() {
       onDeleteStudentGroup: e.deleteStudentGroup,
     };
   return React.createElement(
-    "div",
-    { className: "app-shell" },
+    React.Fragment,
+    null,
     React.createElement(
-      "aside",
-      {
-        className: `sidebar print:hidden ${e.mobileNav ? "sidebar-open" : ""}`,
-      },
+      "div",
+      { className: "app-shell" },
       React.createElement(
-        "div",
-        { className: "brand" },
-        React.createElement("img", {
-          className: "brand-logo",
-          src: ae,
-          alt: "Presenzio",
-        }),
-      ),
-      React.createElement(
-        "div",
-        { className: "sidebar-section" },
-        React.createElement("p", { className: "nav-label" }, "WORKSPACE"),
+        "aside",
+        {
+          className: `sidebar print:hidden ${e.mobileNav ? "sidebar-open" : ""}`,
+        },
         React.createElement(
-          "nav",
-          { "aria-label": "Workspace navigation" },
-          J.map((s) =>
+          "div",
+          { className: "brand" },
+          React.createElement("img", {
+            className: "brand-logo",
+            src: ae,
+            alt: "Presenzio",
+          }),
+        ),
+        React.createElement(
+          "div",
+          { className: "sidebar-section" },
+          React.createElement("p", { className: "nav-label" }, "WORKSPACE"),
+          React.createElement(
+            "nav",
+            { "aria-label": "Workspace navigation" },
+            J.map((s) =>
+              React.createElement(
+                "button",
+                {
+                  className: `nav-item ${e.active === s.id ? "active" : ""}`,
+                  key: s.id,
+                  onClick: () => {
+                    (e.setActive(s.id), e.setMobileNav(!1));
+                  },
+                },
+                React.createElement(G, { name: s.icon, size: 18 }),
+                React.createElement("span", null, s.label),
+              ),
+            ),
+          ),
+        ),
+        React.createElement(
+          "div",
+          { className: "sidebar-bottom" },
+          React.createElement(
+            "button",
+            { className: "nav-item", type: "button", onClick: () => h(!0) },
+            React.createElement(G, { name: "settings", size: 18 }),
+            React.createElement("span", null, "Settings"),
+          ),
+          React.createElement(
+            "div",
+            { className: "profile" },
+            React.createElement(D, {
+              initials: x || "T",
+              color: "blue",
+              small: !0,
+            }),
+            React.createElement(
+              "span",
+              null,
+              React.createElement("b", null, O),
+              React.createElement("small", null, n?.email || "Teacher account"),
+            ),
             React.createElement(
               "button",
               {
-                className: `nav-item ${e.active === s.id ? "active" : ""}`,
-                key: s.id,
-                onClick: () => {
-                  (e.setActive(s.id), e.setMobileNav(!1));
-                },
+                className:
+                  "ml-auto text-xs font-semibold text-slate-400 transition hover:text-rose-500",
+                type: "button",
+                onClick: W,
               },
-              React.createElement(G, { name: s.icon, size: 18 }),
-              React.createElement("span", null, s.label),
+              "Log out",
             ),
           ),
         ),
       ),
       React.createElement(
-        "div",
-        { className: "sidebar-bottom" },
+        "main",
+        { className: "main-content print:hidden" },
         React.createElement(
-          "button",
-          { className: "nav-item", type: "button", onClick: () => h(!0) },
-          React.createElement(G, { name: "settings", size: 18 }),
-          React.createElement("span", null, "Settings"),
-        ),
-        React.createElement(
-          "div",
-          { className: "profile" },
-          React.createElement(D, {
-            initials: x || "T",
-            color: "blue",
-            small: !0,
-          }),
-          React.createElement(
-            "span",
-            null,
-            React.createElement("b", null, O),
-            React.createElement("small", null, n?.email || "Teacher account"),
-          ),
+          "header",
+          { className: "topbar" },
           React.createElement(
             "button",
             {
-              className:
-                "ml-auto text-xs font-semibold text-slate-400 transition hover:text-rose-500",
-              type: "button",
-              onClick: W,
+              className: "mobile-menu",
+              onClick: () => e.setMobileNav(!e.mobileNav),
+              "aria-label": "Toggle navigation",
             },
-            "Log out",
+            React.createElement("span", null),
+            React.createElement("span", null),
+            React.createElement("span", null),
+          ),
+          React.createElement("div", { className: "space" }),
+          React.createElement(
+            "div",
+            { className: "topbar-actions flex items-center gap-3" },
+            React.createElement(ne, null),
+            React.createElement(D, {
+              initials: x || "T",
+              color: "blue",
+              small: !0,
+            }),
+          ),
+        ),
+        React.createElement(
+          "div",
+          { className: "content-wrap" },
+          React.createElement(
+            Suspense,
+            {
+              fallback: React.createElement(
+                "div",
+                { className: "p-6 text-sm text-slate-400" },
+                "Loading\u2026",
+              ),
+            },
+            H,
           ),
         ),
       ),
-    ),
-    React.createElement(
-      "main",
-      { className: "main-content print:hidden" },
-      React.createElement(
-        "header",
-        { className: "topbar" },
+      S &&
+        !l &&
+        !r &&
+        React.createElement(se, {
+          section: S,
+          onClose: () => f(null),
+          onOpenAction: P,
+          onOpenPrint: E,
+          onOpenStudentView: z,
+          onSyncToExcel: e.syncToExcel,
+          syncReady: i?.id === S.id,
+        }),
+      p &&
+        React.createElement(oe, {
+          section: _,
+          sections: e.sections,
+          students: i?.id === p ? e.students : [],
+          onUpdateStudent: e.updateStudent,
+          onTransferStudent: e.transferStudent,
+          onLoadTransferPreview: e.loadTransferPreview,
+          onClose: () => g(null),
+        }),
+      d &&
+        React.createElement(te, {
+          section: d,
+          deleting: C,
+          error: U,
+          onClose: () => !C && u(null),
+          onConfirm: $,
+        }),
+      l &&
+        w &&
+        !r &&
         React.createElement(
-          "button",
+          Suspense,
           {
-            className: "mobile-menu",
-            onClick: () => e.setMobileNav(!e.mobileNav),
-            "aria-label": "Toggle navigation",
-          },
-          React.createElement("span", null),
-          React.createElement("span", null),
-          React.createElement("span", null),
-        ),
-        React.createElement("div", { className: "space" }),
-        React.createElement(
-          "div",
-          { className: "topbar-actions flex items-center gap-3" },
-          React.createElement(ne, null),
-          React.createElement(D, {
-            initials: x || "T",
-            color: "blue",
-            small: !0,
-          }),
-        ),
-      ),
-      React.createElement("div", { className: "content-wrap" }, H),
-    ),
-    S &&
-      !l &&
-      !r &&
-      React.createElement(se, {
-        section: S,
-        onClose: () => f(null),
-        onOpenAction: P,
-        onOpenPrint: E,
-        onOpenStudentView: z,
-        onSyncToExcel: e.syncToExcel,
-        syncReady: i?.id === S.id,
-      }),
-    p &&
-      React.createElement(oe, {
-        section: _,
-        sections: e.sections,
-        students: i?.id === p ? e.students : [],
-        onUpdateStudent: e.updateStudent,
-        onTransferStudent: e.transferStudent,
-        onLoadTransferPreview: e.loadTransferPreview,
-        onClose: () => g(null),
-      }),
-    d &&
-      React.createElement(te, {
-        section: d,
-        deleting: C,
-        error: U,
-        onClose: () => !C && u(null),
-        onConfirm: $,
-      }),
-    l && w && !r && React.createElement(Q, { ...K }),
-    r &&
-      N &&
-      (V
-        ? React.createElement(ee, {
-            type: r.type,
-            section: N,
-            students: e.students,
-            assessmentScores: e.assessmentScores,
-            attendanceSessions: e.attendanceSessions,
-            gradingPeriods: e.gradingPeriods,
-            onClose: j,
-          })
-        : React.createElement(
-            "div",
-            {
-              className:
-                "fixed inset-0 z-50 flex items-center justify-center bg-slate-50 print:hidden",
-            },
-            React.createElement(
-              "p",
-              { className: "text-sm text-slate-500" },
-              "Loading class data\u2026",
+            fallback: React.createElement(
+              "div",
+              {
+                className:
+                  "fixed inset-0 z-50 flex items-center justify-center bg-slate-50 print:hidden",
+              },
+              React.createElement(
+                "p",
+                { className: "text-sm text-slate-500" },
+                "Loading\u2026",
+              ),
             ),
-          )),
-    L && React.createElement(re, { onClose: () => h(!1) }),
+          },
+          React.createElement(Q, { ...K }),
+        ),
+      r &&
+        N &&
+        (V
+          ? React.createElement(
+              Suspense,
+              {
+                fallback: React.createElement(
+                  "div",
+                  {
+                    className:
+                      "fixed inset-0 z-50 flex items-center justify-center bg-slate-50 print:hidden",
+                  },
+                  React.createElement(
+                    "p",
+                    { className: "text-sm text-slate-500" },
+                    "Loading\u2026",
+                  ),
+                ),
+              },
+              React.createElement(ee, {
+                type: r.type,
+                section: N,
+                students: e.students,
+                assessmentScores: e.assessmentScores,
+                attendanceSessions: e.attendanceSessions,
+                gradingPeriods: e.gradingPeriods,
+                onClose: j,
+              }),
+            )
+          : React.createElement(
+              "div",
+              {
+                className:
+                  "fixed inset-0 z-50 flex items-center justify-center bg-slate-50 print:hidden",
+              },
+              React.createElement(
+                "p",
+                { className: "text-sm text-slate-500" },
+                "Loading class data\u2026",
+              ),
+            )),
+      L && React.createElement(re, { onClose: () => h(!1) }),
+    ),
   );
 }

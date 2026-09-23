@@ -175,5 +175,76 @@ export function useAttendanceActions(context) {
     ],
   );
 
-  return { saveAttendance };
+  const deleteAttendance = useCallback(
+    async ({ date, sessionTime, session: sessionRecord }) => {
+      if (!currentSectionId) throw new Error("No active Supabase section.");
+      const periodCode = sessionRecord?.periodCode;
+
+      if (browserIsOffline() || !supabase) {
+        const existingSession =
+          sessionRecord ??
+          attendanceSessions.find(
+            (item) =>
+              item.sessionDate === date && item.sessionTime === sessionTime,
+          );
+        if (!existingSession) return;
+        await queueOfflineChange("delete-attendance", {
+          sectionId: currentSectionId,
+          date,
+          sessionTime,
+          sessionId: existingSession.id,
+        });
+        setAttendanceSessions((current) =>
+          current.filter((item) => item.id !== existingSession.id),
+        );
+        return;
+      }
+
+      const { data: existingSession, error: sessionLookupError } =
+        await supabase
+          .from("class_sessions")
+          .select("id, period_id")
+          .eq("section_id", currentSectionId)
+          .eq("session_date", date)
+          .eq("session_time", sessionTime)
+          .maybeSingle();
+      if (sessionLookupError) throw sessionLookupError;
+      if (!existingSession) {
+        // Nothing saved server-side for this date/time; just drop it locally.
+        setAttendanceSessions((current) =>
+          current.filter(
+            (item) =>
+              !(item.sessionDate === date && item.sessionTime === sessionTime),
+          ),
+        );
+        return;
+      }
+
+      const { error: recordsError } = await supabase
+        .from("attendance_records")
+        .delete()
+        .eq("session_id", existingSession.id);
+      if (recordsError) throw recordsError;
+
+      const { error: sessionError } = await supabase
+        .from("class_sessions")
+        .delete()
+        .eq("id", existingSession.id);
+      if (sessionError) throw sessionError;
+
+      if (existingSession.period_id) {
+        await recalculatePeriodGrades(existingSession.period_id);
+      }
+      await loadLiveData(currentSectionId);
+    },
+    [
+      currentSectionId,
+      loadLiveData,
+      attendanceSessions,
+      queueOfflineChange,
+      recalculatePeriodGrades,
+    ],
+  );
+
+  return { saveAttendance, deleteAttendance };
 }

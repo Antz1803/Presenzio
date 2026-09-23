@@ -43,6 +43,7 @@ export default function K({
   loading: N,
   onClose: t,
   onSaveAttendance: A,
+  onDeleteAttendance: J,
   onSaveAssessmentScores: h,
   onAutoSaveAssessmentScores: M,
   onSaveAssessment: w,
@@ -74,17 +75,18 @@ export default function K({
           ),
         )
       : e === "attendance"
-        ? React.createElement(
-            r,
-            { title: s[e], section: i, onClose: t },
-            React.createElement(y, {
-              section: i,
-              students: n,
-              attendanceSessions: d,
-              onSave: A,
-              onClose: t,
-            }),
-          )
+      ? React.createElement(
+          r,
+          { title: s[e], section: i, onClose: t },
+          React.createElement(y, {
+            section: i,
+            students: n,
+            attendanceSessions: d,
+            onSave: A,
+            onDelete: J,
+            onClose: t,
+          }),
+        )
         : e === "record-score"
           ? React.createElement(
               r,
