@@ -52,7 +52,28 @@ export function useAssessmentSubmitActions(context) {
       (total, question) => total + Number(question.points || 0),
       0,
     );
-    const answerRows = buildAnswerRows(questions, answers, answerSimilarity);
+
+    // Build answers from the client's cached question set first.
+    let answerRows = buildAnswerRows(questions, answers, answerSimilarity);
+
+    // Guard against stale question IDs: if the assessment was edited or
+    // regenerated after the student loaded it, the client's cached
+    // `assessment.questions` may reference question rows that no longer
+    // exist. Re-fetch the live set of question IDs and drop any answer
+    // that doesn't match, so we never hit the FK constraint on
+    // assessment_answers.question_id.
+    if (supabase && !browserIsOffline()) {
+      const { data: liveQuestions, error: liveQuestionsError } = await supabase
+        .from("assessment_questions") // <-- verify this table name against your schema
+        .select("id")
+        .eq("assessment_id", assessmentId);
+      if (liveQuestionsError) throw liveQuestionsError;
+      const validQuestionIds = new Set((liveQuestions ?? []).map((q) => q.id));
+      answerRows = answerRows.filter((answer) =>
+        validQuestionIds.has(answer.question_id),
+      );
+    }
+
     if (!autoSubmit && answerRows.some((answer) => !answer.answer.trim())) {
       throw new Error("Answer every question before submitting.");
     }
@@ -147,20 +168,30 @@ export function useAssessmentSubmitActions(context) {
         autoSubmitted: autoSubmit,
       };
     }
+    // Upsert instead of insert: two near-simultaneous submit triggers
+    // (timer expiry, Escape key, tab-hidden) can race and both pass the
+    // "already submitted" guard before either write lands. Upserting on
+    // the same unique constraint that used to throw a duplicate-key
+    // error makes the second call update instead of crash.
     const { data: attempt, error: attemptError } = await supabase
       .from("assessment_attempts")
-      .insert({
-        assessment_id: assessmentId,
-        student_id: studentId,
-        attempt_no: Number(attemptNumber) || 1,
-        status: needsReview ? "needs_review" : "submitted",
-        score,
-        max_score: maxScore,
-        submitted_at: new Date().toISOString(),
-      })
+      .upsert(
+        {
+          assessment_id: assessmentId,
+          student_id: studentId,
+          attempt_no: Number(attemptNumber) || 1,
+          status: needsReview ? "needs_review" : "submitted",
+          score,
+          max_score: maxScore,
+          submitted_at: new Date().toISOString(),
+        },
+        { onConflict: "assessment_id,student_id,attempt_no" }, // <-- verify against your actual constraint columns
+      )
       .select("id")
-      .single();
+      .maybeSingle();
     if (attemptError) throw attemptError;
+    if (!attempt)
+      throw new Error("Could not create or update the assessment attempt.");
     const { error: clearAnswersError } = await supabase
       .from("assessment_answers")
       .delete()
