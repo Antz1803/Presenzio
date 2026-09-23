@@ -346,16 +346,16 @@ export default function T({
               { className: "text-base font-bold text-slate-800" },
               "Edit Profile Details",
             ),
-            React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: () => f(!1),
-                className:
-                  "text-slate-400 hover:text-slate-600 text-sm font-bold",
-              },
-              "\xC3\u2014",
-            ),
+           React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: () => f(!1),
+              className:
+                "text-slate-400 hover:text-slate-600 text-sm font-bold",
+            },
+            "x",
+          ),
           ),
           React.createElement(
             "form",

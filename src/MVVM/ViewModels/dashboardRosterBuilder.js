@@ -81,8 +81,8 @@ export function buildRoster({
         ["plum", "blue", "peach", "green", "yellow", "lavender"][
           (enrollment.ctrl_no ?? 0) % 6
         ] ?? "plum",
-      number: student?.student_no ?? "CTRL-" + (enrollment.ctrl_no ?? "Ã¢â‚¬”"),
-      gender: student?.gender ?? "Ã¢â‚¬”",
+      number: student?.student_no ?? "CTRL-" + (enrollment.ctrl_no ?? ""),
+      gender: student?.gender ?? "",
       course: student?.course ?? "",
       yearLevel: student?.year_level ?? "",
       contactNo: student?.contact_no ?? "",

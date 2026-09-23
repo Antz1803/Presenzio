@@ -95,8 +95,8 @@ export function useDashboardOfflineData(context) {
         setConnectionStatus("offline");
         setConnectionMessage(
           snapshot
-            ? "Offline Ã‚· saved locally"
-            : "Offline Ã‚· no cached class data",
+            ? "Offline ‚· saved locally"
+            : "Offline ‚· no cached class data",
         );
         setPendingSyncCount(await countOfflineMutations());
       }

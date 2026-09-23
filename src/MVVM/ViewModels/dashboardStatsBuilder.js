@@ -58,7 +58,7 @@ export function buildLiveStats({
   }).length;
   const mostConsistent =
     [...liveRoster].sort((a, b) => b.attendance - a.attendance)[0]?.name ??
-    "Ã¢â‚¬”";
+    "";
 
   const liveAttendanceSessions = [...sessionsData]
     .sort((first, second) =>
@@ -108,16 +108,16 @@ export function buildLiveStats({
     female,
     todayAttendance: liveRoster.length
       ? ((todayPresent / liveRoster.length) * 100).toFixed(1) + "%"
-      : "Ã¢â‚¬”",
+      : "",
     todayPresent,
     todayAbsent: Math.max(liveRoster.length - todayPresent, 0),
-    classAverage: classAverage ? classAverage.toFixed(2) : "Ã¢â‚¬”",
+    classAverage: classAverage ? classAverage.toFixed(2) : "",
     needsAttention: liveRoster.filter((student) => student.attendance < 80)
       .length,
     monthAttendance: liveRoster.length
       ? average(liveRoster.map((student) => student.attendance)).toFixed(1) +
         "%"
-      : "Ã¢â‚¬”",
+      : "",
     attendanceBars: attendanceRates,
     totalPresent,
     totalAbsent,
@@ -138,7 +138,7 @@ export function buildLiveStats({
             gradedStudents.length) *
           100
         ).toFixed(1) + "%"
-      : "Ã¢â‚¬”",
+      : "",
   };
 
   return { liveStats, liveAttendanceSessions, liveSessions };

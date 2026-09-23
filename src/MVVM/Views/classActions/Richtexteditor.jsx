@@ -55,7 +55,7 @@ function RichTextEditor({
       "3x3",
     );
     if (!dimensions) return;
-    const match = dimensions.match(/^\s*(\d+)\s*[xÃƒ]\s*(\d+)\s*$/i);
+    const match = dimensions.match(/^\s*(\d+)\s*[xƒ]\s*(\d+)\s*$/i);
     if (!match) {
       setError("Enter the table size like 3x4.");
       return;
