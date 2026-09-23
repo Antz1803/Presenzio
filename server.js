@@ -523,18 +523,54 @@ async function syncSubmission(submission, { writeScore = true } = {}) {
   const localAttemptId = attemptFields.id;
   delete attemptFields.id;
   delete attemptFields.auto_submitted;
-  const [remoteAttempt] = await supabaseMutation("assessment_attempts", "POST", [attemptFields], {
-    onConflict: "assessment_id,student_id,attempt_no",
-    returnData: true,
-  });
+  let remoteAttempt;
+  try {
+    [remoteAttempt] = await supabaseMutation("assessment_attempts", "POST", [attemptFields], {
+      onConflict: "assessment_id,student_id,attempt_no",
+      returnData: true,
+    });
+  } catch (error) {
+    if (error.message.includes('"code":"23505"')) {
+      // The attempt row already exists remotely — most likely a prior sync
+      // pass inserted it successfully but failed later in this same
+      // function (e.g. on the answers step below), so this submission got
+      // retried from scratch. Fetch the existing row instead of failing.
+      [remoteAttempt] = await supabaseRequest("assessment_attempts", {
+        assessment_id: attemptFields.assessment_id,
+        student_id: attemptFields.student_id,
+        attempt_no: attemptFields.attempt_no,
+      }, { limit: 1 });
+      if (!remoteAttempt) throw error;
+    } else {
+      throw error;
+    }
+  }
   const remoteAttemptId = remoteAttempt?.id || localAttemptId;
   await supabaseDelete("assessment_answers", { attempt_id: remoteAttemptId });
   if (answers?.length) {
-    await supabaseMutation(
-      "assessment_answers",
-      "POST",
-      answers.map((answer) => ({ ...answer, attempt_id: remoteAttemptId })),
-    );
+    // Drop any answer whose question no longer exists remotely (e.g. the
+    // assessment was edited after the student started) instead of letting
+    // one stale answer block the whole submission from syncing.
+    const remoteQuestions = await supabaseRequest(
+      "assessment_questions",
+      { assessment_id: attempt.assessment_id },
+      { select: "id" },
+    ).catch(() => []);
+    const validQuestionIds = new Set(remoteQuestions.map((row) => row.id));
+    const validAnswers = answers.filter((answer) => validQuestionIds.has(answer.question_id));
+    const droppedCount = answers.length - validAnswers.length;
+    if (droppedCount > 0) {
+      console.warn(
+        `Dropping ${droppedCount} answer(s) referencing questions that no longer exist remotely (attempt ${remoteAttemptId}).`,
+      );
+    }
+    if (validAnswers.length) {
+      await supabaseMutation(
+        "assessment_answers",
+        "POST",
+        validAnswers.map((answer) => ({ ...answer, attempt_id: remoteAttemptId })),
+      );
+    }
   }
   if (submission.violations?.length) {
     await supabaseMutation("assessment_violations", "POST", submission.violations);
