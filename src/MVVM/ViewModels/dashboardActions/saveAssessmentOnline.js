@@ -21,6 +21,7 @@ export async function saveAssessmentOnline(context, input, periodRow) {
     setAssessmentDefinitions,
     setAssessmentScores,
     queueOfflineChange,
+    loadLiveData,
     helpers,
   } = context;
   const {
