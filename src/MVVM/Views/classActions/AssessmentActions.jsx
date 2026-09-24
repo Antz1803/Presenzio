@@ -1068,6 +1068,7 @@ function le({
     [U, N] = v({ status: "", text: "" }),
     [r, A] = v(""),
     [k, P] = v(null),
+    [ze, We] = v(""),
     b = u.find((e) => e.id === m),
     _ = i
       ? u.find(
@@ -1079,7 +1080,7 @@ function le({
         )
       : null,
     T = (e) => {
-      (E(e.id), h(Z(e)), N({ status: "", text: "" }));
+      (E(e.id), h(Z(e)), N({ status: "", text: "" }), We(""));
     },
     q = (e, s) =>
       h((a) => {
@@ -1212,6 +1213,9 @@ function le({
           A("");
         }
       }
+    },
+    Ve = (e) => {
+      We((s) => (s === e ? "" : e));
     },
     o = (e, s) => {
       (e.stopPropagation(), $(s));
@@ -1493,16 +1497,16 @@ function le({
                 React.createElement(
                   "div",
                   null,
-                  React.createElement("span", null, "INDIVIDUAL RETRY ACCESS"),
+                  React.createElement("span", null, "STUDENT SUBMISSIONS"),
                   React.createElement(
                     "h4",
                     null,
-                    "Allow another attempt for a specific student",
+                    "Review answers & allow another attempt",
                   ),
                   React.createElement(
                     "p",
                     null,
-                    "Students get one attempt by default. Use the button beside a student to add one more attempt for that student only.",
+                    "Click \u201CView answers\u201D to see exactly what a student submitted for their most recent attempt. Students get one attempt by default \u2014 use \u201CAllow another\u201D to grant one more.",
                   ),
                 ),
                 React.createElement(
@@ -1510,47 +1514,185 @@ function le({
                   { className: "assessment-retry-list" },
                   w.length
                     ? w.map((e) => {
-                        const s = (b?.attempts ?? []).filter(
-                            (c) => c.student_id === e.studentId,
-                          ).length,
+                        const attempts = (b?.attempts ?? [])
+                            .filter((c) => c.student_id === e.studentId)
+                            .sort(
+                              (x, y) =>
+                                Number(y.attempt_no) - Number(x.attempt_no),
+                            ),
+                          s = attempts.length,
+                          latest = attempts[0] ?? null,
                           a = Number(
                             (b?.attemptGrants ?? []).find(
                               (c) => c.student_id === e.studentId,
                             )?.extra_attempts || 0,
-                          );
+                          ),
+                          isOpen = ze === e.studentId;
                         return React.createElement(
-                          "div",
-                          {
-                            className: "assessment-retry-row",
-                            key: e.studentId,
-                          },
+                          React.Fragment,
+                          { key: e.studentId },
                           React.createElement(
                             "div",
-                            null,
-                            React.createElement("strong", null, e.name),
+                            { className: "assessment-retry-row" },
                             React.createElement(
-                              "small",
+                              "div",
                               null,
-                              e.number,
-                              " \xB7 ",
-                              s,
-                              " used \xB7 ",
-                              a,
-                              " extra granted",
+                              React.createElement("strong", null, e.name),
+                              React.createElement(
+                                "small",
+                                null,
+                                e.number,
+                                " \xB7 ",
+                                s,
+                                " used \xB7 ",
+                                a,
+                                " extra granted",
+                              ),
+                            ),
+                            React.createElement(
+                              "div",
+                              { className: "flex flex-wrap gap-2" },
+                              React.createElement(
+                                "button",
+                                {
+                                  type: "button",
+                                  className: "outline-button",
+                                  disabled: !latest,
+                                  onClick: () => Ve(e.studentId),
+                                },
+                                isOpen ? "Hide answers" : "View answers",
+                              ),
+                              React.createElement(
+                                "button",
+                                {
+                                  type: "button",
+                                  className: "outline-button",
+                                  disabled: r === e.studentId,
+                                  onClick: () => t(e),
+                                },
+                                r === e.studentId
+                                  ? "Granting\u2026"
+                                  : "Allow another",
+                              ),
                             ),
                           ),
-                          React.createElement(
-                            "button",
-                            {
-                              type: "button",
-                              className: "outline-button",
-                              disabled: r === e.studentId,
-                              onClick: () => t(e),
-                            },
-                            r === e.studentId
-                              ? "Granting\u2026"
-                              : "Allow another",
-                          ),
+                          isOpen &&
+                            latest &&
+                            React.createElement(
+                              "div",
+                              {
+                                className:
+                                  "mb-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3",
+                              },
+                              React.createElement(
+                                "div",
+                                {
+                                  className:
+                                    "mb-2.5 flex items-center justify-between",
+                                },
+                                React.createElement(
+                                  "span",
+                                  {
+                                    className:
+                                      "text-[11px] font-bold uppercase tracking-wide text-slate-500",
+                                  },
+                                  `Attempt ${latest.attempt_no}`,
+                                  latest.status === "needs_review"
+                                    ? " \xB7 Needs review"
+                                    : "",
+                                ),
+                                React.createElement(
+                                  "strong",
+                                  { className: "text-[13px] text-slate-900" },
+                                  `${Number(latest.score ?? 0).toFixed(2)} / ${Number(latest.max_score ?? 0).toFixed(2)}`,
+                                ),
+                              ),
+                              !(latest.answers ?? []).length &&
+                                React.createElement(
+                                  "p",
+                                  { className: "m-0 text-xs text-slate-400" },
+                                  "No submitted answer data found for this attempt (it may not have synced yet).",
+                                ),
+                              ...[...(b?.questions ?? [])]
+                                .sort(
+                                  (x, y) =>
+                                    Number(x.question_no) -
+                                    Number(y.question_no),
+                                )
+                                .map((qq, idx) => {
+                                  const ansRow = (latest.answers ?? []).find(
+                                      (ans) => ans.question_id === qq.id,
+                                    ),
+                                    isMc = qq.question_type === "multiple_choice",
+                                    answerText = ansRow?.answer ?? "",
+                                    chosenLabel =
+                                      isMc && answerText && L.includes(answerText)
+                                        ? qq.choices?.[L.indexOf(answerText)]
+                                        : "",
+                                    statusColorClass =
+                                      ansRow?.is_correct === true
+                                        ? "text-emerald-600"
+                                        : ansRow?.is_correct === false
+                                          ? "text-rose-600"
+                                          : "text-slate-500";
+                                  return React.createElement(
+                                    "div",
+                                    {
+                                      key: qq.id,
+                                      className: `py-2.5 ${idx === 0 ? "" : "border-t border-slate-200"}`,
+                                    },
+                                    React.createElement(
+                                      "p",
+                                      { className: "mb-1 text-xs text-slate-600" },
+                                      `Q${idx + 1}. `,
+                                      React.createElement(
+                                        "strong",
+                                        { className: "text-slate-900" },
+                                        qq.prompt,
+                                      ),
+                                    ),
+                                    isMc
+                                      ? React.createElement(
+                                          "p",
+                                          {
+                                            className:
+                                              "mb-1 text-[13px] text-slate-800",
+                                          },
+                                          "Answered: ",
+                                          React.createElement(
+                                            "b",
+                                            null,
+                                            answerText
+                                              ? `${answerText}${chosenLabel ? ` \u2014 ${chosenLabel}` : ""}`
+                                              : "\u2014",
+                                          ),
+                                          " \xB7 Correct: ",
+                                          React.createElement(
+                                            "b",
+                                            null,
+                                            qq.correct_answer,
+                                          ),
+                                        )
+                                      : React.createElement(
+                                          "pre",
+                                          {
+                                            className:
+                                              "mb-1 whitespace-pre-wrap break-words rounded-lg bg-slate-900 px-2.5 py-2 text-xs text-slate-200",
+                                          },
+                                          answerText || "(no answer submitted)",
+                                        ),
+                                    React.createElement(
+                                      "p",
+                                      {
+                                        className: `m-0 text-xs font-semibold ${statusColorClass}`,
+                                      },
+                                      ansRow
+                                        ? `${Number(ansRow.points_earned ?? 0).toFixed(2)} / ${Number(qq.points ?? 0).toFixed(2)} pts`
+                                        : "Not answered",
+                                    ),
+                                  );
+                                }),
+                            ),
                         );
                       })
                     : React.createElement(

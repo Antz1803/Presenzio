@@ -157,6 +157,30 @@ export async function loadDashboardRecords({ sectionData, sectionList }) {
   attemptRows = mergeById(attemptRows, lanManagement?.attempts ?? []);
   grantRows = mergeById(grantRows, lanManagement?.attemptGrants ?? []);
   violationRows = mergeById(violationRows, lanManagement?.violations ?? []);
+
+  // Fetch each attempt's actual submitted answers (question_id, the raw
+  // answer text/choice, correctness, and points earned) and attach them
+  // to their attempt row. This has to happen after attemptRows is final
+  // (post-LAN-merge) since we key off attempt ids. LAN-originated
+  // attempts that haven't synced to Supabase yet simply get an empty
+  // `answers` array until they sync.
+  let answerRows = [];
+  const attemptIds = attemptRows.map((attempt) => attempt.id).filter(Boolean);
+  if (attemptIds.length) {
+    const { data: answerData, error: answerError } = await supabase
+      .from("assessment_answers")
+      .select("id, attempt_id, question_id, answer, is_correct, points_earned")
+      .in("attempt_id", attemptIds);
+    if (answerError) {
+      console.error("Failed to load assessment_answers:", answerError);
+    }
+    answerRows = answerError ? [] : (answerData ?? []);
+  }
+  attemptRows = attemptRows.map((attempt) => ({
+    ...attempt,
+    answers: answerRows.filter((answer) => answer.attempt_id === attempt.id),
+  }));
+
   const liveAssessmentDefinitions = assessmentRows.map((assessment) => ({
     ...assessment,
     attempts: attemptRows.filter(

@@ -284,6 +284,9 @@ function we({
     [L, F] = d(0),
     [W, O] = d([]),
     [Z, D] = d({}),
+    [pendingDeleteStudent, setPendingDeleteStudent] = d(null),
+    [isDeletingStudent, setIsDeletingStudent] = d(!1),
+    [deleteStudentError, setDeleteStudentError] = d(""),
     Q = G(
       () =>
         [...s].sort((e, a) =>
@@ -458,19 +461,28 @@ function we({
         }
       }
     },
-    confirmDeleteStudent = async (student) => {
-      if (!deleteStudentFn) return;
-      const confirmed = window.confirm(
-        `Remove ${student.name} from this class? Their scores, grades, and attendance in this class will be deleted. This cannot be undone.`,
-      );
-      if (!confirmed) return;
+    confirmDeleteStudent = (student) => {
+      (setDeleteStudentError(""), setPendingDeleteStudent(student));
+    },
+    cancelDeleteStudent = () => {
+      if (isDeletingStudent) return;
+      (setPendingDeleteStudent(null), setDeleteStudentError(""));
+    },
+    performDeleteStudent = async () => {
+      if (!deleteStudentFn || !pendingDeleteStudent) return;
+      (setIsDeletingStudent(!0), setDeleteStudentError(""));
       try {
-        await deleteStudentFn({
-          enrollmentId: student.id,
+        (await deleteStudentFn({
+          enrollmentId: pendingDeleteStudent.id,
           sectionId: t?.id,
-        });
+        }),
+          setPendingDeleteStudent(null));
       } catch (err) {
-        window.alert(err?.message || "The student could not be removed.");
+        setDeleteStudentError(
+          err?.message || "The student could not be removed.",
+        );
+      } finally {
+        setIsDeletingStudent(!1);
       }
     };
   return React.createElement(
@@ -1254,6 +1266,98 @@ MANCILLA, JEORGE REY        2414456
           ),
       ),
     ),
+    pendingDeleteStudent &&
+      React.createElement(
+        "div",
+        {
+          className:
+            "fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm print:hidden",
+          onMouseDown: (e) =>
+            e.target === e.currentTarget && cancelDeleteStudent(),
+        },
+        React.createElement(
+          "section",
+          {
+            className:
+              "w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-2xl",
+            role: "alertdialog",
+            "aria-modal": "true",
+            "aria-labelledby": "remove-student-title",
+          },
+          React.createElement(
+            "div",
+            {
+              className:
+                "mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-50 text-rose-500",
+            },
+            React.createElement(be, { name: "trash", size: 22 }),
+          ),
+          React.createElement(
+            "p",
+            {
+              className:
+                "text-[10px] font-bold uppercase tracking-wider text-rose-500",
+            },
+            "Permanent Action",
+          ),
+          React.createElement(
+            "h2",
+            {
+              id: "remove-student-title",
+              className: "mt-1 text-lg font-bold text-slate-900",
+            },
+            "Remove this student?",
+          ),
+          React.createElement(
+            "p",
+            { className: "mt-2 text-sm text-slate-500" },
+            "Remove ",
+            React.createElement(
+              "strong",
+              null,
+              pendingDeleteStudent.name,
+            ),
+            " from this class? Their scores, grades, and attendance in this class will be deleted.",
+          ),
+          React.createElement(
+            "p",
+            { className: "mt-1 text-xs font-medium text-slate-400" },
+            "This cannot be undone.",
+          ),
+          deleteStudentError &&
+            React.createElement(
+              "p",
+              { className: "mt-3 text-xs font-medium text-rose-600" },
+              deleteStudentError,
+            ),
+          React.createElement(
+            "div",
+            { className: "mt-6 flex justify-center gap-3" },
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                className:
+                  "rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50",
+                onClick: cancelDeleteStudent,
+                disabled: isDeletingStudent,
+              },
+              "Cancel",
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                className:
+                  "rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-500 disabled:opacity-60",
+                onClick: performDeleteStudent,
+                disabled: isDeletingStudent,
+              },
+              isDeletingStudent ? "Removing\u2026" : "Remove student",
+            ),
+          ),
+        ),
+      ),
   );
 }
 function ke({ section: t, deleting: s, error: i, onClose: r, onConfirm: c }) {
