@@ -122,33 +122,31 @@ export function useStudentActions(context) {
     [currentSectionId, loadLiveData, queueOfflineChange, students.length],
   );
 
-const deleteStudent = useCallback(
-  async ({ enrollmentId, sectionId }) => {
-    if (!enrollmentId || !sectionId) {
-      throw new Error("Student information is incomplete.");
-    }
-    if (browserIsOffline() || !supabase) {
-      await queueOfflineChange("delete-student", {
-        enrollmentId,
-        sectionId,
-      });
-      setStudents((current) =>
-        current.filter((item) => item.id !== enrollmentId),
-      );
-      return;
-    }
-    const { error: enrollmentError } = await supabase
-      .from("enrollments")
-      .delete()
-      .eq("id", enrollmentId)
-      .eq("section_id", sectionId);
-    if (enrollmentError) throw enrollmentError;
-    await loadLiveData(sectionId);
-  },
-  [browserIsOffline, loadLiveData, queueOfflineChange, setStudents, supabase],
-);
-
-return { addStudent, updateStudent, deleteStudent };
+  const deleteStudent = useCallback(
+    async ({ enrollmentId, sectionId }) => {
+      if (!enrollmentId || !sectionId) {
+        throw new Error("Student information is incomplete.");
+      }
+      if (browserIsOffline() || !supabase) {
+        await queueOfflineChange("delete-student", {
+          enrollmentId,
+          sectionId,
+        });
+        setStudents((current) =>
+          current.filter((item) => item.id !== enrollmentId),
+        );
+        return;
+      }
+      const { error: enrollmentError } = await supabase
+        .from("enrollments")
+        .delete()
+        .eq("id", enrollmentId)
+        .eq("section_id", sectionId);
+      if (enrollmentError) throw enrollmentError;
+      await loadLiveData(sectionId);
+    },
+    [browserIsOffline, loadLiveData, queueOfflineChange, setStudents, supabase],
+  );
 
   const updateStudent = useCallback(
     async ({ studentId, enrollmentId, sectionId, ctrlNo, ...student }) => {
@@ -216,5 +214,5 @@ return { addStudent, updateStudent, deleteStudent };
     [browserIsOffline, loadLiveData, queueOfflineChange, setStudents, supabase],
   );
 
-  return { addStudent, updateStudent };
+  return { addStudent, updateStudent, deleteStudent };
 }
