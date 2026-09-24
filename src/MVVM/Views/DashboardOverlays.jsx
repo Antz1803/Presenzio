@@ -263,6 +263,7 @@ function we({
   sections: i = [],
   onClose: r,
   onUpdateStudent: c,
+  onDeleteStudent: deleteStudentFn,
   onTransferStudent: n,
   onLoadTransferPreview: m,
 }) {
@@ -455,6 +456,21 @@ function we({
         } finally {
           u(!1);
         }
+      }
+    },
+    confirmDeleteStudent = async (student) => {
+      if (!deleteStudentFn) return;
+      const confirmed = window.confirm(
+        `Remove ${student.name} from this class? Their scores, grades, and attendance in this class will be deleted. This cannot be undone.`,
+      );
+      if (!confirmed) return;
+      try {
+        await deleteStudentFn({
+          enrollmentId: student.id,
+          sectionId: t?.id,
+        });
+      } catch (err) {
+        window.alert(err?.message || "The student could not be removed.");
       }
     };
   return React.createElement(
@@ -1212,6 +1228,17 @@ MANCILLA, JEORGE REY        2414456
                           onClick: () => le(e),
                         },
                         "Transfer",
+                      ),
+                    deleteStudentFn &&
+                      React.createElement(
+                        "button",
+                        {
+                          type: "button",
+                          className:
+                            "rounded-lg border border-rose-200 px-2.5 py-1 text-[11px] font-semibold text-rose-600 hover:bg-rose-50",
+                          onClick: () => confirmDeleteStudent(e),
+                        },
+                        "Remove",
                       ),
                   ),
                 ),

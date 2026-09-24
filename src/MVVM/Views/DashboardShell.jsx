@@ -327,6 +327,7 @@ export default function ce() {
           sections: e.sections,
           students: i?.id === p ? e.students : [],
           onUpdateStudent: e.updateStudent,
+          onDeleteStudent: e.deleteStudent,
           onTransferStudent: e.transferStudent,
           onLoadTransferPreview: e.loadTransferPreview,
           onClose: () => g(null),
