@@ -282,6 +282,7 @@ const {
     submitAssessment,
     addStudent,
     updateStudent,
+    deleteStudent,
     transferStudent,
     loadTransferPreview,
     updateSection,
