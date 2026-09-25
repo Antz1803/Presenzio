@@ -1,4 +1,4 @@
-import React, { useState as y } from "react";
+import React, { useEffect as ee, useState as y } from "react";
 import { formatDisplayDate as D } from "./actionUtils";
 const C = [
     { key: "quiz", label: "Quiz", prefix: "Q", count: 4 },
@@ -228,6 +228,15 @@ function w({
       }).filter((a) => a !== null);
       return r.length ? r.reduce((a, o) => a + o, 0) / r.length : 0;
     };
+  ee(() => {
+    M(L(u, m, g));
+    _((currentScores) => {
+      const nextScores = G(i, u, m);
+      return JSON.stringify(currentScores) === JSON.stringify(nextScores)
+        ? currentScores
+        : nextScores;
+    });
+  }, [i, u, g, m]);
   return React.createElement(
     "div",
     { className: "record-score-panel" },

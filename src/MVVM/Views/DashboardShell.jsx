@@ -182,6 +182,7 @@ export default function ce() {
         (await e.addStudent(s), c());
       },
       onRefreshGrades: e.refreshGrades,
+      onRefreshLiveData: e.refresh,
       onSaveStudentGroup: e.saveStudentGroup,
       onDeleteStudentGroup: e.deleteStudentGroup,
     };

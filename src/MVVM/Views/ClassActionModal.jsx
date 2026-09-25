@@ -54,16 +54,21 @@ export default function K({
   onSaveGradingPeriods: F,
   onAddStudent: z,
   onRefreshGrades: u,
+  onRefreshLiveData: U,
   onSaveStudentGroup: I,
   onDeleteStudentGroup: R,
 }) {
   const b = W(null);
   return (
     V(() => {
-      const a = b.current === "show-grades";
-      ((b.current = e),
-        !(e !== "show-grades" || a || !u) && u().catch(() => {}));
-    }, [u, e]),
+      const a = b.current;
+      b.current = e;
+      e === "show-grades" && a !== e && u
+        ? u().catch(() => {})
+        : e === "record-score" && a !== e && U
+          ? U(i?.id).catch(() => {})
+          : null;
+    }, [U, u, e, i?.id]),
     N
       ? React.createElement(
           r,
