@@ -736,18 +736,19 @@ function fillSummary(patches, students, gradingPeriods) {
     patchCell(patches, "Summary", row, 0, index + 1);
     patchCell(patches, "Summary", row, 1, student.name);
 
-    // Carry the last active period's grade into every period after it that
-    // has no configured date range yet, so PG/MG/SFG/FG never go blank just
-    // because Semi-final or Final hasn't started.
-    let carriedGrade = null;
+    // Keep Summary formula-driven like the reference workbook. The source
+    // values come from the period sheets, which are populated from the same
+    // scores, attendance, weights, and transmutation table used by the app.
     summaryPeriodOrder.forEach((code) => {
       const column = summaryColumns[code];
       if (activeSet.has(code)) {
-        patchFormula(patches, "Summary", row, column, summaryFormulas[code](periodRow));
-        const grade = Number(student.grades?.[code]);
-        if (Number.isFinite(grade)) carriedGrade = grade;
-      } else if (carriedGrade != null) {
-        patchLiteral(patches, "Summary", row, column, carriedGrade);
+        patchFormula(
+          patches,
+          "Summary",
+          row,
+          column,
+          summaryFormulas[code](periodRow),
+        );
       } else {
         patchLiteral(patches, "Summary", row, column, "");
       }

@@ -83,12 +83,12 @@ export function useGradeCalculationActions(context) {
         (async () => {
           const withWeights = await supabase
             .from("grading_periods")
-            .select("id, code, sort_order, weights")
+            .select("id, code, sort_order, start_date, end_date, weights")
             .order("sort_order");
           if (!withWeights.error) return withWeights;
           return supabase
             .from("grading_periods")
-            .select("id, code, sort_order")
+            .select("id, code, sort_order, start_date, end_date")
             .order("sort_order");
         })(),
       ]);
@@ -102,9 +102,14 @@ export function useGradeCalculationActions(context) {
       const ownGrades = new Map();
       periods.forEach((period) => {
         const periodWeights = getPeriodGradingWeights(period);
-        const periodSessions = (sessionRows ?? []).filter(
-          (session) => session.period_id === period.id,
-        );
+        const periodSessions = (sessionRows ?? []).filter((session) => {
+          if (session.period_id !== period.id) return false;
+          if (!period.start_date || !period.end_date) return true;
+          const sessionDate = String(session.session_date ?? "").slice(0, 10);
+          return (
+            sessionDate >= period.start_date && sessionDate <= period.end_date
+          );
+        });
         const periodStudentGrades = new Map();
         roster.forEach((student) => {
           const categoryGrades = {};
