@@ -22,8 +22,6 @@ import {
   browserIsOffline,
   createLocalId,
   isNetworkError,
-  callLanApi,
-  mergeAssessmentScores,
   serializeAssessmentDate,
   answerSimilarity,
 } from "./dashboardUtils";
@@ -193,7 +191,6 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
       assessmentItemLimits,
       average,
       browserIsOffline,
-      callLanApi,
       createAssessmentAccessKey,
       createLocalId,
       formatShortDate,

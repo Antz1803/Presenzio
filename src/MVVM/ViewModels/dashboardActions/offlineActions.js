@@ -50,7 +50,6 @@ export function useOfflineActions(context) {
     assessmentItemLimits,
     average,
     browserIsOffline,
-    callLanApi,
     createAssessmentAccessKey,
     createLocalId,
     formatShortDate,

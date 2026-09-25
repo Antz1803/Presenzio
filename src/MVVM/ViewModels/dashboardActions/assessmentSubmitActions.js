@@ -11,7 +11,7 @@ export function useAssessmentSubmitActions(context) {
     queueOfflineChange,
     helpers,
   } = context;
-  const { answerSimilarity, browserIsOffline, callLanApi, createLocalId } =
+  const { answerSimilarity, browserIsOffline, createLocalId } =
     helpers;
   const submitAssessment = async ({
     assessmentId,
@@ -86,39 +86,6 @@ export function useAssessmentSubmitActions(context) {
         question.question_type === "coding" &&
         !question.expected_output?.trim(),
     );
-    const lanAttemptId = createLocalId();
-    const lanResult = await callLanApi("/api/student-assessment/submit", {
-      method: "POST",
-      body: JSON.stringify({
-        attempt: {
-          id: lanAttemptId,
-          assessment_id: assessmentId,
-          student_id: studentId,
-          status: needsReview ? "needs_review" : "submitted",
-          score,
-          max_score: maxScore,
-          attempt_no: Number(attemptNumber) || 1,
-          submitted_at: new Date().toISOString(),
-        },
-        answers: answerRows.map((answer) => ({
-          ...answer,
-          attempt_id: lanAttemptId,
-        })),
-        violations,
-        score: {
-          section_id: assessment.section_id,
-          period_id: assessment.period_id,
-          enrollment_id: enrollmentId,
-          category: assessment.category,
-          item_no: assessment.item_no,
-          score,
-          max_score: maxScore,
-        },
-        periodCode: assessment.period?.code || null,
-        autoSubmit,
-      }),
-    });
-    if (lanResult) return lanResult;
     if (browserIsOffline() || !supabase) {
       if (!assessment.item_no) {
         throw new Error("This assessment is missing its Record Score column.");

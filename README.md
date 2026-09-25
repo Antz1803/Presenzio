@@ -1,34 +1,25 @@
-# React + Vite
+# Presenzio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Presenzio is a React/Vite gradebook that uses Supabase for shared data and IndexedDB for browser-side offline queuing.
 
 ## Run with Docker
 
-Install Docker Desktop, then run the production site with the Supabase variables from `.env.local`:
+Install dependencies, configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local`, then start the development site:
 
 ```powershell
-docker compose --env-file .env.local up --build -d
+npm install
+npm run dev
 ```
 
-Open `http://localhost:5500`. To use it from another device on the same network, open `http://YOUR-COMPUTER-IP:5500` and allow Docker through the Windows Private network firewall when prompted.
-
-### LAN SQL Server storage
-
-The LAN API stores its assessment cache and pending submissions in the local SQL Server database, then retries synchronization to Supabase when internet is available. Run `sqlserver.schema.sql` once in the `Presenzio` database through SSMS, then add these local-only variables to `.env.local`:
+For a production container, pass the same Supabase values as build arguments:
 
 If you use the assessment attempt and time-window controls, run the complete `supabase/schema.sql` in the Supabase SQL Editor after updating this project. It adds the assessment availability fields and allows multiple numbered attempts per student. Existing assessments default to one attempt with no time window.
 
 ```text
-SQL_SERVER=host.docker.internal
-SQL_PORT=1433
-SQL_DATABASE=Presenzio
-SQL_USER=presenzio_app
-SQL_PASSWORD=your-sql-login-password
+docker compose --env-file .env.local up --build -d
 ```
 
-The Docker API uses SQL Server through `host.docker.internal`; port 1433 must be enabled for TCP/IP and allowed on the Windows Private network firewall. Do not run `docker compose down -v`, because the local Docker volume may contain older pending data.
-
-Stop the container with:
+Open `http://localhost:5500` when the container is running. Stop it with:
 
 ```powershell
 docker compose down

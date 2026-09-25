@@ -8,7 +8,6 @@ import {
   resolvePeriodCodeForSession,
   isNetworkError,
   toGradeRows,
-  callLanApi,
 } from "./dashboardUtils";
 import { buildRoster } from "./dashboardRosterBuilder";
 import { buildLiveStats } from "./dashboardStatsBuilder";
@@ -75,12 +74,30 @@ export function useDashboardLiveLoader(context) {
       }
       if (!isStale()) setConnectionStatus("connecting");
       try {
-        let sectionQuery = supabase.from("sections").select("*");
+        let sectionQuery = supabase
+          .from("sections")
+          .select("*, school_year:school_years(label, semester)");
         if (accountScoped)
           sectionQuery = sectionQuery.eq("teacher_id", accountId);
-        const { data: sectionList, error: sectionListError } =
+        let { data: sectionList, error: sectionListError } =
           await sectionQuery.order("id", { ascending: false });
-        if (sectionListError) throw sectionListError;
+        if (sectionListError) {
+          // Older deployments may not expose the relationship in the client
+          // schema yet. Keep loading classes, just without the optional
+          // school-year metadata used by Excel Settings.
+          let fallbackSectionQuery = supabase.from("sections").select("*");
+          if (accountScoped)
+            fallbackSectionQuery = fallbackSectionQuery.eq(
+              "teacher_id",
+              accountId,
+            );
+          const fallback = await fallbackSectionQuery.order("id", {
+            ascending: false,
+          });
+          if (fallback.error) throw sectionListError;
+          sectionList = fallback.data;
+          sectionListError = null;
+        }
         const sectionData =
           sectionList?.find((item) => item.id === preferredSectionId) ??
           sectionList?.[0];
@@ -142,7 +159,6 @@ export function useDashboardLiveLoader(context) {
             "Live · " + (sectionData.subject_code ?? "Supabase"),
           );
         }
-        void callLanApi("/api/sync", { method: "POST" }).catch(() => {});
         return {
           live: true,
           sectionId: sectionData.id,

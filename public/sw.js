@@ -1,4 +1,4 @@
-const CACHE_NAME = "presenzio-app-v1";
+const CACHE_NAME = "presenzio-app-v2";
 const APP_SHELL = ["/", "/index.html"];
 
 self.addEventListener("install", (event) => {
@@ -37,6 +37,16 @@ self.addEventListener("fetch", (event) => {
           return response;
         })
         .catch(() => caches.match("/index.html")),
+    );
+    return;
+  }
+
+  // The workbook is updated independently from the app shell. Always fetch
+  // the current template so an older cached .xlsm cannot reintroduce broken
+  // formulas or stale sheet structure during Excel sync.
+  if (requestUrl.pathname === "/grade-sheet-template.xlsm") {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request)),
     );
     return;
   }

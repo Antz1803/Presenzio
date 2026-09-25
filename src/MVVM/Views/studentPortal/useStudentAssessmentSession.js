@@ -101,7 +101,7 @@ export function useStudentAssessmentSession() {
           (u({
             status: "success",
             text: n.queued
-              ? `Score: ${n.score}/${n.maxScore}. Your answers were saved on the LAN computer${n.needsReview ? " and are waiting for review" : ""}. They will sync to Supabase when internet is available.`
+              ? `Score: ${n.score}/${n.maxScore}. Your answers were saved${n.needsReview ? " and are waiting for review" : ""}. They will sync to Supabase when internet is available.`
               : n.needsReview
                 ? "Your answers were submitted. Your coding response is waiting for review."
                 : `Your answers were submitted. Score: ${n.score}/${n.maxScore}.`,

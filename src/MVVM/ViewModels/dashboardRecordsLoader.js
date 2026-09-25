@@ -1,5 +1,4 @@
 import { supabase } from "../../lib/supabaseClient";
-import { callLanApi, mergeAssessmentScores } from "./dashboardUtils";
 
 export async function loadDashboardRecords({ sectionData, sectionList }) {
   const { data: enrollments, error: enrollmentError } = await supabase
@@ -62,13 +61,7 @@ export async function loadDashboardRecords({ sectionData, sectionList }) {
       .eq("section_id", sectionData.id);
   if (assessmentScoreError) throw assessmentScoreError;
 
-  const lanScores = await callLanApi(
-    `/api/submissions?sectionId=${encodeURIComponent(sectionData.id)}`,
-  );
-  const combinedAssessmentScoreData = mergeAssessmentScores(
-    assessmentScoreData ?? [],
-    lanScores?.scores ?? [],
-  );
+  const combinedAssessmentScoreData = assessmentScoreData ?? [];
 
   const { data: studentGroupData, error: studentGroupError } = await supabase
     .from("student_groups")
@@ -117,9 +110,6 @@ export async function loadDashboardRecords({ sectionData, sectionList }) {
   }
   const assessmentRows = assessmentDataError ? [] : (assessmentData ?? []);
   const assessmentIds = assessmentRows.map((assessment) => assessment.id);
-  const lanManagement = await callLanApi(
-    `/api/assessment-management?sectionId=${encodeURIComponent(sectionData.id)}`,
-  );
   let attemptRows = [];
   let grantRows = [];
   let violationRows = [];
@@ -147,23 +137,9 @@ export async function loadDashboardRecords({ sectionData, sectionList }) {
     grantRows = grantResult.error ? [] : (grantResult.data ?? []);
     violationRows = violationResult.error ? [] : (violationResult.data ?? []);
   }
-  const mergeById = (remoteRows, lanRows) => [
-    ...new Map(
-      [...remoteRows, ...lanRows]
-        .filter((row) => row?.id)
-        .map((row) => [row.id, row]),
-    ).values(),
-  ];
-  attemptRows = mergeById(attemptRows, lanManagement?.attempts ?? []);
-  grantRows = mergeById(grantRows, lanManagement?.attemptGrants ?? []);
-  violationRows = mergeById(violationRows, lanManagement?.violations ?? []);
-
   // Fetch each attempt's actual submitted answers (question_id, the raw
   // answer text/choice, correctness, and points earned) and attach them
-  // to their attempt row. This has to happen after attemptRows is final
-  // (post-LAN-merge) since we key off attempt ids. LAN-originated
-  // attempts that haven't synced to Supabase yet simply get an empty
-  // `answers` array until they sync.
+  // to their attempt row.
   let answerRows = [];
   const attemptIds = attemptRows.map((attempt) => attempt.id).filter(Boolean);
   if (attemptIds.length) {

@@ -47,7 +47,6 @@ export function useStudentAssessmentActions(context) {
     assessmentItemLimits,
     average,
     browserIsOffline,
-    callLanApi,
     createAssessmentAccessKey,
     createLocalId,
     formatShortDate,
@@ -63,11 +62,6 @@ export function useStudentAssessmentActions(context) {
       if (!normalizedKey) throw new Error("Enter the Assessment Key ID.");
       if (!normalizedStudentNumber)
         throw new Error("Enter your student ID number.");
-
-      const lanResult = await callLanApi(
-        `/api/student-assessment?accessKey=${encodeURIComponent(normalizedKey)}&studentNumber=${encodeURIComponent(normalizedStudentNumber)}`,
-      );
-      if (lanResult) return lanResult;
 
       if (browserIsOffline() || !supabase) {
         const cachedSections =

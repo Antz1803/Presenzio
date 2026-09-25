@@ -51,7 +51,6 @@ export function useGradeImportActions(context) {
     assessmentItemLimits,
     average,
     browserIsOffline,
-    callLanApi,
     createAssessmentAccessKey,
     createLocalId,
     formatShortDate,

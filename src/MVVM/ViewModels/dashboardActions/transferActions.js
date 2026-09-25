@@ -50,7 +50,6 @@ export function useTransferActions(context) {
     assessmentItemLimits,
     average,
     browserIsOffline,
-    callLanApi,
     createAssessmentAccessKey,
     createLocalId,
     formatShortDate,

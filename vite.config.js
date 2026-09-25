@@ -10,7 +10,6 @@ dns.setDefaultResultOrder('ipv4first')
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "")
   const supabaseUrl = env.VITE_SUPABASE_URL?.replace(/\/$/, "")
-  const lanServerUrl = env.VITE_LAN_SERVER_URL || "http://localhost:3000"
 
   return {
     plugins: [
@@ -27,11 +26,6 @@ export default defineConfig(({ mode }) => {
     server: supabaseUrl
       ? {
           proxy: {
-            "/api": {
-              target: lanServerUrl,
-              changeOrigin: true,
-              secure: false,
-            },
             "/supabase": {
               target: supabaseUrl,
               changeOrigin: true,

@@ -18,7 +18,7 @@ export function useAttemptActions(context) {
     setAssessmentDefinitions,
     helpers,
   } = context;
-  const { browserIsOffline, callLanApi } = helpers;
+  const { browserIsOffline } = helpers;
   const grantAssessmentAttempt = useCallback(
     async ({ assessmentId, studentId }) => {
       if (!currentSectionId) throw new Error("No active Supabase section.");
@@ -29,33 +29,6 @@ export function useAttemptActions(context) {
         student_id: studentId,
         section_id: currentSectionId,
       };
-      const lanResult = await callLanApi("/api/assessment-attempt-grants", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-      if (lanResult?.grant) {
-        const grant = lanResult.grant;
-        setAssessmentAttemptGrants((current) => [
-          ...current.filter((item) => item.id !== grant.id),
-          grant,
-        ]);
-        setAssessmentDefinitions((current) =>
-          current.map((assessment) =>
-            assessment.id === assessmentId
-              ? {
-                  ...assessment,
-                  attemptGrants: [
-                    ...(assessment.attemptGrants ?? []).filter(
-                      (item) => item.id !== grant.id,
-                    ),
-                    grant,
-                  ],
-                }
-              : assessment,
-          ),
-        );
-        return grant;
-      }
       if (browserIsOffline() || !supabase) {
         await queueOfflineChange("grant-assessment-attempt", payload);
         return { ...payload, extra_attempts: 1, queued: true };
@@ -81,7 +54,6 @@ export function useAttemptActions(context) {
         .select("id, assessment_id, student_id, extra_attempts, granted_at")
         .single();
       if (error) throw error;
-      await callLanApi("/api/sync", { method: "POST" });
       await loadLiveData(currentSectionId);
       return grant;
     },

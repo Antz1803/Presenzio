@@ -1,5 +1,3 @@
-const LAN_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-
 import { transmutationBreakpoints } from "./dashboardConstants";
 export function transmutePercentage(value) {
   if (!Number.isFinite(Number(value))) return null;
@@ -96,65 +94,6 @@ export function isNetworkError(error) {
     error?.status === 0 ||
     error?.name === "TypeError"
   );
-}
-
-// Default timeout for LAN API calls. Callers that hit heavier endpoints
-// (e.g. /api/sync, which runs several Supabase queries plus grant sync/prune
-// work server-side) should pass a larger `timeoutMs` in options, since the
-// old fixed 2000ms budget was aborting those calls before the server could
-// respond — which showed up in DevTools as a red, 0 B, "failed" request with
-// no console output, because the abort was being swallowed silently.
-const DEFAULT_LAN_API_TIMEOUT_MS = 10000;
-
-export async function callLanApi(path, options = {}) {
-  let response;
-  const controller = new AbortController();
-  const timeoutMs = options.timeoutMs ?? DEFAULT_LAN_API_TIMEOUT_MS;
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    response = await fetch(`${LAN_API_BASE_URL}${path}`, {
-      ...options,
-      signal: options.signal ?? controller.signal,
-      headers: {
-        ...(options.body ? { "Content-Type": "application/json" } : {}),
-        ...(options.headers || {}),
-      },
-    });
-  } catch (error) {
-    const reason =
-      error?.name === "AbortError" ? `timed out after ${timeoutMs}ms` : error;
-    console.warn(`LAN API call to ${path} failed:`, reason);
-    return null;
-  } finally {
-    clearTimeout(timeout);
-  }
-
-  const contentType = response.headers.get("content-type") || "";
-  if (!contentType.includes("application/json")) return null;
-  const body = await response.json();
-  if (!response.ok) {
-    const error = new Error(body.error || "LAN service request failed.");
-    error.lanApi = true;
-    error.status = response.status;
-    throw error;
-  }
-  return body;
-}
-
-export function assessmentScoreKey(row) {
-  return [
-    row.section_id,
-    row.period_id,
-    row.enrollment_id,
-    row.category,
-    row.item_no,
-  ].join(":");
-}
-
-export function mergeAssessmentScores(remoteRows = [], lanRows = []) {
-  const rows = new Map(remoteRows.map((row) => [assessmentScoreKey(row), row]));
-  lanRows.forEach((row) => rows.set(assessmentScoreKey(row), row));
-  return [...rows.values()];
 }
 
 export function normalizeSubmittedAnswer(value) {

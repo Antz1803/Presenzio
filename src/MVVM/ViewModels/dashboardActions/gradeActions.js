@@ -50,7 +50,6 @@ export function useGradeActions(context) {
     assessmentItemLimits,
     average,
     browserIsOffline,
-    callLanApi,
     createAssessmentAccessKey,
     createLocalId,
     formatShortDate,

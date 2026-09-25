@@ -6,8 +6,6 @@
   "scripts": {
     "dev": "vite",
     "dev:web": "vite",
-    "dev:server": "node server.js",
-    "dev:all": "concurrently -n WEB,API -c blue,green \"npm:dev:web\" \"npm:dev:server\"",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -16,8 +14,6 @@
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.112.4",
     "@tailwindcss/vite": "^4.3.3",
-    "dotenv": "^17.4.2",
-    "mssql": "^11.0.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tailwindcss": "^4.3.3",
@@ -31,7 +27,6 @@
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
     "babel-plugin-react-compiler": "^1.0.0",
-    "concurrently": "^9.1.0",
     "eslint": "^10.9.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.4",

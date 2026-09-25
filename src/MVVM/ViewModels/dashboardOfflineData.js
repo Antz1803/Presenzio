@@ -3,7 +3,6 @@ import {
   countOfflineMutations,
   readOfflineSnapshot,
 } from "../../lib/offlineStore";
-import { callLanApi, mergeAssessmentScores } from "./dashboardUtils";
 import { emptyStats } from "./dashboardConstants";
 
 export function useDashboardOfflineData(context) {
@@ -77,19 +76,6 @@ export function useDashboardOfflineData(context) {
       if (!applyOfflineSnapshot(snapshot, sectionList)) {
         clearLiveData();
         setSections(sectionList);
-      }
-      if (selectedSectionId) {
-        const lanScores = await callLanApi(
-          `/api/submissions?sectionId=${encodeURIComponent(selectedSectionId)}`,
-        );
-        if (
-          lanScores?.scores?.length &&
-          loadRequestIdRef.current === requestId
-        ) {
-          setAssessmentScores((current) =>
-            mergeAssessmentScores(current, lanScores.scores),
-          );
-        }
       }
       if (requestId == null || loadRequestIdRef.current === requestId) {
         setConnectionStatus("offline");
