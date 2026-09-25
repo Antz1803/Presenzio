@@ -3,6 +3,7 @@ import { useCallback } from "react";
 import { importMasterListFile } from "../importMasterList";
 import { importGradeSheetFile } from "../importRecord";
 import { syncGradeSheetToExcel } from "../syncGradeSheetToExcelPreservingTemplate";
+import { getPeriodGradingWeightPercentages } from "../dashboardConstants";
 import { supabase } from "../../../lib/supabaseClient";
 import {
   countOfflineMutations,
@@ -66,7 +67,7 @@ export function useSetupActions(context) {
   );
 
   const saveGradingPeriods = useCallback(
-    async (dateRanges) => {
+    async ({ dateRanges = {}, weightSettings = {} } = {}) => {
       if (!supabase) throw new Error("Supabase is not configured.");
 
       const invalidPeriod = Object.entries(dateRanges).find(([, dates]) => {
@@ -82,14 +83,25 @@ export function useSetupActions(context) {
         );
       }
 
-      const rows = Object.entries(dateRanges).map(([code, dates], index) => ({
-        code,
-        sort_order:
-          gradingPeriods.find((periodItem) => periodItem.code === code)
-            ?.sort_order ?? index + 1,
-        start_date: dates.start || null,
-        end_date: dates.end || null,
-      }));
+      const rows = Object.entries(dateRanges).map(([code, dates], index) => {
+        const period = gradingPeriods.find(
+          (periodItem) => periodItem.code === code,
+        );
+        const savedWeights =
+          weightSettings[code] ?? getPeriodGradingWeightPercentages(period);
+        return {
+          code,
+          sort_order: period?.sort_order ?? index + 1,
+          start_date: dates.start || null,
+          end_date: dates.end || null,
+          weights: Object.fromEntries(
+            Object.entries(savedWeights).map(([key, value]) => [
+              key,
+              Number(value),
+            ]),
+          ),
+        };
+      });
       if (browserIsOffline() || !supabase) {
         await queueOfflineChange("save-grading-periods", { rows });
         setGradingPeriods((current) =>
@@ -100,6 +112,7 @@ export function useSetupActions(context) {
                   ...currentPeriod,
                   start_date: next.start_date,
                   end_date: next.end_date,
+                  weights: next.weights,
                 }
               : currentPeriod;
           }),

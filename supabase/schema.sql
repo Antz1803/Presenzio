@@ -86,6 +86,7 @@ create table if not exists grading_periods (
   sort_order int not null unique,
   start_date date,
   end_date date,
+  weights jsonb not null default '{"quiz":20,"assignment":10,"activity":30,"attendance":5,"exam":35}'::jsonb,
   check (start_date is null or end_date is null or start_date <= end_date)
 );
 
@@ -94,6 +95,9 @@ alter table if exists grading_periods
 
 alter table if exists grading_periods
   add column if not exists end_date date;
+
+alter table if exists grading_periods
+  add column if not exists weights jsonb not null default '{"quiz":20,"assignment":10,"activity":30,"attendance":5,"exam":35}'::jsonb;
 
 insert into grading_periods (code, sort_order) values
   ('prelim', 1), ('midterm', 2), ('semifinal', 3), ('final', 4)

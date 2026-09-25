@@ -31,7 +31,7 @@ export async function loadDashboardRecords({ sectionData, sectionList }) {
 
   let { data: periods, error: periodError } = await supabase
     .from("grading_periods")
-    .select("id, code, sort_order, start_date, end_date")
+    .select("id, code, sort_order, start_date, end_date, weights")
     .order("sort_order");
   if (periodError) {
     // Keep existing classes visible until the date columns are added to

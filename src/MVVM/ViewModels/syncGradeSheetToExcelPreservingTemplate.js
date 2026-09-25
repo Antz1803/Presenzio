@@ -1,5 +1,10 @@
 import * as XLSX from "xlsx";
 import * as CFB from "cfb";
+import {
+  getPeriodGradingWeightPercentages,
+  gradingWeights,
+  transmutationBreakpoints,
+} from "./dashboardConstants";
 
 const periodSheets = {
   prelim: "Prelim",
@@ -17,6 +22,7 @@ const templateSheetNumbers = {
   Final: 6,
   Summary: 7,
   Month: 8,
+  Transmutation: 9,
 };
 
 const attendanceLayout = {
@@ -56,14 +62,56 @@ const gradeColumns = {
   final: { own: 35, cumulative: 39 },
 };
 
+function setCalculationParameters(patches, gradingPeriods = []) {
+  // Each period has its own percentage table in the workbook. The fourth
+  // term is the template's reserved spacer column and remains zero-weighted.
+  const layouts = {
+    prelim: { row: 11, column: 4 },
+    semifinal: { row: 11, column: 7 },
+    midterm: { row: 20, column: 4 },
+    final: { row: 20, column: 7 },
+  };
+  Object.entries(layouts).forEach(([code, layout]) => {
+    const period = gradingPeriods.find((item) => item.code === code);
+    const weights = getPeriodGradingWeightPercentages(period);
+    [
+      weights.quiz,
+      weights.assignment,
+      weights.activity,
+      Number(gradingWeights.spacer) * 100,
+      weights.attendance,
+      weights.exam,
+    ].forEach((weight, index) => {
+      patchCell(
+        patches,
+        "Settings",
+        layout.row + index,
+        layout.column,
+        Number(weight),
+      );
+    });
+  });
+
+  // Keep Excel's approximate VLOOKUP table exactly aligned with the system's
+  // transmutePercentage breakpoints for every percentage from 0 through 100.
+  for (let percentage = 0; percentage <= 100; percentage += 1) {
+    let gradePoint = transmutationBreakpoints[0][1];
+    transmutationBreakpoints.forEach(([breakpoint, grade]) => {
+      if (percentage >= breakpoint) gradePoint = grade;
+    });
+    patchCell(patches, "Transmutation", percentage + 1, 0, percentage);
+    patchCell(patches, "Transmutation", percentage + 1, 1, gradePoint);
+  }
+}
+
 const summaryPeriodOrder = ["prelim", "midterm", "semifinal", "final"];
 
 function getActivePeriodCodes(gradingPeriods) {
   const byCode = new Map((gradingPeriods ?? []).map((period) => [period.code, period]));
-  return summaryPeriodOrder.filter((code) => {
-    const period = byCode.get(code);
-    return Boolean(period?.start_date && period?.end_date);
-  });
+  // A saved score is valid export data even when the teacher has not yet
+  // configured the optional date range for that grading period. Date ranges
+  // must not make assessment scores disappear from Excel.
+  return summaryPeriodOrder.filter((code) => byCode.has(code));
 }
 
 function buildPeriodDateRanges(gradingPeriods) {
@@ -297,7 +345,7 @@ function getTemplateFile(cfb, name) {
   return file;
 }
 
-function setMetadata(patches, section) {
+function setMetadata(patches, section, gradingPeriods = []) {
   const time = formatTimeRange(section);
   const metadata = {
     schoolYear:
@@ -327,6 +375,21 @@ function setMetadata(patches, section) {
     ["B8", metadata.dean],
   ];
   settings.forEach(([address, value]) => patchAddress(patches, "Settings", address, value));
+  const periodLabels = {
+    prelim: "Prelim",
+    midterm: "Midterm",
+    semifinal: "Semi-final",
+    final: "Final",
+  };
+  patchCell(patches, "Settings", 29, 3, "PERIOD");
+  patchCell(patches, "Settings", 29, 4, "START DATE");
+  patchCell(patches, "Settings", 29, 6, "END DATE");
+  ["prelim", "midterm", "semifinal", "final"].forEach((code, index) => {
+    const period = gradingPeriods.find((item) => item.code === code);
+    patchCell(patches, "Settings", 30 + index, 3, periodLabels[code]);
+    patchCell(patches, "Settings", 30 + index, 4, period?.start_date || "");
+    patchCell(patches, "Settings", 30 + index, 6, period?.end_date || "");
+  });
   [
     ["B1", metadata.title], ["E1", metadata.room], ["B2", metadata.time],
     ["E2", metadata.days], ["B3", metadata.code], ["E3", metadata.teacher],
@@ -825,24 +888,23 @@ export async function syncGradeSheetToExcel({
   const activePeriodSet = new Set(activePeriodCodes);
   const periodDateRanges = buildPeriodDateRanges(gradingPeriods);
 
-  // Only periods with a configured date range get their data (and their
-  // sheet) written at all. Periods that haven't started yet are left
-  // completely blank instead of showing empty/misleading records.
+  // Export all stored assessment records for configured grading periods.
+  // Date ranges are used below only when filtering attendance sessions.
   const filteredAssessmentScores = (assessmentScores ?? []).filter((row) =>
     activePeriodSet.has(periodCodeForRow(row, periodsById)),
   );
   const filteredAssessmentDefinitions = (assessmentDefinitions ?? []).filter((item) =>
     activePeriodSet.has(item.period?.code),
   );
-  // A session only counts toward a period's total if it's tagged with that
-  // period AND its actual session date falls inside that period's current
-  // start/end range — so totals stay accurate even if a period's dates were
-  // adjusted after some sessions were already recorded under it, and a
-  // mistagged session can never leak into a period that isn't active yet.
+  // If a period has dates, keep attendance inside that range. If dates are
+  // not configured yet, preserve the stored attendance session instead of
+  // silently dropping it from the workbook.
   const filteredAttendanceSessions = (attendanceSessions ?? []).filter(
-    (session) =>
-      activePeriodSet.has(session.periodCode) &&
-      sessionWithinPeriodRange(session, periodDateRanges),
+    (session) => {
+      if (!activePeriodSet.has(session.periodCode)) return false;
+      if (!periodDateRanges.has(session.periodCode)) return true;
+      return sessionWithinPeriodRange(session, periodDateRanges);
+    },
   );
 
   const response = await fetch("/grade-sheet-template.xlsm");
@@ -850,7 +912,8 @@ export async function syncGradeSheetToExcel({
   const bytes = new Uint8Array(await response.arrayBuffer());
   const cfb = CFB.read(bytes, { type: "array" });
   const patches = {};
-  setMetadata(patches, section);
+  setCalculationParameters(patches, gradingPeriods);
+  setMetadata(patches, section, gradingPeriods);
   fillAttendance(patches, sortedStudents, filteredAttendanceSessions);
   Object.keys(periodSheets).forEach((periodCode) => {
     if (!activePeriodSet.has(periodCode)) {

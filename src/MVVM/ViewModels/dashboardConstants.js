@@ -36,6 +36,33 @@ export const gradingWeights = {
   exam: 0.35,
 };
 
+export const gradingWeightKeys = [
+  "quiz",
+  "assignment",
+  "activity",
+  "attendance",
+  "exam",
+];
+
+export function getPeriodGradingWeights(period) {
+  const saved = period?.weights;
+  return gradingWeightKeys.reduce((weights, key) => {
+    const percentage = Number(saved?.[key]);
+    weights[key] = Number.isFinite(percentage) && percentage >= 0
+      ? percentage / 100
+      : gradingWeights[key];
+    return weights;
+  }, { spacer: 0 });
+}
+
+export function getPeriodGradingWeightPercentages(period) {
+  const weights = getPeriodGradingWeights(period);
+  return gradingWeightKeys.reduce((percentages, key) => {
+    percentages[key] = weights[key] * 100;
+    return percentages;
+  }, {});
+}
+
 export const assessmentItemLimits = {
   quiz: 4,
   assignment: 4,

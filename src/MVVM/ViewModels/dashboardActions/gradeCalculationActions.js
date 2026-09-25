@@ -4,6 +4,7 @@ import { importMasterListFile } from "../importMasterList";
 import { importGradeSheetFile } from "../importRecord";
 import { syncGradeSheetToExcel } from "../syncGradeSheetToExcelPreservingTemplate";
 import { supabase } from "../../../lib/supabaseClient";
+import { getPeriodGradingWeights } from "../dashboardConstants";
 import {
   countOfflineMutations,
   listOfflineMutations,
@@ -69,7 +70,7 @@ export function useGradeCalculationActions(context) {
       const [
         { data: assessmentRows, error: assessmentError },
         { data: sessionRows, error: sessionError },
-        { data: periodRows, error: periodError },
+        periodResult,
       ] = await Promise.all([
         supabase
           .from("assessment_scores")
@@ -79,27 +80,35 @@ export function useGradeCalculationActions(context) {
           .from("class_sessions")
           .select("id, period_id, attendance_records(enrollment_id, status)")
           .eq("section_id", sectionId),
-        supabase
-          .from("grading_periods")
-          .select("id, code, sort_order")
-          .order("sort_order"),
+        (async () => {
+          const withWeights = await supabase
+            .from("grading_periods")
+            .select("id, code, sort_order, weights")
+            .order("sort_order");
+          if (!withWeights.error) return withWeights;
+          return supabase
+            .from("grading_periods")
+            .select("id, code, sort_order")
+            .order("sort_order");
+        })(),
       ]);
       if (assessmentError) throw assessmentError;
       if (sessionError) throw sessionError;
-      if (periodError) throw periodError;
+      if (periodResult.error) throw periodResult.error;
 
-      const periods = (periodRows ?? []).sort(
+      const periods = (periodResult.data ?? []).sort(
         (first, second) => first.sort_order - second.sort_order,
       );
       const ownGrades = new Map();
       periods.forEach((period) => {
+        const periodWeights = getPeriodGradingWeights(period);
         const periodSessions = (sessionRows ?? []).filter(
           (session) => session.period_id === period.id,
         );
         const periodStudentGrades = new Map();
         roster.forEach((student) => {
           const categoryGrades = {};
-          Object.keys(gradingWeights).forEach((categoryKey) => {
+            Object.keys(periodWeights).forEach((categoryKey) => {
             if (categoryKey === "attendance") return;
             // Excel's point cells are blank for blank raw-score cells, and
             // its category average uses COUNT/AVERAGE. Use only recorded
@@ -137,7 +146,7 @@ export function useGradeCalculationActions(context) {
             );
           }
 
-          const contributingGrades = Object.entries(gradingWeights).filter(
+          const contributingGrades = Object.entries(periodWeights).filter(
             ([categoryKey]) => categoryGrades[categoryKey] != null,
           );
 
