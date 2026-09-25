@@ -134,3 +134,26 @@ export function answerSimilarity(firstValue, secondValue) {
   }
   return 1 - previous[second.length] / maxLength;
 }
+export function compareStudentNames(first, second) {
+  const firstName = String(
+    typeof first === "string" ? first : first?.name ?? first?.full_name ?? "",
+  );
+  const secondName = String(
+    typeof second === "string" ? second : second?.name ?? second?.full_name ?? "",
+  );
+  return (
+    firstName.localeCompare(secondName, undefined, {
+      sensitivity: "base",
+      numeric: true,
+    }) ||
+    String(first?.student_no ?? first?.id ?? "").localeCompare(
+      String(second?.student_no ?? second?.id ?? ""),
+      undefined,
+      { numeric: true, sensitivity: "base" },
+    )
+  );
+}
+
+export function sortStudentsAlphabetically(students) {
+  return Array.isArray(students) ? [...students].sort(compareStudentNames) : [];
+}

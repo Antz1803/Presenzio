@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { isSupabaseConfigured } from "../../lib/supabaseClient";
 import { emptyStats } from "./dashboardConstants";
+import { sortStudentsAlphabetically } from "./dashboardUtils";
 
 export function useDashboardState() {
   const [active, setActive] = useState("overview");
@@ -8,7 +9,16 @@ export function useDashboardState() {
   const [period, setPeriod] = useState("Prelim");
   const [category, setCategory] = useState("Quiz");
   const [query, setQuery] = useState("");
-  const [students, setStudents] = useState([]);
+  const [students, setStudentState] = useState([]);
+  const setStudents = useCallback((nextStudents) => {
+    setStudentState((currentStudents) => {
+      const next =
+        typeof nextStudents === "function"
+          ? nextStudents(currentStudents)
+          : nextStudents;
+      return sortStudentsAlphabetically(next);
+    });
+  }, []);
   const [gradeRows, setGradeRows] = useState([]);
   const [gradingPeriods, setGradingPeriods] = useState([]);
   const [assessmentScores, setAssessmentScores] = useState([]);
