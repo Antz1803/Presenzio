@@ -57,6 +57,7 @@ export default function K({
   onRefreshLiveData: refreshLiveData,
   onSaveStudentGroup: I,
   onDeleteStudentGroup: R,
+  instructor: instructorProfile,
 }) {
   const b = W(null);
   return (
@@ -339,6 +340,7 @@ export default function K({
                               ? React.createElement(U, {
                                   gradingPeriods: m,
                                   section: i,
+                                  instructor: instructorProfile,
                                   onSave: F,
                                   onClose: t,
                                 })

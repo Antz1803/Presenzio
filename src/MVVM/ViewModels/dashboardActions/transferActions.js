@@ -15,6 +15,7 @@ import {
 export function useTransferActions(context) {
   const {
     accountId,
+    instructorName,
     accountScoped,
     currentSectionId,
     period,
@@ -230,13 +231,14 @@ export function useTransferActions(context) {
     }
     await syncGradeSheetToExcel({
       section: fresh.section,
+      instructor: { name: instructorName },
       students: fresh.students,
       assessmentScores: fresh.assessmentScores,
       assessmentDefinitions: fresh.assessmentDefinitions,
       attendanceSessions: fresh.attendanceSessions,
       gradingPeriods: fresh.periods,
     });
-  }, [section, loadLiveData]);
+  }, [instructorName, section, loadLiveData]);
 
   return { loadTransferPreview, transferStudent, syncToExcel };
 }

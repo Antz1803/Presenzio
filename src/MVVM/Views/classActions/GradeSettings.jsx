@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { gradePeriods } from "./actionUtils";
 import { ModalShell } from "./ActionModalShell";
+import { getStoredDean, setStoredDean } from "../../Models/deanStorage";
 import {
   gradingWeightKeys,
   gradingWeights,
@@ -58,12 +59,15 @@ const initialWeights = (saved) =>
     }),
   );
 
-export function GradeSettings({ gradingPeriods, section, onSave, onClose }) {
+export function GradeSettings({ gradingPeriods, section, instructor, onSave, onClose }) {
   const [dateRanges, setDateRanges] = useState(() =>
     initialRanges(gradingPeriods),
   );
   const [weightSettings, setWeightSettings] = useState(() =>
     initialWeights(gradingPeriods),
+  );
+  const [dean, setDean] = useState(
+    () => section?.dean || section?.dean_name || getStoredDean(section?.id),
   );
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ status: "", text: "" });
@@ -115,6 +119,8 @@ export function GradeSettings({ gradingPeriods, section, onSave, onClose }) {
     setSaving(true);
     setMessage({ status: "", text: "" });
     try {
+      const savedDean = dean.trim();
+      setStoredDean(section?.id, savedDean);
       await onSave({ dateRanges, weightSettings });
       setMessage({
         status: "success",
@@ -158,7 +164,14 @@ export function GradeSettings({ gradingPeriods, section, onSave, onClose }) {
             </div>
             <div className="grade-sheet-field">
               <strong>Teacher Name:</strong>
-              <span>{displayValue(section?.teacher_name || section?.teacher?.full_name)}</span>
+              <span>
+                {displayValue(
+                  section?.teacher_name ||
+                    section?.teacher?.full_name ||
+                    section?.instructor?.name ||
+                    instructor?.name,
+                )}
+              </span>
             </div>
             <div className="grade-sheet-field">
               <strong>Subject Title:</strong>
@@ -166,7 +179,16 @@ export function GradeSettings({ gradingPeriods, section, onSave, onClose }) {
             </div>
             <div className="grade-sheet-field">
               <strong>Dean:</strong>
-              <span>{displayValue(section?.dean)}</span>
+              <input
+                className="grade-sheet-metadata-input"
+                value={dean}
+                onChange={(event) => {
+                  setDean(event.target.value);
+                  setMessage({ status: "", text: "" });
+                }}
+                placeholder="Enter dean name"
+                aria-label="Dean name"
+              />
             </div>
           </div>
           <div className="grade-sheet-metadata-column grade-sheet-year-column">

@@ -28,6 +28,11 @@ import {
 export function useDashboardViewModel({ accountScoped = true } = {}) {
   const { user } = useAuth();
   const accountId = user?.id ?? null;
+  const instructorName =
+    user?.user_metadata?.instructor_profile?.name ||
+    user?.user_metadata?.full_name ||
+    user?.email?.split("@")[0] ||
+    "Teacher";
   const state = useDashboardState();
   const {
     active,
@@ -151,6 +156,7 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
 
   const actions = useDashboardCoordinator({
     accountId,
+    instructorName,
     accountScoped,
     currentSectionId,
     period,

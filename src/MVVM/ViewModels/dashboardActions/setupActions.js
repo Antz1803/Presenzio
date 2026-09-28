@@ -155,7 +155,15 @@ export function useSetupActions(context) {
       }
       await loadLiveData(currentSectionId);
     },
-    [currentSectionId, gradingPeriods, loadLiveData, queueOfflineChange],
+    [
+      currentSectionId,
+      gradingPeriods,
+      loadLiveData,
+      queueOfflineChange,
+      section,
+      setSection,
+      setSections,
+    ],
   );
 
   const importMasterList = useCallback(

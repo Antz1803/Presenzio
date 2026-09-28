@@ -11,6 +11,7 @@ import { useDashboardActions } from "./useDashboardActions";
 export function useDashboardCoordinator(context) {
   const {
     accountId,
+    instructorName,
     accountScoped,
     currentSectionId,
     period,
@@ -217,6 +218,7 @@ export function useDashboardCoordinator(context) {
     flushOfflineMutations,
   } = useDashboardActions({
     accountId,
+    instructorName,
     accountScoped,
     currentSectionId,
     period,

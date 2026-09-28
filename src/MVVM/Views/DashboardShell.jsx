@@ -141,6 +141,7 @@ export default function ce() {
     K = {
       type: l?.type,
       section: w,
+      instructor: k,
       students: o ? e.students : [],
       assessmentScores: o ? e.assessmentScores : [],
       assessmentDefinitions: o ? e.assessmentDefinitions : [],

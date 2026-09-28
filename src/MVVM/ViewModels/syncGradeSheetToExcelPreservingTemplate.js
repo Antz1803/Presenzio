@@ -4,6 +4,7 @@ import {
   getPeriodGradingWeightPercentages,
   transmutationBreakpoints,
 } from "./dashboardConstants";
+import { getStoredDean } from "../Models/deanStorage";
 
 const periodSheets = {
   prelim: "Prelim",
@@ -392,7 +393,7 @@ function getTemplateFile(cfb, name) {
   return file;
 }
 
-function setMetadata(patches, section, gradingPeriods = []) {
+function setMetadata(patches, section, gradingPeriods = [], instructor) {
   const time = formatTimeRange(section);
   const metadata = {
     schoolYear:
@@ -411,8 +412,12 @@ function setMetadata(patches, section, gradingPeriods = []) {
     sectionNo: section?.section_no || "",
     year: section?.year_level || "",
     teacher:
-      section?.teacher_name || section?.teacher?.full_name || "Jeorge Rey Mancilla",
-    dean: section?.dean || section?.dean_name || "",
+      section?.teacher_name ||
+      section?.teacher?.full_name ||
+      section?.instructor?.name ||
+      instructor?.name ||
+      "",
+    dean: section?.dean || section?.dean_name || getStoredDean(section?.id),
   };
   const settings = [
     ["B1", metadata.schoolYear], ["B2", metadata.semester],
@@ -910,6 +915,7 @@ function fillMonth(patches, section, students, attendanceSessions) {
 
 export async function syncGradeSheetToExcel({
   section,
+  instructor,
   students,
   assessmentScores,
   assessmentDefinitions = [],
@@ -966,7 +972,7 @@ export async function syncGradeSheetToExcel({
   const cfb = CFB.read(bytes, { type: "array" });
   const patches = {};
   setCalculationParameters(patches, gradingPeriods);
-  setMetadata(patches, section, gradingPeriods);
+  setMetadata(patches, section, gradingPeriods, instructor);
   fillAttendance(patches, sortedStudents, filteredAttendanceSessions);
   Object.keys(periodSheets).forEach((periodCode) => {
     if (!activePeriodSet.has(periodCode)) {
