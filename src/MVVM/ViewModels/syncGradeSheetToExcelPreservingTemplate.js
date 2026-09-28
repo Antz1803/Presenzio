@@ -126,6 +126,12 @@ function patchPeriodCalculationFormulas(patches, periodCode) {
   patchFormula(patches, sheetName, 5, 31, `Settings!${label(settings.attendanceHeaderRow)}`);
   patchFormula(patches, sheetName, 5, 33, `Settings!${label(settings.examHeaderRow)}`);
 
+  const attendanceLabels = { semifinal: "ASF", final: "AF" };
+  if (attendanceLabels[periodCode]) {
+    // AF8 is the attendance period label; AF9 remains the first roster value.
+    patchLiteral(patches, sheetName, 7, 31, attendanceLabels[periodCode]);
+  }
+
   for (let row = 8; row < periodRosterRows + 8; row += 1) {
     const excelRow = row + 1;
     patchFormula(
