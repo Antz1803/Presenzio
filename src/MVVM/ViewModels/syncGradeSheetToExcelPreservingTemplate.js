@@ -2,7 +2,6 @@ import * as XLSX from "xlsx";
 import * as CFB from "cfb";
 import {
   getPeriodGradingWeightPercentages,
-  gradingWeights,
   transmutationBreakpoints,
 } from "./dashboardConstants";
 
@@ -63,25 +62,20 @@ const gradeColumns = {
 };
 
 function setCalculationParameters(patches, gradingPeriods = []) {
-  // Each period has its own percentage table in the workbook. The fourth
-  // term is the template's reserved spacer column and remains zero-weighted.
+  // The CEC template stores the five assessment weights in its Settings sheet:
+  // F9:F13 (Prelim), F17:F21 (Midterm), I9:I13 (SemiFinal), and I17:I21
+  // (Final). There is no spacer weight in the CEC calculation.
   const layouts = {
-    prelim: { row: 11, column: 4 },
-    semifinal: { row: 11, column: 7 },
-    midterm: { row: 20, column: 4 },
-    final: { row: 20, column: 7 },
+    prelim: { row: 8, column: 5 },
+    semifinal: { row: 8, column: 8 },
+    midterm: { row: 16, column: 5 },
+    final: { row: 16, column: 8 },
   };
   Object.entries(layouts).forEach(([code, layout]) => {
     const period = gradingPeriods.find((item) => item.code === code);
     const weights = getPeriodGradingWeightPercentages(period);
-    [
-      weights.quiz,
-      weights.assignment,
-      weights.activity,
-      Number(gradingWeights.spacer) * 100,
-      weights.attendance,
-      weights.exam,
-    ].forEach((weight, index) => {
+    [weights.quiz, weights.assignment, weights.activity, weights.attendance, weights.exam]
+      .forEach((weight, index) => {
       patchCell(
         patches,
         "Settings",
@@ -89,8 +83,13 @@ function setCalculationParameters(patches, gradingPeriods = []) {
         layout.column,
         Number(weight),
       );
-    });
+      });
   });
+
+  patchFormula(patches, "Settings", 13, 5, "SUM(F9:F13)");
+  patchFormula(patches, "Settings", 13, 8, "SUM(I9:I13)");
+  patchFormula(patches, "Settings", 21, 5, "SUM(F17:F21)");
+  patchFormula(patches, "Settings", 21, 8, "SUM(I17:I21)");
 
   // Keep Excel's approximate VLOOKUP table exactly aligned with the system's
   // transmutePercentage breakpoints for every percentage from 0 through 100.
@@ -105,6 +104,39 @@ function setCalculationParameters(patches, gradingPeriods = []) {
 }
 
 const summaryPeriodOrder = ["prelim", "midterm", "semifinal", "final"];
+
+const periodCalculationSettings = {
+  prelim: { weightColumn: "F", weightRows: [9, 10, 11, 12, 13], labelColumn: "E", attendanceHeaderRow: 12, examHeaderRow: 13 },
+  midterm: { weightColumn: "F", weightRows: [17, 18, 19, 20, 21], labelColumn: "E", attendanceHeaderRow: 20, examHeaderRow: 21 },
+  semifinal: { weightColumn: "I", weightRows: [9, 10, 11, 12, 13], labelColumn: "H", attendanceHeaderRow: 12, examHeaderRow: 13 },
+  final: { weightColumn: "I", weightRows: [17, 18, 19, 20, 21], labelColumn: "H", attendanceHeaderRow: 20, examHeaderRow: 21 },
+};
+
+function patchPeriodCalculationFormulas(patches, periodCode) {
+  const settings = periodCalculationSettings[periodCode];
+  if (!settings) return;
+  const sheetName = periodSheets[periodCode];
+  const weight = (index) => `${settings.weightColumn}${settings.weightRows[index]}`;
+  const label = (row) => `${settings.labelColumn}${row}`;
+
+  patchFormula(patches, sheetName, 5, 2, `Settings!${label(settings.weightRows[0])}`);
+  patchFormula(patches, sheetName, 5, 11, `Settings!${label(settings.weightRows[1])}`);
+  patchFormula(patches, sheetName, 5, 20, `Settings!${label(settings.weightRows[2])}`);
+  patchLiteral(patches, sheetName, 5, 29, "");
+  patchFormula(patches, sheetName, 5, 31, `Settings!${label(settings.attendanceHeaderRow)}`);
+  patchFormula(patches, sheetName, 5, 33, `Settings!${label(settings.examHeaderRow)}`);
+
+  for (let row = 8; row < periodRosterRows + 8; row += 1) {
+    const excelRow = row + 1;
+    patchFormula(
+      patches,
+      sheetName,
+      row,
+      gradeColumns[periodCode].own,
+      `IF(COUNT(C${excelRow}:AI${excelRow})=0,"",K${excelRow}*Settings!${weight(0)}/100+T${excelRow}*Settings!${weight(1)}/100+AC${excelRow}*Settings!${weight(2)}/100+AG${excelRow}*Settings!${weight(3)}/100+AI${excelRow}*Settings!${weight(4)}/100)`,
+    );
+  }
+}
 
 function getActivePeriodCodes(gradingPeriods) {
   const byCode = new Map((gradingPeriods ?? []).map((period) => [period.code, period]));
@@ -248,6 +280,7 @@ function cellXml(address, value, original = "") {
     value &&
     typeof value === "object" &&
     Object.prototype.hasOwnProperty.call(value, "literal");
+  const clearStyle = value && typeof value === "object" && value.clearStyle;
   if (/<f\b/.test(original) && !isLiteralPatch) return original;
   const cellValue = isLiteralPatch ? value.literal : value;
   const openingEnd = original.indexOf(">");
@@ -255,6 +288,7 @@ function cellXml(address, value, original = "") {
   opening = opening
     .replace(/\s+t="[^"]*"/g, "")
     .replace(/\s*\/?>$/, ">");
+  if (clearStyle) opening = opening.replace(/\s+s="[^"]*"/g, "");
 
   if (cellValue && typeof cellValue === "object" && cellValue.formula) {
     return `${opening}<f>${escapeXml(cellValue.formula)}</f><v></v></c>`;
@@ -340,7 +374,14 @@ function applySheetPatches(xml, patches, sheetName) {
 }
 
 function getTemplateFile(cfb, name) {
-  const file = cfb.FileIndex.find((item) => item.name === name);
+  // CFB exposes XLSM ZIP entries differently depending on how the workbook
+  // was produced: some templates keep `xl\\worksheets\\sheet1.xml`, while
+  // Excel-generated CFB files expose the same entry simply as `sheet1.xml`.
+  // Match both forms so the bundled CEC template can be synchronized.
+  const basename = name.replace(/\\/g, "/").split("/").pop();
+  const file = cfb.FileIndex.find(
+    (item) => item.name === name || item.name === basename,
+  );
   if (!file) throw new Error(`Template sheet file ${name} was not found.`);
   return file;
 }
@@ -369,8 +410,8 @@ function setMetadata(patches, section, gradingPeriods = []) {
   };
   const settings = [
     ["B1", metadata.schoolYear], ["B2", metadata.semester],
-    ["D1", metadata.year], ["G1", metadata.room], ["G2", metadata.time],
-    ["G3", metadata.days], ["B4", metadata.edp], ["G4", metadata.sectionNo],
+    ["E1", metadata.year], ["H1", metadata.room], ["H2", metadata.time],
+    ["H3", metadata.days], ["B4", metadata.edp], ["H4", metadata.sectionNo],
     ["B5", metadata.code], ["B6", metadata.teacher], ["B7", metadata.title],
     ["B8", metadata.dean],
   ];
@@ -381,15 +422,20 @@ function setMetadata(patches, section, gradingPeriods = []) {
     semifinal: "Semi-final",
     final: "Final",
   };
-  patchCell(patches, "Settings", 29, 3, "PERIOD");
-  patchCell(patches, "Settings", 29, 4, "START DATE");
-  patchCell(patches, "Settings", 29, 6, "END DATE");
+  patchCell(patches, "Settings", 10, 0, "PERIOD");
+  patchCell(patches, "Settings", 10, 1, "START DATE");
+  patchCell(patches, "Settings", 10, 2, "END DATE");
   ["prelim", "midterm", "semifinal", "final"].forEach((code, index) => {
     const period = gradingPeriods.find((item) => item.code === code);
-    patchCell(patches, "Settings", 30 + index, 3, periodLabels[code]);
-    patchCell(patches, "Settings", 30 + index, 4, period?.start_date || "");
-    patchCell(patches, "Settings", 30 + index, 6, period?.end_date || "");
+    patchCell(patches, "Settings", 11 + index, 0, periodLabels[code]);
+    patchCell(patches, "Settings", 11 + index, 1, period?.start_date || "");
+    patchCell(patches, "Settings", 11 + index, 2, period?.end_date || "");
   });
+  // The template has a bordered blank row below the Final date. Clear its
+  // formatting so the date table ends directly after the Final row.
+  [0, 1, 2].forEach((column) =>
+    patchCell(patches, "Settings", 15, column, { literal: "", clearStyle: true }),
+  );
   [
     ["B1", metadata.title], ["E1", metadata.room], ["B2", metadata.time],
     ["E2", metadata.days], ["B3", metadata.code], ["E3", metadata.teacher],
@@ -919,6 +965,7 @@ export async function syncGradeSheetToExcel({
   Object.keys(periodSheets).forEach((periodCode) => {
     if (!activePeriodSet.has(periodCode)) {
       clearPeriodSheet(patches, periodCode);
+      patchPeriodCalculationFormulas(patches, periodCode);
       return;
     }
     fillPeriod(
@@ -930,6 +977,7 @@ export async function syncGradeSheetToExcel({
       filteredAttendanceSessions,
       periodsById,
     );
+    patchPeriodCalculationFormulas(patches, periodCode);
   });
   fillSummary(patches, sortedStudents, gradingPeriods);
   fillMonth(patches, section, sortedStudents, filteredAttendanceSessions);
