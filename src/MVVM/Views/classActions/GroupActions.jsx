@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ModalShell } from "./ActionModalShell";
-import { GroupBoxList } from "./GroupBoxList";
+import { GroupBoxListEnhanced as GroupBoxList } from "./GroupBoxListEnhanced";
 import { CreateGroupingView } from "./CreateGroupingView";
 import { ScoreBoxView } from "./ScoreBoxView";
 
@@ -11,6 +11,7 @@ export function GroupActivities({
   savedGroups = [],
   onSaveGroup,
   onDeleteGroup,
+  onUpdateGroup,
   onSave,
   onClose,
 }) {
@@ -48,6 +49,7 @@ export function GroupActivities({
           onCreateNew={() => setView("create")}
           onOpenBox={openBox}
           onDeleteGroup={deleteBox}
+          onUpdateGroup={onUpdateGroup}
           deletingId={deletingId}
         />
       )}

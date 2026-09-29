@@ -75,7 +75,7 @@ export function getAssessmentItem(
       Number(row.item_no) === itemNo &&
       row.period?.code === period,
   );
-  if (!record) return "0";
+  if (!record) return "-";
   const score = Number(record.score) || 0;
   const maximum = Number(record.max_score);
   return maximum > 0

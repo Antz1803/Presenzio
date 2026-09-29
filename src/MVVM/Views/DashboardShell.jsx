@@ -161,14 +161,14 @@ export default function ce() {
           },
       loading: !o,
       onClose: c,
-      onSaveAttendance: async (s) => {
-        (await e.saveAttendance(s), c());
+      onSaveAttendance: async (s, options = {}) => {
+        (await e.saveAttendance(s), options.keepOpen || c());
       },
       onDeleteAttendance: async (s) => {
         await e.deleteAttendance(s);
       },
-      onSaveAssessmentScores: async (s) => {
-        (await e.saveAssessmentScores(s), c());
+      onSaveAssessmentScores: async (s, options = {}) => {
+        (await e.saveAssessmentScores(s), options.keepOpen || c());
       },
       onAutoSaveAssessmentScores: e.saveAssessmentScores,
       onSaveAssessment: e.saveAssessment,
@@ -185,6 +185,7 @@ export default function ce() {
       onRefreshGrades: e.refreshGrades,
       onRefreshLiveData: e.refresh,
       onSaveStudentGroup: e.saveStudentGroup,
+      onUpdateStudentGroup: e.updateStudentGroup,
       onDeleteStudentGroup: e.deleteStudentGroup,
     };
   return React.createElement(

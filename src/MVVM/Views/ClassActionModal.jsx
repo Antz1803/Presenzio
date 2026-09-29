@@ -56,6 +56,7 @@ export default function K({
   onRefreshGrades: u,
   onRefreshLiveData: refreshLiveData,
   onSaveStudentGroup: I,
+  onUpdateStudentGroup: updateStudentGroup,
   onDeleteStudentGroup: R,
   instructor: instructorProfile,
 }) {
@@ -115,7 +116,8 @@ export default function K({
                 savedGroups: p,
                 onSaveGroup: I,
                 onDeleteGroup: R,
-                onSave: h,
+                onUpdateGroup: updateStudentGroup,
+                onSave: (payload) => h(payload, { keepOpen: true }),
                 onClose: t,
               })
             : e === "create-assessment"
@@ -157,6 +159,7 @@ export default function K({
                             students: n,
                             attendanceSessions: d,
                             gradingPeriods: m,
+                            onSave: A,
                           }),
                         )
                       : e === "attendance-list-legacy"

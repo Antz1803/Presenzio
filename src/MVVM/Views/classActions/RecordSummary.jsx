@@ -22,6 +22,23 @@ export function RecordSummary({
     start: selected?.start_date ?? "",
     end: selected?.end_date ?? "",
   };
+  const visibleSummaryGroups = recordSummaryGroups
+    .map((group) => ({
+      ...group,
+      items: Array.from({ length: group.count }, (_, index) => index + 1).filter(
+        (itemNo) =>
+          assessmentScores.some(
+            (record) =>
+              record.period?.code === period &&
+              record.category === group.key &&
+              Number(record.item_no) === itemNo &&
+              record.score !== null &&
+              record.score !== undefined &&
+              record.score !== "",
+          ),
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
   return (
     <ModalShell
       title="Record Summary"
@@ -55,19 +72,19 @@ export function RecordSummary({
             <thead>
               <tr>
                 <th rowSpan="2">STUDENT NAME</th>
-                {recordSummaryGroups.map((group) => (
-                  <th colSpan={group.count} key={group.key}>
+                {visibleSummaryGroups.map((group) => (
+                  <th colSpan={group.items.length} key={group.key}>
                     {group.label}
                   </th>
                 ))}
                 <th rowSpan="2">TOTAL ATTENDANCE</th>
               </tr>
               <tr>
-                {recordSummaryGroups.flatMap((group) =>
-                  Array.from({ length: group.count }, (_, index) => (
-                    <th key={`${group.key}-${index + 1}`}>
+                {visibleSummaryGroups.flatMap((group) =>
+                  group.items.map((itemNo) => (
+                    <th key={`${group.key}-${itemNo}`}>
                       {group.prefix}
-                      {index + 1}
+                      {itemNo}
                     </th>
                   )),
                 )}
@@ -85,13 +102,13 @@ export function RecordSummary({
                       </span>
                     </div>
                   </td>
-                  {recordSummaryGroups.flatMap((group) =>
-                    Array.from({ length: group.count }, (_, index) => (
-                      <td key={`${group.key}-${index + 1}`}>
+                  {visibleSummaryGroups.flatMap((group) =>
+                    group.items.map((itemNo) => (
+                      <td key={`${group.key}-${itemNo}`}>
                         {getAssessmentItem(
                           student.id,
                           group.key,
-                          index + 1,
+                          itemNo,
                           period,
                           assessmentScores,
                         )}

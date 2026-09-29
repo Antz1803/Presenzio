@@ -5,7 +5,12 @@ import {
   assessmentItemLimits,
   itemNoOptions,
 } from "./assessmentConfig";
-import { defaultGroupCount, shuffle, toAssignments } from "./groupingUtils";
+import {
+  defaultGroupCount,
+  parsePastedGroups,
+  shuffle,
+  toAssignments,
+} from "./groupingUtils";
 
 export function CreateGroupingView({ students, onBack, onSaveGroup }) {
   const [groupCount, setGroupCount] = useState(() =>
@@ -16,6 +21,7 @@ export function CreateGroupingView({ students, onBack, onSaveGroup }) {
   const [category, setCategory] = useState("quiz");
   const [period, setPeriod] = useState("prelim");
   const [itemNo, setItemNo] = useState("1");
+  const [pastedGroups, setPastedGroups] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const updateCategory = (value) => {
@@ -39,8 +45,29 @@ export function CreateGroupingView({ students, onBack, onSaveGroup }) {
     setError("");
     setGroups(next);
   };
+  const applyPastedGroups = () => {
+    const parsed = parsePastedGroups(pastedGroups, students);
+    if (!parsed.groups.length)
+      return setError("Paste groups using headings such as Group 1 and Group 2.");
+    if (parsed.emptyGroups.length)
+      return setError(
+        `Group ${parsed.emptyGroups.join(", ")} has no recognized members.`,
+      );
+    if (parsed.unmatched.length)
+      return setError(
+        `These names were not found in the roster: ${parsed.unmatched.join(", ")}`,
+      );
+    if (parsed.duplicates.length)
+      return setError(
+        `These students were listed more than once: ${parsed.duplicates.join(", ")}`,
+      );
+    setGroups(parsed.groups);
+    setGroupCount(String(parsed.groups.length));
+    setError("");
+  };
   const save = async () => {
-    if (!groups.length) return setError("Randomize groups before saving.");
+    if (!groups.length)
+      return setError("Paste groups or randomize groups before saving.");
     if (!label.trim())
       return setError("Give this grouping a label (e.g. the activity name).");
     setSaving(true);
@@ -139,6 +166,28 @@ export function CreateGroupingView({ students, onBack, onSaveGroup }) {
         Splits your {students.length} enrolled student
         {students.length === 1 ? "" : "s"} into evenly-sized groups.
       </p>
+      <div className="group-paste-panel">
+        <label htmlFor="pasted-groups">Paste groups</label>
+        <textarea
+          id="pasted-groups"
+          rows="6"
+          value={pastedGroups}
+          onChange={(event) => setPastedGroups(event.target.value)}
+          placeholder={"Group 1\nMember name\nMember name\n\nGroup 2\nMember name"}
+          disabled={saving}
+        />
+        <div className="group-paste-footer">
+          <span>Put one enrolled student name on each line under a Group heading.</span>
+          <button
+            type="button"
+            className="outline-button"
+            onClick={applyPastedGroups}
+            disabled={saving || !pastedGroups.trim()}
+          >
+            Use pasted groups
+          </button>
+        </div>
+      </div>
       {error && (
         <p className="record-save-message error" role="status">
           {error}

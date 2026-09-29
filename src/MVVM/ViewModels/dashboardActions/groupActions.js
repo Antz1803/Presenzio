@@ -158,5 +158,37 @@ export function useGroupActions(context) {
       studentGroups,
     ],
   );
-  return { saveStudentGroup, deleteStudentGroup };
+  const updateStudentGroup = useCallback(
+    async ({ groupId, sectionId, label }) => {
+      const targetSectionId = sectionId ?? currentSectionId;
+      const nextLabel = label?.trim();
+      if (!groupId) throw new Error("No grouping selected.");
+      if (!nextLabel) throw new Error("A grouping title is required.");
+      if (!targetSectionId) throw new Error("No active Supabase section.");
+
+      if (browserIsOffline() || !supabase) {
+        await queueOfflineChange("update-student-group", {
+          groupId,
+          sectionId: targetSectionId,
+          label: nextLabel,
+        });
+        setStudentGroups((current) =>
+          current.map((group) =>
+            group.id === groupId ? { ...group, label: nextLabel } : group,
+          ),
+        );
+        return;
+      }
+
+      const { error } = await supabase
+        .from("student_groups")
+        .update({ label: nextLabel })
+        .eq("id", groupId)
+        .eq("section_id", targetSectionId);
+      if (error) throw error;
+      await loadLiveData(targetSectionId);
+    },
+    [currentSectionId, loadLiveData, queueOfflineChange, setStudentGroups],
+  );
+  return { saveStudentGroup, deleteStudentGroup, updateStudentGroup };
 }

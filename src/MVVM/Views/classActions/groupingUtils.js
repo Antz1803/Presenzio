@@ -19,6 +19,60 @@ export function toAssignments(groups) {
   );
 }
 
+function normalizeStudentName(value) {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/[.,]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function parsePastedGroups(value, students) {
+  const groups = [];
+  const unmatched = [];
+  const duplicates = [];
+  const lines = String(value ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const assigned = new Set();
+  let currentGroup = null;
+
+  lines.forEach((line) => {
+    if (/^group\s+\d+\s*:?$/i.test(line)) {
+      currentGroup = [];
+      groups.push(currentGroup);
+      return;
+    }
+    if (!currentGroup) {
+      unmatched.push(line);
+      return;
+    }
+    const student = students.find(
+      (item) => normalizeStudentName(item.name) === normalizeStudentName(line),
+    );
+    if (!student) {
+      unmatched.push(line);
+    } else if (assigned.has(student.id)) {
+      duplicates.push(line);
+    } else {
+      currentGroup.push(student);
+      assigned.add(student.id);
+    }
+  });
+
+  return {
+    groups,
+    unmatched,
+    duplicates,
+    emptyGroups: groups.reduce(
+      (result, group, index) =>
+        group.length ? result : [...result, index + 1],
+      [],
+    ),
+  };
+}
+
 export function formatSavedDate(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())

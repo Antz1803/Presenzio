@@ -198,6 +198,15 @@ export async function replayOfflineMutation({
     if (r) throw r;
     return { sectionId: e.sectionId };
   }
+  if (i === "update-student-group") {
+    const { error: r } = await t
+      .from("student_groups")
+      .update({ label: e.label })
+      .eq("id", e.groupId)
+      .eq("section_id", e.sectionId);
+    if (r) throw r;
+    return { sectionId: e.sectionId };
+  }
   if (i === "save-assessment") {
     const { error: r } = await t
       .from("assessments")

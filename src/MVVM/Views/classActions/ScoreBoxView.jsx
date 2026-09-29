@@ -16,19 +16,24 @@ export function ScoreBoxView({
   const [category, setCategory] = useState(box.category || "quiz");
   const [period, setPeriod] = useState(box.period || "prelim");
   const [itemNo, setItemNo] = useState(String(box.itemNo || 1));
-  const [maxScore, setMaxScore] = useState("10");
+  const [maxScoreOverrides, setMaxScoreOverrides] = useState({});
   const [assignments, setAssignments] = useState({ ...box.assignments });
   const [groupCount, setGroupCount] = useState(String(box.groupCount || 1));
-  const [groupScores, setGroupScores] = useState({});
+  const [groupScoreOverrides, setGroupScoreOverrides] = useState({});
   const [message, setMessage] = useState({ status: "", text: "" });
+  const [saving, setSaving] = useState(false);
   const sorted = useMemo(
     () =>
       [...students].sort((a, b) => (a.name || "").localeCompare(b.name || "")),
     [students],
   );
-  const numbers = Array.from(
-    { length: Math.max(1, Number(groupCount) || 1) },
-    (_, index) => index + 1,
+  const numbers = useMemo(
+    () =>
+      Array.from(
+        { length: Math.max(1, Number(groupCount) || 1) },
+        (_, index) => index + 1,
+      ),
+    [groupCount],
   );
   const existing = useMemo(() => {
     const scores = {};
@@ -41,6 +46,27 @@ export function ScoreBoxView({
       });
     return { scores, maxScores };
   }, [assessmentScores, category, period]);
+  const slotKey = `${category}:${period}:${itemNo}`;
+  const savedGroupScores = useMemo(() => {
+    const savedGroupScores = {};
+    numbers.forEach((number) => {
+      const members = Object.entries(assignments)
+        .filter(([, group]) => group === number)
+        .map(([studentId]) => studentId);
+      const savedScore = members
+        .map((studentId) => existing.scores[`${studentId}:${itemNo}`])
+        .find((score) => score !== undefined);
+      if (savedScore !== undefined) savedGroupScores[number] = savedScore;
+    });
+    return savedGroupScores;
+  }, [assignments, existing, itemNo, numbers]);
+  const groupScores = {
+    ...savedGroupScores,
+    ...(groupScoreOverrides[slotKey] ?? {}),
+  };
+  const maxScore =
+    maxScoreOverrides[slotKey] ??
+    String(existing.maxScores[String(itemNo)] ?? "10");
   const updateCategory = (value) => {
     setCategory(value);
     const limit = assessmentItemLimits[value] ?? 4;
@@ -50,6 +76,7 @@ export function ScoreBoxView({
   };
   const save = async (event) => {
     event.preventDefault();
+    if (saving) return;
     const max = Number(maxScore);
     if (!Number.isFinite(max) || max <= 0)
       return setMessage({
@@ -81,6 +108,8 @@ export function ScoreBoxView({
       if (group && groupScores[group] !== undefined)
         scores[`${studentId}:${itemNo}`] = groupScores[group];
     });
+    setSaving(true);
+    setMessage({ status: "", text: "" });
     try {
       await onSave({
         period,
@@ -88,17 +117,23 @@ export function ScoreBoxView({
         scores,
         maxScores: { ...existing.maxScores, [itemNo]: max },
       });
-      setMessage({ status: "success", text: "Group scores saved." });
+      onBack();
     } catch (error) {
       setMessage({
         status: "error",
         text: error?.message || "Group scores could not be saved.",
       });
+      setSaving(false);
     }
   };
   return (
     <form className="assessment-builder" onSubmit={save}>
-      <button type="button" className="outline-button" onClick={onBack}>
+      <button
+        type="button"
+        className="outline-button"
+        onClick={onBack}
+        disabled={saving}
+      >
         ← Back to groupings
       </button>
       <p className="action-help">
@@ -146,7 +181,12 @@ export function ScoreBoxView({
             min="0.01"
             step="0.01"
             value={maxScore}
-            onChange={(e) => setMaxScore(e.target.value)}
+                  onChange={(e) =>
+                    setMaxScoreOverrides((current) => ({
+                      ...current,
+                      [slotKey]: e.target.value,
+                    }))
+                  }
           />
         </label>
         <label>
@@ -182,9 +222,12 @@ export function ScoreBoxView({
                   value={groupScores[number] ?? ""}
                   disabled={!members.length}
                   onChange={(e) =>
-                    setGroupScores((current) => ({
+                    setGroupScoreOverrides((current) => ({
                       ...current,
-                      [number]: e.target.value,
+                      [slotKey]: {
+                        ...(current[slotKey] ?? {}),
+                        [number]: e.target.value,
+                      },
                     }))
                   }
                 />
@@ -239,11 +282,17 @@ export function ScoreBoxView({
         </p>
       )}
       <div className="action-modal-footer">
-        <button type="button" className="outline-button" onClick={onBack}>
+        <button
+          type="button"
+          className="outline-button"
+          onClick={onBack}
+          disabled={saving}
+        >
           Back
         </button>
-        <button type="submit" className="primary-button">
-          Save group scores
+        <button type="submit" className="primary-button" disabled={saving}>
+          {saving && <span className="button-spinner" aria-hidden="true" />}
+          {saving ? "Saving..." : "Save group scores"}
         </button>
       </div>
     </form>
