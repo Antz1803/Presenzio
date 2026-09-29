@@ -1037,6 +1037,7 @@ function Z(g) {
     questions: [...(g.questions ?? [])]
       .sort((u, w) => Number(u.question_no) - Number(w.question_no))
       .map((u) => ({
+        id: u.id,
         type: u.question_type,
         prompt: u.prompt ?? "",
         points: String(u.points ?? "1"),
@@ -1514,12 +1515,21 @@ function le({
                   { className: "assessment-retry-list" },
                   w.length
                     ? w.map((e) => {
-                        const attempts = (b?.attempts ?? [])
-                            .filter((c) => c.student_id === e.studentId)
-                            .sort(
-                              (x, y) =>
-                                Number(y.attempt_no) - Number(x.attempt_no),
-                            ),
+                          const attempts = (b?.attempts ?? [])
+                            .filter(
+                              (c) => String(c.student_id) === String(e.studentId),
+                            )
+                            .sort((x, y) => {
+                              const attemptNumberDifference =
+                                Number(y.attempt_no) - Number(x.attempt_no);
+                              if (attemptNumberDifference !== 0) {
+                                return attemptNumberDifference;
+                              }
+                              return (
+                                new Date(y.submitted_at || 0).getTime() -
+                                new Date(x.submitted_at || 0).getTime()
+                              );
+                            }),
                           s = attempts.length,
                           latest = attempts[0] ?? null,
                           a = Number(
@@ -1620,8 +1630,10 @@ function le({
                                     Number(y.question_no),
                                 )
                                 .map((qq, idx) => {
-                                  const ansRow = (latest.answers ?? []).find(
-                                      (ans) => ans.question_id === qq.id,
+                                    const ansRow = (latest.answers ?? []).find(
+                                      (ans) =>
+                                        String(ans.question_id) ===
+                                        String(qq.id),
                                     ),
                                     isMc = qq.question_type === "multiple_choice",
                                     answerText = ansRow?.answer ?? "",

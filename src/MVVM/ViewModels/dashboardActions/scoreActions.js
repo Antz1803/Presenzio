@@ -27,7 +27,6 @@ export function useScoreActions(context) {
     studentGroups,
     attendanceSessions,
     recalculatePeriodGrades,
-    loadLiveData,
     clearLiveData,
     queueOfflineChange,
     setSection,
@@ -88,10 +87,10 @@ export function useScoreActions(context) {
             enrollment_id: itemNo.split(":")[0],
             category,
             item_no: itemNumber,
-            score:
-              value === ""
-                ? 0
-                : Math.max(0, Math.min(Number(value), itemMaxScore)),
+              score:
+                value === ""
+                  ? 0
+                  : Math.max(0, Number(value)),
             max_score: itemMaxScore,
           };
         })
@@ -145,13 +144,30 @@ export function useScoreActions(context) {
         if (error) throw error;
       }
       await recalculatePeriodGrades(periodRow.id);
-      await loadLiveData(currentSectionId);
+
+      // Do not reload the entire dashboard after a manual score edit. A full
+      // reload can replace the currently loaded assessment attempts while
+      // the answer rows are still settling, making submitted answers appear
+      // to disappear in Manage Assessments.
+      setAssessmentScores((currentRows) => [
+        ...currentRows.filter(
+          (row) =>
+            !(
+              row.period?.code === periodCode &&
+              row.category === category
+            ),
+        ),
+        ...assessmentRows.map((row) => ({
+          ...row,
+          period: { code: periodCode },
+        })),
+      ]);
     },
     [
       currentSectionId,
-      loadLiveData,
       queueOfflineChange,
       recalculatePeriodGrades,
+      setAssessmentScores,
     ],
   );
 

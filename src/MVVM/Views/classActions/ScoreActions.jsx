@@ -181,8 +181,7 @@ function w({
         return;
       }
       const o = Number(a),
-        f = Number(v[String(r)]),
-        l = Number.isFinite(o) ? Math.max(0, f > 0 ? Math.min(o, f) : o) : "";
+        l = Number.isFinite(o) ? Math.max(0, o) : "";
       _({ ...d, [n]: { ...d[n], [e + ":" + r]: l } });
     },
     W = (e, r) => M({ ...E, [n]: { ...E[n], [String(e)]: r } }),
@@ -379,7 +378,6 @@ function w({
                     "aria-label": e.name + " item " + l,
                     type: "number",
                     min: "0",
-                    max: S > 0 ? S : void 0,
                     step: "0.01",
                     value: d[n][e.id + ":" + l],
                     disabled: !S,

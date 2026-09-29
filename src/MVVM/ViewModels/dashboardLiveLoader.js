@@ -124,6 +124,32 @@ export function useDashboardLiveLoader(context) {
           classSessions,
         } = await loadDashboardRecords({ sectionData, sectionList });
 
+        // Saving a Record Score can trigger a refresh while the answer query
+        // is briefly incomplete. Keep answer rows that were already loaded
+        // so editing a manual score cannot make View answers appear empty.
+        const assessmentDefinitionsWithAnswerCache =
+          liveAssessmentDefinitions.map((assessment) => {
+            const previousAssessment = (assessmentDefinitions ?? []).find(
+              (item) => String(item.id) === String(assessment.id),
+            );
+            if (!previousAssessment) return assessment;
+            return {
+              ...assessment,
+              attempts: (assessment.attempts ?? []).map((attempt) => {
+                const previousAttempt = (previousAssessment.attempts ?? []).find(
+                  (item) => String(item.id) === String(attempt.id),
+                );
+                if (
+                  (attempt.answers ?? []).length === 0 &&
+                  (previousAttempt?.answers ?? []).length > 0
+                ) {
+                  return { ...attempt, answers: previousAttempt.answers };
+                }
+                return attempt;
+              }),
+            };
+          });
+
         const { sessionsData, liveRoster } = buildRoster({
           classSessions,
           periodGrades,
@@ -149,7 +175,7 @@ export function useDashboardLiveLoader(context) {
           setAssessmentAttempts(attemptRows);
           setAssessmentAttemptGrants(grantRows);
           setAssessmentViolations(violationRows);
-          setAssessmentDefinitions(liveAssessmentDefinitions);
+          setAssessmentDefinitions(assessmentDefinitionsWithAnswerCache);
           setStudentGroups(liveStudentGroups);
           setAttendanceSessions(liveAttendanceSessions);
           setSessions(liveSessions);
@@ -166,7 +192,7 @@ export function useDashboardLiveLoader(context) {
           students: liveRoster,
           periods: periods ?? [],
           assessmentScores: combinedAssessmentScoreData,
-          assessmentDefinitions: liveAssessmentDefinitions,
+          assessmentDefinitions: assessmentDefinitionsWithAnswerCache,
           studentGroups: liveStudentGroups,
           attendanceSessions: liveAttendanceSessions,
         };

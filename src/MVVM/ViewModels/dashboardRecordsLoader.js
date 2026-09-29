@@ -61,7 +61,7 @@ export async function loadDashboardRecords({ sectionData, sectionList }) {
       .eq("section_id", sectionData.id);
   if (assessmentScoreError) throw assessmentScoreError;
 
-  const combinedAssessmentScoreData = assessmentScoreData ?? [];
+  let combinedAssessmentScoreData = [...(assessmentScoreData ?? [])];
 
   const { data: studentGroupData, error: studentGroupError } = await supabase
     .from("student_groups")
@@ -154,8 +154,69 @@ export async function loadDashboardRecords({ sectionData, sectionList }) {
   }
   attemptRows = attemptRows.map((attempt) => ({
     ...attempt,
-    answers: answerRows.filter((answer) => answer.attempt_id === attempt.id),
+    answers: answerRows.filter(
+      (answer) => String(answer.attempt_id) === String(attempt.id),
+    ),
   }));
+
+  // An assessment submission writes both an attempt and a record score. Use
+  // the latest submitted attempt as the local source of truth as well, so a
+  // slightly stale score query cannot make Record Score disagree with the
+  // score shown in Manage Assessments.
+  const latestAttemptByStudentAssessment = new Map();
+  for (const attempt of attemptRows) {
+    if (attempt.status === "in_progress") continue;
+    const key = `${attempt.assessment_id}:${attempt.student_id}`;
+    const current = latestAttemptByStudentAssessment.get(key);
+    const attemptNumber = Number(attempt.attempt_no) || 0;
+    const currentNumber = Number(current?.attempt_no) || 0;
+    const submittedAt = new Date(attempt.submitted_at || 0).getTime();
+    const currentSubmittedAt = new Date(
+      current?.submitted_at || 0,
+    ).getTime();
+    if (
+      !current ||
+      attemptNumber > currentNumber ||
+      (attemptNumber === currentNumber && submittedAt > currentSubmittedAt)
+    ) {
+      latestAttemptByStudentAssessment.set(key, attempt);
+    }
+  }
+
+  for (const [key, attempt] of latestAttemptByStudentAssessment) {
+    const assessment = assessmentRows.find(
+      (item) => String(item.id) === String(attempt.assessment_id),
+    );
+    const enrollment = (enrollments ?? []).find(
+      (item) => String(item.student?.id) === String(attempt.student_id),
+    );
+    if (!assessment || !enrollment || !assessment.item_no) continue;
+
+    const scoreRow = {
+      section_id: sectionData.id,
+      period_id: assessment.period_id,
+      enrollment_id: enrollment.id,
+      category: assessment.category,
+      item_no: assessment.item_no,
+      score: attempt.score,
+      max_score: attempt.max_score,
+      period: assessment.period,
+    };
+    const rowIndex = combinedAssessmentScoreData.findIndex(
+      (row) =>
+        String(row.enrollment_id) === String(scoreRow.enrollment_id) &&
+        String(row.period_id) === String(scoreRow.period_id) &&
+        row.category === scoreRow.category &&
+        Number(row.item_no) === Number(scoreRow.item_no),
+    );
+    if (rowIndex >= 0) {
+      // Keep an existing Record Score value. It may be a deliberate manual
+      // adjustment or extra credit and must not be overwritten by the latest
+      // automatically calculated assessment attempt score.
+    } else {
+      combinedAssessmentScoreData.push(scoreRow);
+    }
+  }
 
   const liveAssessmentDefinitions = assessmentRows.map((assessment) => ({
     ...assessment,

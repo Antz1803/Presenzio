@@ -73,7 +73,7 @@ export function useAssessmentUpdateActions(context) {
         (item) => item.id === assessmentId,
       );
       const questionRows = questions.map((question, index) => ({
-        id: createLocalId(),
+        id: question.id || createLocalId(),
         assessment_id: assessmentId,
         question_no: index + 1,
         question_type: question.type,
@@ -178,12 +178,8 @@ export function useAssessmentUpdateActions(context) {
       .select("id, access_key")
       .single();
     if (assessmentError) throw assessmentError;
-    const { error: clearQuestionsError } = await supabase
-      .from("assessment_questions")
-      .delete()
-      .eq("assessment_id", assessmentId);
-    if (clearQuestionsError) throw clearQuestionsError;
     const questionRows = questions.map((question, index) => ({
+      ...(question.id ? { id: question.id } : {}),
       assessment_id: assessmentId,
       question_no: index + 1,
       question_type: question.type,
@@ -211,8 +207,25 @@ export function useAssessmentUpdateActions(context) {
     }));
     const { error: questionError } = await supabase
       .from("assessment_questions")
-      .insert(questionRows);
+      .upsert(questionRows, { onConflict: "id" });
     if (questionError) throw questionError;
+    const existingQuestions =
+      assessmentDefinitions.find((item) => item.id === assessmentId)
+        ?.questions ?? [];
+    const retainedQuestionIds = new Set(
+      questionRows.map((question) => question.id).filter(Boolean),
+    );
+    const removedQuestionIds = existingQuestions
+      .map((question) => question.id)
+      .filter((id) => id && !retainedQuestionIds.has(id));
+    if (removedQuestionIds.length) {
+      const { error: removedQuestionsError } = await supabase
+        .from("assessment_questions")
+        .delete()
+        .in("id", removedQuestionIds)
+        .eq("assessment_id", assessmentId);
+      if (removedQuestionsError) throw removedQuestionsError;
+    }
     const maxScore = questions.reduce(
       (total, question) => total + Number(question.points || 0),
       0,

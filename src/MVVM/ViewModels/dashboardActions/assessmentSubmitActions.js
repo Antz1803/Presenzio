@@ -48,6 +48,9 @@ export function useAssessmentSubmitActions(context) {
     const questions = [...(assessment.questions ?? [])].sort(
       (first, second) => Number(first.question_no) - Number(second.question_no),
     );
+    if (!questions.length) {
+      throw new Error("This assessment has no questions to submit.");
+    }
     const maxScore = questions.reduce(
       (total, question) => total + Number(question.points || 0),
       0,
@@ -71,6 +74,12 @@ export function useAssessmentSubmitActions(context) {
       const validQuestionIds = new Set((liveQuestions ?? []).map((q) => q.id));
       answerRows = answerRows.filter((answer) =>
         validQuestionIds.has(answer.question_id),
+      );
+    }
+
+    if (answerRows.length !== questions.length) {
+      throw new Error(
+        "Some assessment questions could not be matched to the current question records. Please reload the assessment and try again.",
       );
     }
 
@@ -165,12 +174,18 @@ export function useAssessmentSubmitActions(context) {
       .eq("attempt_id", attempt.id);
     if (clearAnswersError) throw clearAnswersError;
     if (answerRows.length) {
-      const { error: answerError } = await supabase
+      const { data: savedAnswers, error: answerError } = await supabase
         .from("assessment_answers")
         .insert(
           answerRows.map((answer) => ({ ...answer, attempt_id: attempt.id })),
-        );
+        )
+        .select("id, attempt_id, question_id");
       if (answerError) throw answerError;
+      if ((savedAnswers ?? []).length !== answerRows.length) {
+        throw new Error(
+          "The attempt was created, but not all answers were saved. Please submit again.",
+        );
+      }
     }
     if (violations.length) {
       const { error: violationError } = await supabase

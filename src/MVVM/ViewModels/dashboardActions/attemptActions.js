@@ -12,7 +12,6 @@ import {
 export function useAttemptActions(context) {
   const {
     currentSectionId,
-    loadLiveData,
     queueOfflineChange,
     setAssessmentAttemptGrants,
     setAssessmentDefinitions,
@@ -54,10 +53,40 @@ export function useAttemptActions(context) {
         .select("id, assessment_id, student_id, extra_attempts, granted_at")
         .single();
       if (error) throw error;
-      await loadLiveData(currentSectionId);
+      // Update only the grant locally. Reloading the whole dashboard here can
+      // replace already-loaded assessment answers while the refresh settles.
+      setAssessmentAttemptGrants((currentGrants) => [
+        ...currentGrants.filter(
+          (item) =>
+            !(
+              String(item.assessment_id) === String(assessmentId) &&
+              String(item.student_id) === String(studentId)
+            ),
+        ),
+        grant,
+      ]);
+      setAssessmentDefinitions((currentAssessments) =>
+        currentAssessments.map((assessment) => {
+          if (String(assessment.id) !== String(assessmentId)) {
+            return assessment;
+          }
+          const existingGrants = (assessment.attemptGrants ?? []).filter(
+            (item) => String(item.student_id) !== String(studentId),
+          );
+          return {
+            ...assessment,
+            attemptGrants: [...existingGrants, grant],
+          };
+        }),
+      );
       return grant;
     },
-    [currentSectionId, loadLiveData, queueOfflineChange],
+    [
+      currentSectionId,
+      queueOfflineChange,
+      setAssessmentAttemptGrants,
+      setAssessmentDefinitions,
+    ],
   );
   return { grantAssessmentAttempt };
 }
