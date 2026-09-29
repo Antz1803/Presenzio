@@ -1011,6 +1011,33 @@ export async function syncGradeSheetToExcel({
   const time = start && end ? `${start}${end}` : "Time";
   const filename = `${safeFilePart(section?.subject_code)}-${safeFilePart(section?.days || "Schedule")}-${time}.xlsm`;
   const blob = new Blob([output], { type: "application/vnd.ms-excel.sheet.macroEnabled.12" });
+
+  if (
+    typeof window !== "undefined" &&
+    "showSaveFilePicker" in window
+  ) {
+    try {
+      const fileHandle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [
+          {
+            description: "Excel macro-enabled workbook",
+            accept: {
+              "application/vnd.ms-excel.sheet.macroEnabled.12": [".xlsm"],
+            },
+          },
+        ],
+      });
+      const writable = await fileHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return;
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+      throw error;
+    }
+  }
+
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
