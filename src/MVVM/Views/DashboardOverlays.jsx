@@ -134,7 +134,7 @@ function ge({
             className: `${f} mt-1`,
             disabled: l,
             onClick: () => {
-              (s(), c(t.id));
+              (s(), c(t));
             },
           },
           "Open Student View",

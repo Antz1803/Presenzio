@@ -1,26 +1,46 @@
 import React, { lazy, Suspense } from "react";
-import { useState as a, useMemo as B } from "react";
+import { useState as a, useMemo as B, useEffect as useReactEffect } from "react";
+import {
+  useLocation as useRouterLocation,
+  useNavigate as useRouterNavigate,
+} from "react-router-dom";
 import { useDashboardViewModel as F } from "../ViewModels/useDashboardViewModel";
 import { navItems as J } from "../Models/dashboardModel";
 const Q = lazy(() => import("./ClassActionModal"));
 const X = lazy(() => import("./ClassesView"));
 const Y = lazy(() => import("./OverviewView"));
 const Z = lazy(() => import("./ReportsView"));
-const ee = lazy(() => import("./PrintReportModal"));
+const PrintReportModal = lazy(() => import("./PrintReportModal"));
 import { Avatar as D, Icon as G } from "./DashboardShared";
 import {
-  ClassOptionsModal as se,
-  DeleteClassModal as te,
+  ClassOptionsModal as ClassOptionsModalView,
+  DeleteClassModal as DeleteClassModalView,
   LiveClock as ne,
-  StudentModal as oe,
+  StudentModal as StudentModalView,
 } from "./DashboardOverlays";
 import ae from "../../assets/Logo.png";
 import "../../App.css";
 import { useAuth as ie } from "../../auth/useAuth";
 import re from "../../auth/ProfileDetailsModal";
 import { getStoredInstructorAvatar as le } from "../../auth/profileStorage";
+function studentViewSlug(section) {
+  const parts = [section?.subject_code, section?.section_no]
+    .filter(Boolean)
+    .join(" section ");
+  return (
+    (parts || section?.subject_title || "class")
+      .toString()
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "class"
+  );
+}
 export default function ce() {
   const e = F(),
+    location = useRouterLocation(),
+    navigate = useRouterNavigate(),
     { user: n, logout: T, updateInstructorProfile: I } = ie(),
     k = B(() => {
       const s = n?.user_metadata?.instructor_profile || {},
@@ -72,9 +92,9 @@ export default function ce() {
     E = (s, t = i?.id) => {
       (t && m(t), A({ type: s, sectionId: t }));
     },
-    z = (s) =>
+    z = (section) =>
       window.open(
-        `${window.location.origin}/?view=student&section=${encodeURIComponent(s)}`,
+        `${window.location.origin}/student/${studentViewSlug(section)}`,
         "_blank",
         "noopener,noreferrer",
       ),
@@ -105,8 +125,12 @@ export default function ce() {
         window.alert(s?.message || "Could not log out.");
       }
     },
-    H =
-      e.active === "classes"
+    routeActive = location.pathname.match(/^\/dashboard\/(overview|classes|reports)$/)?.[1] || "overview";
+  useReactEffect(() => {
+    if (e.active !== routeActive) e.setActive(routeActive);
+  }, [e.active, e.setActive, routeActive]);
+    const H =
+      routeActive === "classes"
         ? React.createElement(X, {
             sections: e.sections,
             section: i,
@@ -126,7 +150,7 @@ export default function ce() {
             },
             onUpdateClass: e.updateSection,
           })
-        : e.active === "reports"
+        : routeActive === "reports"
           ? React.createElement(Z, null)
           : React.createElement(Y, {
               setActive: e.setActive,
@@ -193,15 +217,18 @@ export default function ce() {
     null,
     React.createElement(
       "div",
-      { className: "app-shell" },
+      {
+        className:
+          "app-shell relative isolate min-h-screen overflow-hidden !bg-gradient-to-br !from-white !via-[#EAF5FF] !to-[#D9F3FF]",
+      },
       React.createElement(
         "aside",
         {
-          className: `sidebar print:hidden ${e.mobileNav ? "sidebar-open" : ""}`,
+          className: `sidebar print:hidden !border-[#0B2A5B1A] !bg-white/85 !shadow-[10px_0_35px_rgba(11,42,91,0.06)] backdrop-blur-xl ${e.mobileNav ? "sidebar-open" : ""}`,
         },
         React.createElement(
           "div",
-          { className: "brand" },
+          { className: "brand !text-[#0B2A5B]" },
           React.createElement("img", {
             className: "brand-logo",
             src: ae,
@@ -222,7 +249,9 @@ export default function ce() {
                   className: `nav-item ${e.active === s.id ? "active" : ""}`,
                   key: s.id,
                   onClick: () => {
-                    (e.setActive(s.id), e.setMobileNav(!1));
+                    e.setActive(s.id);
+                    e.setMobileNav(!1);
+                    navigate(`/dashboard/${s.id}`);
                   },
                 },
                 React.createElement(G, { name: s.icon, size: 18 }),
@@ -269,10 +298,13 @@ export default function ce() {
       ),
       React.createElement(
         "main",
-        { className: "main-content print:hidden" },
+          { className: "main-content relative z-[1] print:hidden" },
         React.createElement(
           "header",
-          { className: "topbar" },
+          {
+            className:
+              "topbar !border-[#0B2A5B1A] !bg-white/75 backdrop-blur-xl",
+          },
           React.createElement(
             "button",
             {
@@ -298,7 +330,7 @@ export default function ce() {
         ),
         React.createElement(
           "div",
-          { className: "content-wrap" },
+          { className: "content-wrap relative z-[1]" },
           React.createElement(
             Suspense,
             {
@@ -315,7 +347,7 @@ export default function ce() {
       S &&
         !l &&
         !r &&
-        React.createElement(se, {
+        React.createElement(ClassOptionsModalView, {
           section: S,
           onClose: () => f(null),
           onOpenAction: P,
@@ -325,7 +357,7 @@ export default function ce() {
           syncReady: i?.id === S.id,
         }),
       p &&
-        React.createElement(oe, {
+        React.createElement(StudentModalView, {
           section: _,
           sections: e.sections,
           students: i?.id === p ? e.students : [],
@@ -336,7 +368,7 @@ export default function ce() {
           onClose: () => g(null),
         }),
       d &&
-        React.createElement(te, {
+        React.createElement(DeleteClassModalView, {
           section: d,
           deleting: C,
           error: U,
@@ -383,7 +415,7 @@ export default function ce() {
                   ),
                 ),
               },
-              React.createElement(ee, {
+              React.createElement(PrintReportModal, {
                 type: r.type,
                 section: N,
                 students: e.students,

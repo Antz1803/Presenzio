@@ -1,4 +1,4 @@
-import LoginPage from "../pages/LoginPage";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "./useAuth";
 
 function LoadingScreen() {
@@ -14,8 +14,7 @@ export default function ProtectedRoute({ children }) {
 
   if (loading) return <LoadingScreen />;
   if (!user) {
-    const from = `${window.location.pathname}${window.location.search}`;
-    return <LoginPage redirectTo={from} />;
+    return <Navigate to="/login" replace />;
   }
   return children;
 }

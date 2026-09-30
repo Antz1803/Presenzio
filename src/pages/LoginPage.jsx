@@ -6,7 +6,9 @@ function safeRedirect(requestedPath) {
   if (requestedPath?.startsWith("/") && !requestedPath.startsWith("//"))
     return requestedPath;
   const value = new URLSearchParams(window.location.search).get("from");
-  return value?.startsWith("/") && !value.startsWith("//") ? value : "/";
+  return value?.startsWith("/") && !value.startsWith("//")
+    ? value
+    : "/dashboard";
 }
 
 export default function LoginPage({ redirectTo }) {

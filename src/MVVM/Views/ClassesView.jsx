@@ -212,7 +212,7 @@ export default function $({
     "div",
     {
       className:
-        "relative flex min-h-full flex-col gap-8 bg-gradient-to-br from-slate-100/80 via-indigo-50/20 to-slate-100/60 p-8 text-slate-900 [font-family:system-ui,-apple-system,sans-serif] max-md:p-4",
+        "relative flex min-h-full flex-col gap-8 bg-gradient-to-br from-slate-100/80 via-indigo-50/20 to-slate-100/60 text-slate-900 [font-family:system-ui,-apple-system,sans-serif]",
     },
     f &&
       React.createElement(M, {
