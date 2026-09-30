@@ -60,36 +60,45 @@ export default function LoginPage({ redirectTo }) {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10">
-      <section
-        className="w-full max-w-md rounded-3xl border border-white/10 bg-white p-8 shadow-2xl sm:p-10"
-        aria-labelledby="auth-title"
-      >
-        <div className="mb-8 text-center">
-          <img
-            className="mx-auto mb-5 h-14 w-auto object-contain"
-            src={logo}
-            alt="Presenzio"
-          />
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-indigo-600">
-            Teacher workspace
-          </p>
-          <h1
-            id="auth-title"
-            className="mt-2 text-2xl font-extrabold text-slate-900"
-          >
-            {isRegistering ? "Create your account" : "Welcome back"}
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            {isRegistering
-              ? "Register to manage your classes and grades."
-              : "Log in to open your classes and records."}
-          </p>
-        </div>
+    <main className="auth-page">
+      <div className="auth-orbit auth-orbit-one" />
+      <div className="auth-orbit auth-orbit-two" />
+      <section className="auth-layout" aria-labelledby="auth-title">
+        <aside className="auth-story">
+          <div className="auth-brand">
+            <img src={logo} alt="Presenzio" />
+            <span>Presenzio</span>
+          </div>
+          <div className="auth-story-copy">
+            <p className="auth-kicker">A calmer way to teach</p>
+            <h2>Keep every class moving forward.</h2>
+            <p>
+              One focused workspace for attendance, assessments, grades, and
+              the people who make learning happen.
+            </p>
+          </div>
+          <div className="auth-quote">
+            <span>“</span>
+            <p>Spend less time sorting records. Spend more time with students.</p>
+          </div>
+        </aside>
+
+        <section className="auth-card" aria-labelledby="auth-title">
+          <div className="auth-card-heading">
+            <p className="auth-kicker">Teacher workspace</p>
+            <h1 id="auth-title">
+              {isRegistering ? "Create your account" : "Welcome to Presenzio"}
+            </h1>
+            <p>
+              {isRegistering
+                ? "Register to manage your classes and grades."
+                : "Log in to open your classes and records."}
+            </p>
+          </div>
 
         {!configured && (
           <p
-            className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+            className="auth-message auth-message-warning"
             role="alert"
           >
             Supabase authentication is not configured for this environment.
@@ -97,7 +106,7 @@ export default function LoginPage({ redirectTo }) {
         )}
         {error && (
           <p
-            className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+            className="auth-message auth-message-error"
             role="alert"
           >
             {error}
@@ -105,19 +114,19 @@ export default function LoginPage({ redirectTo }) {
         )}
         {notice && (
           <p
-            className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700"
+            className="auth-message auth-message-success"
             role="status"
           >
             {notice}
           </p>
         )}
 
-        <form className="space-y-4" onSubmit={submit}>
+        <form className="auth-form" onSubmit={submit}>
           {isRegistering && (
-            <label className="block text-sm font-semibold text-slate-700">
+            <label className="auth-field">
               Full name
               <input
-                className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                className="auth-input"
                 name="name"
                 value={form.name}
                 onChange={updateField}
@@ -126,10 +135,10 @@ export default function LoginPage({ redirectTo }) {
               />
             </label>
           )}
-          <label className="block text-sm font-semibold text-slate-700">
+          <label className="auth-field">
             Email
             <input
-              className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+              className="auth-input"
               type="email"
               name="email"
               value={form.email}
@@ -138,10 +147,10 @@ export default function LoginPage({ redirectTo }) {
               required
             />
           </label>
-          <label className="block text-sm font-semibold text-slate-700">
+          <label className="auth-field">
             Password
             <input
-              className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+              className="auth-input"
               type="password"
               name="password"
               value={form.password}
@@ -152,7 +161,7 @@ export default function LoginPage({ redirectTo }) {
             />
           </label>
           <button
-            className="w-full rounded-xl bg-indigo-600 px-4 py-3 font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="auth-submit"
             type="submit"
             disabled={!configured || submitting}
           >
@@ -164,18 +173,19 @@ export default function LoginPage({ redirectTo }) {
           </button>
         </form>
 
-        <p className="mt-7 text-center text-sm text-slate-500">
+        <p className="auth-switch">
           {isRegistering
             ? "Already have an account?"
             : "Don't have an account?"}{" "}
           <button
-            className="font-bold text-indigo-600 hover:text-indigo-500"
+            className="auth-switch-button"
             type="button"
             onClick={toggleMode}
           >
             {isRegistering ? "Log in" : "Register"}
           </button>
         </p>
+        </section>
       </section>
     </main>
   );

@@ -40,7 +40,7 @@ export default function H({
 }) {
   return React.createElement(
     "div",
-    { className: "min-h-screen bg-[#07090e] font-sans text-slate-100 pb-16" },
+    { className: "student-exam-shell min-h-screen font-sans pb-16" },
     React.createElement(
       "header",
       {
