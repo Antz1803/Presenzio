@@ -1,0 +1,78 @@
+.group-box-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.group-box-card {
+  position: relative;
+  display: flex;
+  min-height: 205px;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 19px;
+  border-color: #e4dcf2;
+  background:
+    radial-gradient(circle at 100% 0, rgba(118, 81, 214, 0.1), transparent 34%),
+    linear-gradient(145deg, #fff, #fbf9ff);
+}
+
+.group-box-card::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #7651d6, #55c7c1);
+  content: "";
+}
+
+.group-box-card:nth-child(3n + 2) {
+  background:
+    radial-gradient(circle at 100% 0, rgba(73, 192, 183, 0.12), transparent 34%),
+    linear-gradient(145deg, #fff, #f9fdfd);
+}
+
+.group-box-card:nth-child(3n + 2)::before {
+  background: linear-gradient(90deg, #42b8b1, #8d72dc);
+}
+
+.group-box-card:nth-child(3n) {
+  background:
+    radial-gradient(circle at 100% 0, rgba(232, 145, 104, 0.12), transparent 34%),
+    linear-gradient(145deg, #fff, #fffaf8);
+}
+
+.group-box-card:nth-child(3n)::before {
+  background: linear-gradient(90deg, #e89168, #7651d6);
+}
+
+.group-box-card-top {
+  min-height: 62px;
+}
+
+.group-box-meta {
+  min-height: 30px;
+  align-content: flex-start;
+}
+
+.group-box-actions {
+  margin-top: auto;
+  padding-top: 15px;
+}
+
+.group-score-button {
+  margin-left: auto;
+}
+
+@media (max-width: 820px) {
+  .group-box-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .group-score-button {
+    margin-left: 0;
+  }
+}
