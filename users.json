@@ -1,0 +1,23 @@
+{"users": [
+{
+  "localId": "S9kyS3H4s3Twmc07ZCPdaJuiueA2",
+  "email": "jeorgezkie03@gmail.com",
+  "emailVerified": false,
+  "passwordHash": "+UMwCSSA5vrBTRJBFyNPUCEzgduDRBrWJpW4O4DduGiS2gEWwN3y8RhNSmqiQ6n+ma0jg3K6l5QiExT8/PbsHg==",
+  "salt": "wvY+c39XzdGL4g==",
+  "displayName": "Jeorge Rey Mancilla",
+  "lastSignedInAt": "1791288224533",
+  "createdAt": "1791270698116",
+  "providerUserInfo": []
+},
+{
+  "localId": "Sqn3NQi5JmThn1q5dzxeo3EtN9O2",
+  "email": "act.jrantipaso@gmail.com",
+  "emailVerified": false,
+  "passwordHash": "Vaii+GKXTZ/skvoeCCackkNywk9BWV6/k0ruc3NXVE6xadrXHpi0HqxpWcleGm4V7EHwuhioU7K+37aeGkipIA==",
+  "salt": "A1wYTIlk6v0JGg==",
+  "displayName": "Admin",
+  "lastSignedInAt": "1791288245355",
+  "createdAt": "1791284801085",
+  "providerUserInfo": []
+}]}

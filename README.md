@@ -17,6 +17,20 @@ Deploy the Realtime Database rules before using shared data:
 firebase deploy --only database
 ```
 
+## Teacher approval workflow
+
+New teacher registrations are saved as `pending` under
+`registrationRequests/{uid}`. An administrator reviews them at `/admin` and
+can approve or reject the account. Only approved teachers can access the
+dashboard and account data.
+
+To bootstrap the first administrator, create this value in Realtime Database
+after finding the administrator's Firebase Auth UID:
+
+```text
+admins/{uid}: true
+```
+
 Deploy the production build to Firebase Hosting with:
 
 ```powershell

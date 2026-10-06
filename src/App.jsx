@@ -1,7 +1,9 @@
 ﻿import DashboardView from "./MVVM/Views/DashboardShell";
 import StudentPortalView from "./MVVM/Views/StudentPortalView";
 import LoginPage from "./pages/LoginPage";
+import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./auth/ProtectedRoute";
+import AdminRoute from "./auth/AdminRoute";
 import { AuthProvider } from "./auth/AuthContext";
 import {
   BrowserRouter,
@@ -28,6 +30,14 @@ function ApplicationRoutes() {
       <Route path="/student/:sectionSlug" element={<StudentPortalView />} />
       <Route path="/student" element={<StudentPortalView />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        }
+      />
       <Route
         path="/dashboard/:section"
         element={

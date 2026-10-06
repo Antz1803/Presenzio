@@ -65,13 +65,15 @@ function instructorMetadata(profile = {}) {
 }
 
 // Presents a Firebase user in the same shape the rest of the app already expects.
-function toAppUser(firebaseUser, instructorProfile) {
+function toAppUser(firebaseUser, instructorProfile, access = {}) {
   if (!firebaseUser) return null;
   const hasProfile = instructorProfile && Object.keys(instructorProfile).length > 0;
   return {
     id: firebaseUser.uid,
     uid: firebaseUser.uid,
     email: firebaseUser.email || "",
+    isAdmin: access.isAdmin === true,
+    approvalStatus: access.isAdmin ? "approved" : access.request?.status || "pending",
     user_metadata: {
       full_name: firebaseUser.displayName || "",
       ...(hasProfile ? { instructor_profile: instructorProfile } : {}),
@@ -91,6 +93,28 @@ async function loadInstructorProfile(uid) {
   }
 }
 
+async function loadApprovalAccess(uid) {
+  if (!db) return { request: null, isAdmin: false };
+  const [requestSnapshot, adminSnapshot] = await Promise.all([
+    get(ref(db, `registrationRequests/${uid}`)),
+    get(ref(db, `admins/${uid}`)),
+  ]);
+  return {
+    request: requestSnapshot.exists() ? requestSnapshot.val() : null,
+    isAdmin: adminSnapshot.val() === true,
+  };
+}
+
+function approvalError(status) {
+  if (status === "pending") {
+    return new Error("Your teacher account is waiting for administrator approval.");
+  }
+  if (status === "rejected") {
+    return new Error("Your teacher registration was rejected. Contact the administrator.");
+  }
+  return new Error("Your account does not have an approval request yet.");
+}
+
 async function reauthenticate(firebaseUser, currentPassword) {
   if (!currentPassword) return;
   const credential = EmailAuthProvider.credential(firebaseUser.email, currentPassword);
@@ -107,8 +131,18 @@ export function AuthProvider({ children }) {
     let mounted = true;
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
-        const profile = firebaseUser ? await loadInstructorProfile(firebaseUser.uid) : null;
-        if (mounted) setUser(toAppUser(firebaseUser, profile));
+        if (!firebaseUser) {
+          if (mounted) setUser(null);
+          return;
+        }
+        const access = await loadApprovalAccess(firebaseUser.uid);
+        const allowed =
+          access.isAdmin ||
+          (access.request?.status === "approved" && access.request?.active !== false);
+        const profile = allowed ? await loadInstructorProfile(firebaseUser.uid) : null;
+        if (mounted) {
+          setUser(allowed ? toAppUser(firebaseUser, profile, access) : null);
+        }
       } catch (error) {
         console.error("Could not restore the authentication session:", error);
         if (mounted) setUser(null);
@@ -133,7 +167,19 @@ export function AuthProvider({ children }) {
         if (!auth) throw configurationError();
         try {
           const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
-          return toAppUser(credential.user, await loadInstructorProfile(credential.user.uid));
+          const access = await loadApprovalAccess(credential.user.uid);
+          if (
+            !access.isAdmin &&
+            (access.request?.status !== "approved" || access.request?.active === false)
+          ) {
+            await signOut(auth);
+            throw approvalError(access.request?.status);
+          }
+          return toAppUser(
+            credential.user,
+            await loadInstructorProfile(credential.user.uid),
+            access,
+          );
         } catch (error) {
           throw friendlyError(error);
         }
@@ -143,11 +189,20 @@ export function AuthProvider({ children }) {
         if (!auth) throw configurationError();
         try {
           const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
-          await updateAuthProfile(credential.user, { displayName: name.trim() });
-          // onAuthStateChanged fires before displayName is saved, so refresh state here.
-          const appUser = toAppUser(auth.currentUser, null);
-          setUser(appUser);
-          return { user: appUser, session: appUser };
+          const normalizedName = name.trim();
+          const normalizedEmail = email.trim().toLowerCase();
+          await updateAuthProfile(credential.user, { displayName: normalizedName });
+          await set(ref(db, `registrationRequests/${credential.user.uid}`), {
+            uid: credential.user.uid,
+            name: normalizedName,
+            email: normalizedEmail,
+            status: "pending",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+          await signOut(auth);
+          setUser(null);
+          return { user: null, session: null, pendingApproval: true };
         } catch (error) {
           throw friendlyError(error);
         }
@@ -187,7 +242,10 @@ export function AuthProvider({ children }) {
         const profile = user?.user_metadata?.instructor_profile
           ? { ...user.user_metadata.instructor_profile, name: normalizedName }
           : null;
-        const nextUser = toAppUser(auth.currentUser, profile);
+        const nextUser = toAppUser(auth.currentUser, profile, {
+          isAdmin: user?.isAdmin,
+          request: { status: user?.approvalStatus },
+        });
         setUser(nextUser);
 
         return { user: nextUser, emailChangeRequested: emailChanged };

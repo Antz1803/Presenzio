@@ -39,15 +39,19 @@ export default function LoginPage({ redirectTo }) {
     try {
       if (isRegistering) {
         const result = await register(form.name, form.email, form.password);
-        if (!result.session) {
+        if (result.pendingApproval) {
           setMode("login");
           setNotice(
-            "Account created. Check your email if confirmation is enabled, then log in.",
+            "Registration submitted. An administrator must approve your teacher account before you can log in.",
           );
           return;
         }
       } else {
-        await login(form.email, form.password);
+        const authenticatedUser = await login(form.email, form.password);
+        if (authenticatedUser?.isAdmin) {
+          window.location.assign("/admin");
+          return;
+        }
       }
       window.location.assign(safeRedirect(redirectTo));
     } catch (submitError) {
