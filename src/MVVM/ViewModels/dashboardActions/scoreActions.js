@@ -1,9 +1,10 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import { useCallback } from "react";
-import { importMasterListFile } from "../importMasterList";
-import { importGradeSheetFile } from "../importRecord";
+import { importMasterListFile } from "../importMasterListFirebase";
+import { importGradeSheetFile } from "../importRecordFirebase";
 import { syncGradeSheetToExcel } from "../syncGradeSheetToExcelPreservingTemplate";
-import { supabase } from "../../../lib/supabaseClient";
+import { db } from "../../../lib/Firebase";
+import * as store from "../../../lib/accountDb";
 import {
   countOfflineMutations,
   listOfflineMutations,
@@ -60,7 +61,7 @@ export function useScoreActions(context) {
   } = helpers;
   const saveAssessmentScores = useCallback(
     async ({ period, category, scores, maxScores }) => {
-      if (!currentSectionId) throw new Error("No active Supabase section.");
+      if (!currentSectionId) throw new Error("No active Firebase section.");
       const periodCode = period.toLowerCase();
       const baseRows = Object.entries(scores)
         .map(([itemNo, value]) => {
@@ -96,7 +97,7 @@ export function useScoreActions(context) {
         })
         .filter(Boolean);
 
-      if (browserIsOffline() || !supabase) {
+      if (browserIsOffline() || !db) {
         await queueOfflineChange("save-assessment-scores", {
           sectionId: currentSectionId,
           periodCode,
@@ -116,34 +117,9 @@ export function useScoreActions(context) {
         return;
       }
 
-      const { data: periodRow, error: periodError } = await supabase
-        .from("grading_periods")
-        .select("id")
-        .eq("code", periodCode)
-        .single();
-      if (periodError) throw periodError;
-      const assessmentRows = baseRows.map((row) => ({
-        ...row,
-        period_id: periodRow.id,
-      }));
-
-      const { error: clearError } = await supabase
-        .from("assessment_scores")
-        .delete()
-        .eq("section_id", currentSectionId)
-        .eq("period_id", periodRow.id)
-        .eq("category", category);
-      if (clearError) throw clearError;
-
-      if (assessmentRows.length) {
-        const { error } = await supabase
-          .from("assessment_scores")
-          .upsert(assessmentRows, {
-            onConflict: "section_id,period_id,enrollment_id,category,item_no",
-          });
-        if (error) throw error;
-      }
-      await recalculatePeriodGrades(periodRow.id);
+      const assessmentRows = baseRows.map((row) => ({ ...row, period_id: periodCode }));
+      await store.replaceCategoryScores(accountId, currentSectionId, periodCode, category, assessmentRows);
+      await recalculatePeriodGrades(periodCode);
 
       // Do not reload the entire dashboard after a manual score edit. A full
       // reload can replace the currently loaded assessment attempts while

@@ -1,9 +1,10 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import { useCallback } from "react";
-import { importMasterListFile } from "../importMasterList";
-import { importGradeSheetFile } from "../importRecord";
+import { importMasterListFile } from "../importMasterListFirebase";
+import { importGradeSheetFile } from "../importRecordFirebase";
 import { syncGradeSheetToExcel } from "../syncGradeSheetToExcelPreservingTemplate";
-import { supabase } from "../../../lib/supabaseClient";
+import { db } from "../../../lib/Firebase";
+import * as store from "../../../lib/accountDb";
 import { getPeriodGradingWeights } from "../dashboardConstants";
 import {
   countOfflineMutations,
@@ -67,43 +68,13 @@ export function useGradeCalculationActions(context) {
       gradeOverrides = {},
     ) => {
       if (!periodId) return;
-      const [
-        { data: assessmentRows, error: assessmentError },
-        { data: sessionRows, error: sessionError },
-        periodResult,
-      ] = await Promise.all([
-        supabase
-          .from("assessment_scores")
-          .select("period_id, enrollment_id, category, score, max_score")
-          .eq("section_id", sectionId),
-        supabase
-          .from("class_sessions")
-          .select("id, period_id, attendance_records(enrollment_id, status)")
-          .eq("section_id", sectionId),
-        (async () => {
-          const withWeights = await supabase
-            .from("grading_periods")
-            .select("id, code, sort_order, start_date, end_date, weights")
-            .order("sort_order");
-          if (!withWeights.error) return withWeights;
-          return supabase
-            .from("grading_periods")
-            .select("id, code, sort_order, start_date, end_date")
-            .order("sort_order");
-        })(),
-      ]);
-      if (assessmentError) throw assessmentError;
-      if (sessionError) throw sessionError;
-      if (periodResult.error) throw periodResult.error;
-
-      const periods = (periodResult.data ?? []).sort(
-        (first, second) => first.sort_order - second.sort_order,
-      );
+      const { assessmentRows, sessionRows, periods } =
+        await store.getGradingInputs(accountId, sectionId);
       const ownGrades = new Map();
       periods.forEach((period) => {
         const periodWeights = getPeriodGradingWeights(period);
         const periodSessions = (sessionRows ?? []).filter((session) => {
-          if (session.period_id !== period.id) return false;
+          if (session.period_id !== period.code) return false;
           if (!period.start_date || !period.end_date) return true;
           const sessionDate = String(session.session_date ?? "").slice(0, 10);
           return (
@@ -222,26 +193,14 @@ export function useGradeCalculationActions(context) {
         });
       });
 
-      const { error: deleteError } = await supabase
-        .from("period_grades")
-        .delete()
-        .eq("section_id", sectionId);
-      if (deleteError) throw deleteError;
-      if (periodGradeRows.length) {
-        const { error: upsertError } = await supabase
-          .from("period_grades")
-          .upsert(periodGradeRows, {
-            onConflict: "section_id,period_id,enrollment_id",
-          });
-        if (upsertError) throw upsertError;
-      }
+      await store.replacePeriodGrades(accountId, sectionId, periodGradeRows);
     },
-    [currentSectionId, students],
+    [accountId, currentSectionId, students],
   );
 
   const refreshGrades = useCallback(
     async (sectionId = currentSectionId) => {
-      if (!sectionId || !supabase || browserIsOffline()) return;
+      if (!sectionId || !db || browserIsOffline()) return;
       const loaded = await loadLiveData(sectionId);
       if (!loaded?.students?.length || !loaded.periods?.length) return;
       const gradeOverrides = {};

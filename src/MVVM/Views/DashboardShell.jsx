@@ -22,7 +22,6 @@ import ae from "../../assets/Logo.png";
 import "../../App.css";
 import { useAuth as ie } from "../../auth/useAuth";
 import re from "../../auth/ProfileDetailsModal";
-import { getStoredInstructorAvatar as le } from "../../auth/profileStorage";
 function studentViewSlug(section) {
   const parts = [section?.subject_code, section?.section_no]
     .filter(Boolean)
@@ -64,7 +63,7 @@ export default function ce() {
             .slice(0, 2)
             .toUpperCase(),
         color: s.color || "bg-gradient-to-br from-indigo-500 to-violet-600",
-        avatarUrl: le(n?.id),
+        avatarUrl: s.avatarUrl || "",
       };
     }, [n]),
     [R, f] = a(null),

@@ -1,9 +1,8 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import { useCallback } from "react";
-import { importMasterListFile } from "../importMasterList";
-import { importGradeSheetFile } from "../importRecord";
+import { importGradeSheetFile } from "../importRecordFirebase";
 import { syncGradeSheetToExcel } from "../syncGradeSheetToExcelPreservingTemplate";
-import { supabase } from "../../../lib/supabaseClient";
+import { db } from "../../../lib/Firebase";
 import {
   countOfflineMutations,
   listOfflineMutations,
@@ -66,7 +65,7 @@ export function useGradeImportActions(context) {
         message: "Reading grade sheet and finding its class…",
       });
       try {
-        if (browserIsOffline() || !supabase) {
+        if (browserIsOffline() || !db) {
           await queueOfflineChange("import-grade-sheet", { file });
           setGradeSheetImportState({
             status: "success",
@@ -76,7 +75,6 @@ export function useGradeImportActions(context) {
         }
         const result = await importGradeSheetFile({
           file,
-          supabase,
           userId: accountId,
         });
         // recalculatePeriodGrades always recomputes every grading period for

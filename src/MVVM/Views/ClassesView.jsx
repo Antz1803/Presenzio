@@ -19,6 +19,28 @@ function z(t) {
     section_no: t.section_no || "",
   };
 }
+function compareSections(first, second) {
+  const firstSection = String(first.section_no ?? "").trim();
+  const secondSection = String(second.section_no ?? "").trim();
+  if (!firstSection && secondSection) return 1;
+  if (firstSection && !secondSection) return -1;
+  return (
+    firstSection.localeCompare(secondSection, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    }) ||
+    String(first.subject_code ?? "").localeCompare(
+      String(second.subject_code ?? ""),
+      undefined,
+      { numeric: true, sensitivity: "base" },
+    ) ||
+    String(first.subject_title ?? "").localeCompare(
+      String(second.subject_title ?? ""),
+      undefined,
+      { sensitivity: "base" },
+    )
+  );
+}
 function M({ item: t, onClose: l, onSave: c }) {
   const [n, b] = g(() => z(t)),
     [i, d] = g(!1),
@@ -183,7 +205,7 @@ export default function $({
   importState: b,
   gradeSheetImportState: i,
   connectionStatus: d = "connecting",
-  connectionMessage: u = "Connecting to Supabase…",
+  connectionMessage: u = "Connecting to Firebase…",
   pendingSyncCount: m = 0,
   onOpenStudents: h,
   onOpenClassOptions: v,
@@ -194,11 +216,13 @@ export default function $({
     [f, x] = g(null),
     k = E(
       () =>
-        t.filter((e) =>
-          `${e.subject_code} ${e.subject_title} ${e.room} ${e.edp_code} ${e.section_no} ${e.year_level}`
-            .toLowerCase()
-            .includes(r.toLowerCase()),
-        ),
+        t
+          .filter((e) =>
+            `${e.subject_code} ${e.subject_title} ${e.room} ${e.edp_code} ${e.section_no} ${e.year_level}`
+              .toLowerCase()
+              .includes(r.toLowerCase()),
+          )
+          .sort(compareSections),
       [t, r],
     ),
     w = d === "offline",
@@ -345,7 +369,7 @@ export default function $({
               className:
                 "w-full border-0 bg-transparent text-sm font-normal text-slate-800 outline-none placeholder:text-slate-400",
               placeholder:
-                "Search by course code, title, room, EDP, section...",
+                "Search by EDP Code",
               value: r,
               onChange: (e) => p(e.target.value),
             }),

@@ -1,5 +1,6 @@
 import React, { useEffect as xe, useMemo as G, useState as d } from "react";
 import { Icon as be } from "./DashboardShared";
+import { StudentPhotoPicker } from "./classActions/StudentPhotoPicker";
 const fe = [
   ["prelim", "Print Prelim"],
   ["midterm", "Print Midterm"],
@@ -427,17 +428,6 @@ function we({
       (A(null), b(e), v(se(e)), I({ status: "", text: "" }));
     },
     B = (e, a) => v((o) => ({ ...o, [e]: a })),
-    ue = (e) => {
-      const a = e.target.files?.[0];
-      if (!a) return;
-      if (a.size > 2 * 1024 * 1024) {
-        I({ status: "error", text: "Profile photos must be 2 MB or smaller." });
-        return;
-      }
-      const o = new FileReader();
-      ((o.onload = () => B("photo_url", String(o.result || ""))),
-        o.readAsDataURL(a));
-    },
     pe = async (e) => {
       if ((e.preventDefault(), !(!l || !g || !c))) {
         (u(!0), I({ status: "", text: "" }));
@@ -1035,35 +1025,13 @@ MANCILLA, JEORGE REY        2414456
           ),
           React.createElement(
             "div",
-            { className: "mb-4 flex items-center gap-3" },
-            g.photo_url
-              ? React.createElement("img", {
-                  src: g.photo_url,
-                  alt: "",
-                  className:
-                    "h-16 w-16 rounded-2xl object-cover ring-2 ring-white",
-                })
-              : React.createElement(
-                  "div",
-                  {
-                    className:
-                      "flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-100 text-lg font-bold text-indigo-600",
-                  },
-                  l.name?.slice(0, 1) || "?",
-                ),
-            React.createElement(
-              "label",
-              { className: "text-xs font-semibold text-slate-600" },
-              "Profile photo",
-              React.createElement("input", {
-                type: "file",
-                accept: "image/*",
-                onChange: ue,
-                disabled: f,
-                className:
-                  "mt-1 block w-full text-[11px] text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-white file:px-2.5 file:py-1.5 file:text-[11px] file:font-semibold file:text-indigo-600",
-              }),
-            ),
+            { className: "mb-4" },
+            React.createElement("p", { className: "mb-2 text-xs font-semibold text-slate-600" }, "Profile photo"),
+            React.createElement(StudentPhotoPicker, {
+              value: g.photo_url,
+              onChange: (photo) => B("photo_url", photo),
+              disabled: f,
+            }),
           ),
           React.createElement(
             "div",

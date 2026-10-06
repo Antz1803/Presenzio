@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import { useCallback } from "react";
-import { supabase } from "../../../lib/supabaseClient";
+import { db } from "../../../lib/Firebase";
 import {
   countOfflineMutations,
   listOfflineMutations,
@@ -8,8 +8,8 @@ import {
   removeOfflineMutation,
   replayOfflineMutation,
 } from "../../../lib/offlineStore";
-import { importMasterListFile } from "../importMasterList";
-import { importGradeSheetFile } from "../importRecord";
+import { importMasterListFile } from "../importMasterListFirebase";
+import { importGradeSheetFile } from "../importRecordFirebase";
 
 export function useOfflineActions(context) {
   const {
@@ -59,7 +59,7 @@ export function useOfflineActions(context) {
     transmutePercentage,
   } = helpers;
   const flushOfflineMutations = useCallback(async () => {
-    if (!accountScoped || !accountId || !supabase || browserIsOffline()) return;
+    if (!accountScoped || !accountId || !db || browserIsOffline()) return;
     const mutations = await listOfflineMutations();
     setPendingSyncCount(mutations.length);
     if (!mutations.length) return;
@@ -68,12 +68,10 @@ export function useOfflineActions(context) {
     try {
       for (const mutation of mutations) {
         const result = await replayOfflineMutation({
-          supabase,
+          uid: accountId,
           mutation,
-          importMasterList: (file) =>
-            importMasterListFile({ file, supabase, userId: accountId }),
-          importGradeSheet: (file) =>
-            importGradeSheetFile({ file, supabase, userId: accountId }),
+          importMasterList: (file) => importMasterListFile({ file, userId: accountId }),
+          importGradeSheet: (file) => importGradeSheetFile({ file, userId: accountId }),
         });
         if (result?.sectionId) affectedSections.add(result.sectionId);
         await removeOfflineMutation(mutation.id);

@@ -211,7 +211,7 @@ function w({
       } catch (e) {
         p({
           status: "error",
-          text: e?.message || "Scores could not be saved to Supabase.",
+          text: e?.message || "Scores could not be saved to Firebase.",
         });
       } finally {
         $(!1);

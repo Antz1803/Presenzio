@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { supabase } from "../../../lib/supabaseClient";
+import { db } from "../../../lib/Firebase";
 import { saveAssessmentOffline } from "./saveAssessmentOffline";
 import { saveAssessmentOnline } from "./saveAssessmentOnline";
 
@@ -15,8 +15,8 @@ export function useAssessmentActions(context) {
     helpers;
   const saveAssessment = useCallback(
     async (input) => {
-      const { title, category, period, questions } = input;
-      if (!currentSectionId) throw new Error("No active Supabase section.");
+      const { title, period, questions } = input;
+      if (!currentSectionId) throw new Error("No active Firebase section.");
       if (!title?.trim()) throw new Error("An assessment title is required.");
       if (!Array.isArray(questions) || !questions.length)
         throw new Error("Add at least one assessment question.");
@@ -24,7 +24,7 @@ export function useAssessmentActions(context) {
       if (!periodRow)
         throw new Error("The selected grading period is not available.");
       const args = { ...input, assessmentItemLimits, serializeAssessmentDate };
-      if (browserIsOffline() || !supabase)
+      if (browserIsOffline() || !db)
         return saveAssessmentOffline(
           { ...context, queueOfflineChange },
           args,
@@ -36,7 +36,16 @@ export function useAssessmentActions(context) {
         periodRow,
       );
     },
-    [currentSectionId, gradingPeriods, loadLiveData, queueOfflineChange],
+    [
+      assessmentItemLimits,
+      browserIsOffline,
+      context,
+      currentSectionId,
+      gradingPeriods,
+      loadLiveData,
+      queueOfflineChange,
+      serializeAssessmentDate,
+    ],
   );
   return { saveAssessment };
 }

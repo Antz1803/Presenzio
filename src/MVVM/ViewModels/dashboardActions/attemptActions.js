@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import { useCallback } from "react";
-import { supabase } from "../../../lib/supabaseClient";
+import { db } from "../../../lib/Firebase";
+import * as store from "../../../lib/accountDb";
 import {
   countOfflineMutations,
   listOfflineMutations,
@@ -11,6 +12,7 @@ import {
 
 export function useAttemptActions(context) {
   const {
+    accountId,
     currentSectionId,
     queueOfflineChange,
     setAssessmentAttemptGrants,
@@ -20,7 +22,7 @@ export function useAttemptActions(context) {
   const { browserIsOffline } = helpers;
   const grantAssessmentAttempt = useCallback(
     async ({ assessmentId, studentId }) => {
-      if (!currentSectionId) throw new Error("No active Supabase section.");
+      if (!currentSectionId) throw new Error("No active Firebase section.");
       if (!assessmentId || !studentId)
         throw new Error("Select an assessment and student.");
       const payload = {
@@ -28,31 +30,11 @@ export function useAttemptActions(context) {
         student_id: studentId,
         section_id: currentSectionId,
       };
-      if (browserIsOffline() || !supabase) {
+      if (browserIsOffline() || !db) {
         await queueOfflineChange("grant-assessment-attempt", payload);
         return { ...payload, extra_attempts: 1, queued: true };
       }
-      const { data: existing, error: existingError } = await supabase
-        .from("assessment_attempt_grants")
-        .select("id, extra_attempts")
-        .eq("assessment_id", assessmentId)
-        .eq("student_id", studentId)
-        .maybeSingle();
-      if (existingError) throw existingError;
-      const { data: grant, error } = await supabase
-        .from("assessment_attempt_grants")
-        .upsert(
-          {
-            id: existing?.id,
-            assessment_id: assessmentId,
-            student_id: studentId,
-            extra_attempts: Number(existing?.extra_attempts || 0) + 1,
-          },
-          { onConflict: "assessment_id,student_id" },
-        )
-        .select("id, assessment_id, student_id, extra_attempts, granted_at")
-        .single();
-      if (error) throw error;
+      const grant = await store.grantAttempt(accountId, currentSectionId, assessmentId, studentId);
       // Update only the grant locally. Reloading the whole dashboard here can
       // replace already-loaded assessment answers while the refresh settles.
       setAssessmentAttemptGrants((currentGrants) => [
@@ -82,6 +64,7 @@ export function useAttemptActions(context) {
       return grant;
     },
     [
+      accountId,
       currentSectionId,
       queueOfflineChange,
       setAssessmentAttemptGrants,

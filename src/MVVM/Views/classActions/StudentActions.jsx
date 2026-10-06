@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { StudentPhotoPicker } from "./StudentPhotoPicker";
 function AddStudentForm({ onSave, onClose }) {
   const [form, setForm] = useState({
     student_no: "",
@@ -6,9 +7,10 @@ function AddStudentForm({ onSave, onClose }) {
     gender: "",
     course: "",
     year_level: "",
+    photo_url: "",
   });
   const [saving, setSaving] = useState(false);
-  const update = (key, value) => setForm({ ...form, [key]: value });
+  const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
   const save = async (event) => {
     event.preventDefault();
     setSaving(true);
@@ -62,6 +64,14 @@ function AddStudentForm({ onSave, onClose }) {
             name="studentYearLevel"
             value={form.year_level}
             onChange={(event) => update("year_level", event.target.value)}
+          />
+        </label>
+        <label>
+          Student photo
+          <StudentPhotoPicker
+            value={form.photo_url}
+            onChange={(photo) => update("photo_url", photo)}
+            disabled={saving}
           />
         </label>
       </div>

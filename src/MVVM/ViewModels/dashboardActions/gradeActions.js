@@ -1,9 +1,10 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import { useCallback } from "react";
-import { importMasterListFile } from "../importMasterList";
-import { importGradeSheetFile } from "../importRecord";
+import { importMasterListFile } from "../importMasterListFirebase";
+import { importGradeSheetFile } from "../importRecordFirebase";
 import { syncGradeSheetToExcel } from "../syncGradeSheetToExcelPreservingTemplate";
-import { supabase } from "../../../lib/supabaseClient";
+import { db } from "../../../lib/Firebase";
+import * as store from "../../../lib/accountDb";
 import {
   countOfflineMutations,
   listOfflineMutations,
@@ -60,7 +61,7 @@ export function useGradeActions(context) {
   } = helpers;
   const saveGrades = useCallback(
     async ({ period, grades }) => {
-      if (!currentSectionId) throw new Error("No active Supabase section.");
+      if (!currentSectionId) throw new Error("No active Firebase section.");
       const periodCode = period.toLowerCase();
       const baseRows = Object.entries(grades)
         .filter(([, value]) => value !== "" && Number.isFinite(Number(value)))
@@ -70,7 +71,7 @@ export function useGradeActions(context) {
           own_period_grade: Number(value),
           cumulative_grade: Number(value),
         }));
-      if (browserIsOffline() || !supabase) {
+      if (browserIsOffline() || !db) {
         await queueOfflineChange("save-grades", {
           sectionId: currentSectionId,
           periodCode,
@@ -93,19 +94,8 @@ export function useGradeActions(context) {
         );
         return;
       }
-      const { data: periodRow, error: periodError } = await supabase
-        .from("grading_periods")
-        .select("id")
-        .eq("code", periodCode)
-        .single();
-      if (periodError) throw periodError;
-      const rows = baseRows.map((row) => ({ ...row, period_id: periodRow.id }));
-      if (rows.length) {
-        const { error } = await supabase
-          .from("period_grades")
-          .upsert(rows, { onConflict: "section_id,period_id,enrollment_id" });
-        if (error) throw error;
-      }
+      const rows = baseRows.map((row) => ({ ...row, period_id: periodCode }));
+      if (rows.length) await store.upsertPeriodGrades(accountId, currentSectionId, rows);
       await loadLiveData(currentSectionId);
     },
     [currentSectionId, loadLiveData, queueOfflineChange],

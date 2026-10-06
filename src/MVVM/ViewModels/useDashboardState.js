@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { isSupabaseConfigured } from "../../lib/supabaseClient";
+import { isFirebaseConfigured } from "../../lib/Firebase";
 import { emptyStats } from "./dashboardConstants";
 import { sortStudentsAlphabetically } from "./dashboardUtils";
 
@@ -33,12 +33,12 @@ export function useDashboardState() {
   const [stats, setStats] = useState(emptyStats);
   const [section, setSection] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState(
-    isSupabaseConfigured ? "connecting" : "not-configured",
+    isFirebaseConfigured ? "connecting" : "not-configured",
   );
   const [connectionMessage, setConnectionMessage] = useState(
-    isSupabaseConfigured
-      ? "Connecting to Supabase…"
-      : "Configure Supabase to load records",
+    isFirebaseConfigured
+      ? "Connecting to Firebase…"
+      : "Configure Firebase to load records",
   );
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [importState, setImportState] = useState({

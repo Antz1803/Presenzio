@@ -1,8 +1,8 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
-import { importMasterListFile } from "../importMasterList";
-import { importGradeSheetFile } from "../importRecord";
+import { importMasterListFile } from "../importMasterListFirebase";
+import { importGradeSheetFile } from "../importRecordFirebase";
 import { syncGradeSheetToExcel } from "../syncGradeSheetToExcelPreservingTemplate";
-import { supabase } from "../../../lib/supabaseClient";
+import { db } from "../../../lib/Firebase";
 import {
   countOfflineMutations,
   listOfflineMutations,
@@ -25,6 +25,7 @@ export async function saveAssessmentOffline(context, input, periodRow) {
   } = context;
   const {
     assessmentItemLimits,
+    browserIsOffline,
     createAssessmentAccessKey,
     createLocalId,
     serializeAssessmentDate,
@@ -42,7 +43,7 @@ export async function saveAssessmentOffline(context, input, periodRow) {
     replaceAssessmentId,
     overwriteScores,
   } = input;
-  if (browserIsOffline() || !supabase) {
+  if (browserIsOffline() || !db) {
     if (replaceAssessmentId) {
       await queueOfflineChange("delete-assessment", {
         assessmentId: replaceAssessmentId,

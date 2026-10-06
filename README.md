@@ -1,17 +1,21 @@
 # Presenzio
 
-Presenzio is a React/Vite gradebook that uses Supabase for shared data and IndexedDB for browser-side offline queuing.
+Presenzio is a React/Vite gradebook that uses Firebase Authentication and Realtime Database for shared data, with IndexedDB for browser-side offline queuing.
 
 ## Run locally
 
-Install dependencies, configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local`, then start the development site:
+Install dependencies, configure the `VITE_FIREBASE_*` values in `.env.local`, then start the development site:
 
 ```powershell
 npm install
 npm run dev
 ```
 
-If you use the assessment attempt and time-window controls, run the complete `supabase/schema.sql` in the Supabase SQL Editor after updating this project. It adds the assessment availability fields and allows multiple numbered attempts per student. Existing assessments default to one attempt with no time window.
+Deploy the Realtime Database rules before using shared data:
+
+```powershell
+firebase deploy --only database
+```
 
 Deploy the production build to Firebase Hosting with:
 

@@ -283,7 +283,7 @@ function re({ section: g, assessments: u = [], onSave: w, onClose: p }) {
         });
         (O({
           status: "success",
-          text: `Assessment saved. Key ID: ${l?.access_key ?? "available in Supabase"}`,
+          text: `Assessment saved. Key ID: ${l?.access_key ?? "available in Firebase"}`,
         }),
           S((e) => ({
             ...e,

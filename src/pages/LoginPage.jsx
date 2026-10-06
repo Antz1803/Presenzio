@@ -101,7 +101,7 @@ export default function LoginPage({ redirectTo }) {
             className="auth-message auth-message-warning"
             role="alert"
           >
-            Supabase authentication is not configured for this environment.
+            Firebase authentication is not configured for this environment.
           </p>
         )}
         {error && (

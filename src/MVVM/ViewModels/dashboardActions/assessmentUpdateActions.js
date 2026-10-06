@@ -1,8 +1,9 @@
-/* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
-import { supabase } from "../../../lib/supabaseClient";
+import { db } from "../../../lib/Firebase";
+import * as store from "../../../lib/accountDb";
 
 export function useAssessmentUpdateActions(context) {
   const {
+    accountId,
     currentSectionId,
     gradingPeriods,
     assessmentDefinitions,
@@ -26,7 +27,7 @@ export function useAssessmentUpdateActions(context) {
     questions,
     replaceAssessmentId,
   }) => {
-    if (!currentSectionId) throw new Error("No active Supabase section.");
+    if (!currentSectionId) throw new Error("No active Firebase section.");
     const periodRow = gradingPeriods.find((item) => item.code === period);
     if (!periodRow)
       throw new Error("The selected grading period is not available.");
@@ -49,7 +50,7 @@ export function useAssessmentUpdateActions(context) {
       conflictError.conflict = { id: conflict.id, title: conflict.title };
       throw conflictError;
     }
-    if (browserIsOffline() || !supabase) {
+    if (browserIsOffline() || !db) {
       if (confirmedReplace) {
         await queueOfflineChange("delete-assessment", {
           assessmentId: conflict.id,
@@ -145,42 +146,8 @@ export function useAssessmentUpdateActions(context) {
       );
       return { id: assessmentId, access_key: existing?.access_key };
     }
-    if (confirmedReplace) {
-      const { error: deleteConflictError } = await supabase
-        .from("assessments")
-        .delete()
-        .eq("id", conflict.id)
-        .eq("section_id", currentSectionId);
-      if (deleteConflictError) throw deleteConflictError;
-      const { error: deleteConflictScoresError } = await supabase
-        .from("assessment_scores")
-        .delete()
-        .eq("section_id", currentSectionId)
-        .eq("period_id", conflict.period_id)
-        .eq("category", conflict.category)
-        .eq("item_no", conflict.item_no);
-      if (deleteConflictScoresError) throw deleteConflictScoresError;
-    }
-    const { data: assessment, error: assessmentError } = await supabase
-      .from("assessments")
-      .update({
-        title: title.trim(),
-        category,
-        period_id: periodRow.id,
-        item_no: Number(itemNo),
-        instructions: instructions?.trim() || null,
-        time_limit_minutes: timeLimitMinutes ? Number(timeLimitMinutes) : null,
-        available_from: serializeAssessmentDate(availableFrom),
-        available_until: serializeAssessmentDate(availableUntil),
-      })
-      .eq("id", assessmentId)
-      .eq("section_id", currentSectionId)
-      .select("id, access_key")
-      .single();
-    if (assessmentError) throw assessmentError;
     const questionRows = questions.map((question, index) => ({
       ...(question.id ? { id: question.id } : {}),
-      assessment_id: assessmentId,
       question_no: index + 1,
       question_type: question.type,
       prompt: question.prompt,
@@ -205,41 +172,26 @@ export function useAssessmentUpdateActions(context) {
             )
           : null,
     }));
-    const { error: questionError } = await supabase
-      .from("assessment_questions")
-      .upsert(questionRows, { onConflict: "id" });
-    if (questionError) throw questionError;
-    const existingQuestions =
-      assessmentDefinitions.find((item) => item.id === assessmentId)
-        ?.questions ?? [];
-    const retainedQuestionIds = new Set(
-      questionRows.map((question) => question.id).filter(Boolean),
-    );
-    const removedQuestionIds = existingQuestions
-      .map((question) => question.id)
-      .filter((id) => id && !retainedQuestionIds.has(id));
-    if (removedQuestionIds.length) {
-      const { error: removedQuestionsError } = await supabase
-        .from("assessment_questions")
-        .delete()
-        .in("id", removedQuestionIds)
-        .eq("assessment_id", assessmentId);
-      if (removedQuestionsError) throw removedQuestionsError;
-    }
     const maxScore = questions.reduce(
       (total, question) => total + Number(question.points || 0),
       0,
     );
-    if (itemNo) {
-      const { error: scoreMaxError } = await supabase
-        .from("assessment_scores")
-        .update({ max_score: maxScore })
-        .eq("section_id", currentSectionId)
-        .eq("period_id", periodRow.id)
-        .eq("category", category)
-        .eq("item_no", Number(itemNo));
-      if (scoreMaxError) throw scoreMaxError;
-    }
+    if (confirmedReplace) await store.deleteAssessment(accountId, currentSectionId, conflict.id);
+    const assessment = await store.updateAssessment(accountId, currentSectionId, assessmentId, {
+      assessment: {
+        title: title.trim(),
+        category,
+        period_id: periodRow.id,
+        item_no: Number(itemNo),
+        instructions: instructions?.trim() || null,
+        time_limit_minutes: timeLimitMinutes ? Number(timeLimitMinutes) : null,
+        available_from: serializeAssessmentDate(availableFrom),
+        available_until: serializeAssessmentDate(availableUntil),
+      },
+      questions: questionRows,
+      maxScore,
+      itemNo,
+    });
     await loadLiveData(currentSectionId);
     return assessment;
   };

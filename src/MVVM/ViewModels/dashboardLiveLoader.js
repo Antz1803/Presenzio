@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import { useCallback } from "react";
-import { supabase } from "../../lib/supabaseClient";
+import { db } from "../../lib/Firebase";
+import { listSections } from "../../lib/accountDb";
 import {
   formatDate,
   formatDay,
@@ -65,39 +66,16 @@ export function useDashboardLiveLoader(context) {
       if (browserIsOffline()) {
         return loadOfflineData(preferredSectionId, requestId);
       }
-      if (!supabase) {
+      if (!db) {
         if (!isStale()) {
           setConnectionStatus("not-configured");
-          setConnectionMessage("Configure Supabase to load records");
+          setConnectionMessage("Configure Firebase to load records");
         }
         return loadOfflineData(preferredSectionId, requestId);
       }
       if (!isStale()) setConnectionStatus("connecting");
       try {
-        let sectionQuery = supabase
-          .from("sections")
-          .select("*, school_year:school_years(label, semester)");
-        if (accountScoped)
-          sectionQuery = sectionQuery.eq("teacher_id", accountId);
-        let { data: sectionList, error: sectionListError } =
-          await sectionQuery.order("id", { ascending: false });
-        if (sectionListError) {
-          // Older deployments may not expose the relationship in the client
-          // schema yet. Keep loading classes, just without the optional
-          // school-year metadata used by Excel Settings.
-          let fallbackSectionQuery = supabase.from("sections").select("*");
-          if (accountScoped)
-            fallbackSectionQuery = fallbackSectionQuery.eq(
-              "teacher_id",
-              accountId,
-            );
-          const fallback = await fallbackSectionQuery.order("id", {
-            ascending: false,
-          });
-          if (fallback.error) throw sectionListError;
-          sectionList = fallback.data;
-          sectionListError = null;
-        }
+        const sectionList = await listSections(accountId);
         const sectionData =
           sectionList?.find((item) => item.id === preferredSectionId) ??
           sectionList?.[0];
@@ -105,7 +83,7 @@ export function useDashboardLiveLoader(context) {
           if (!isStale()) {
             clearLiveData();
             setConnectionStatus("live");
-            setConnectionMessage("Live · Supabase");
+            setConnectionMessage("Live · Firebase");
           }
           return;
         }
@@ -122,7 +100,7 @@ export function useDashboardLiveLoader(context) {
           grantRows,
           violationRows,
           classSessions,
-        } = await loadDashboardRecords({ sectionData, sectionList });
+        } = await loadDashboardRecords({ uid: accountId, sectionData, sectionList });
 
         // Saving a Record Score can trigger a refresh while the answer query
         // is briefly incomplete. Keep answer rows that were already loaded
@@ -182,7 +160,7 @@ export function useDashboardLiveLoader(context) {
           setStats(liveStats);
           setConnectionStatus("live");
           setConnectionMessage(
-            "Live · " + (sectionData.subject_code ?? "Supabase"),
+            "Live · " + (sectionData.subject_code ?? "Firebase"),
           );
         }
         return {
@@ -197,13 +175,14 @@ export function useDashboardLiveLoader(context) {
           attendanceSessions: liveAttendanceSessions,
         };
       } catch (error) {
+        console.error("[loadLiveData] failed:", error);
         if (isNetworkError(error)) {
           return loadOfflineData(preferredSectionId, requestId);
         }
         if (!isStale()) {
           clearLiveData();
           setConnectionStatus("error");
-          setConnectionMessage(error.message ?? "Supabase connection failed");
+          setConnectionMessage(error.message ?? "Firebase connection failed");
         }
       }
     },

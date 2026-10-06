@@ -90,9 +90,10 @@ export function createLocalId() {
 
 export function isNetworkError(error) {
   return (
-    browserIsOffline(error) ||
+    browserIsOffline() ||
     error?.status === 0 ||
-    error?.name === "TypeError"
+    error?.name === "TypeError" ||
+    /client is offline|network|unavailable|disconnected/i.test(error?.message ?? "")
   );
 }
 

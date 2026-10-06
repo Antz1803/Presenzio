@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { supabase } from "../../../lib/supabaseClient";
-const INSTRUCTIONS_IMAGE_BUCKET = "assessment-instructions";
 function sanitizePastedHtml(html) {
   const container = document.createElement("div");
   container.innerHTML = html;
@@ -30,7 +28,6 @@ function RichTextEditor({
   value,
   onChange,
   placeholder,
-  uploadPathPrefix = "instructions",
 }) {
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -40,15 +37,18 @@ function RichTextEditor({
     if (editorRef.current && editorRef.current.innerHTML !== (value || "")) {
       editorRef.current.innerHTML = value || "";
     }
-  }, []);
+  }, [value]);
   const emitChange = useCallback(() => {
     onChange?.(editorRef.current?.innerHTML ?? "");
   }, [onChange]);
-  const runCommand = (command, argument) => {
-    editorRef.current?.focus();
-    document.execCommand(command, false, argument);
-    emitChange();
-  };
+  const runCommand = useCallback(
+    (command, argument) => {
+      editorRef.current?.focus();
+      document.execCommand(command, false, argument);
+      emitChange();
+    },
+    [emitChange],
+  );
   const insertTable = () => {
     const dimensions = window.prompt(
       "Table size as rows x columns (e.g. 3x4):",
@@ -68,25 +68,19 @@ function RichTextEditor({
   const uploadImageFile = useCallback(
     async (file) => {
       if (!file || !file.type?.startsWith("image/")) return;
-      if (!supabase) {
-        setError("Image upload needs a live Supabase connection.");
+      if (file.size > 2 * 1024 * 1024) {
+        setError("Images must be 2 MB or smaller.");
         return;
       }
       setUploading(true);
       setError("");
       try {
-        const extension = file.name?.split(".").pop() || "png";
-        const path = `${uploadPathPrefix}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
-        const { error: uploadError } = await supabase.storage
-          .from(INSTRUCTIONS_IMAGE_BUCKET)
-          .upload(path, file, { contentType: file.type, upsert: false });
-        if (uploadError) throw uploadError;
-        const { data: publicUrlData } = supabase.storage
-          .from(INSTRUCTIONS_IMAGE_BUCKET)
-          .getPublicUrl(path);
-        const imageUrl = publicUrlData?.publicUrl;
-        if (!imageUrl)
-          throw new Error("Could not resolve the uploaded image URL.");
+        const imageUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error("Could not read the image."));
+          reader.readAsDataURL(file);
+        });
         runCommand(
           "insertHTML",
           `<img src="${imageUrl}" alt="Screenshot" style="max-width:100%;border-radius:6px;margin:8px 0;" />`,
@@ -97,7 +91,7 @@ function RichTextEditor({
         setUploading(false);
       }
     },
-    [uploadPathPrefix],
+    [runCommand],
   );
   const handlePaste = (event) => {
     const items = [...(event.clipboardData?.items ?? [])];
@@ -263,4 +257,4 @@ function RichTextEditor({
     </div>
   );
 }
-export { RichTextEditor, INSTRUCTIONS_IMAGE_BUCKET };
+export { RichTextEditor };

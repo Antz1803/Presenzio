@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useCallback, useEffect, useRef } from "react";
-import { supabase } from "../../lib/supabaseClient";
+import { onValue, ref } from "firebase/database";
+import { db } from "../../lib/Firebase";
 import {
   countOfflineMutations,
   enqueueOfflineMutation,
@@ -38,9 +39,7 @@ export function useDashboardCoordinator(context) {
     setAssessmentScores,
     setAssessmentDefinitions,
     setStudentGroups,
-    setAssessmentAttempts,
     setAssessmentAttemptGrants,
-    setAssessmentViolations,
     setAttendanceSessions,
     setConnectionStatus,
     setConnectionMessage,
@@ -132,60 +131,23 @@ export function useDashboardCoordinator(context) {
   }, []);
 
   useEffect(() => {
-    if (!accountScoped || !accountId || !supabase || !currentSectionId)
+    if (!accountScoped || !accountId || !db || !currentSectionId)
       return undefined;
-    const channel = supabase
-      .channel("section-" + currentSectionId)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "period_grades",
-          filter: "section_id=eq." + currentSectionId,
-        },
-        scheduleReload,
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "assessment_scores",
-          filter: "section_id=eq." + currentSectionId,
-        },
-        scheduleReload,
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "class_sessions",
-          filter: "section_id=eq." + currentSectionId,
-        },
-        scheduleReload,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "attendance_records" },
-        scheduleReload,
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "student_groups",
-          filter: "section_id=eq." + currentSectionId,
-        },
-        scheduleReload,
-      )
-      .subscribe();
+    let initial = true;
+    const unsubscribe = onValue(
+      ref(db, `accounts/${accountId}/sectionData/${currentSectionId}`),
+      () => {
+        if (initial) {
+          initial = false;
+          return;
+        }
+        scheduleReload();
+      },
+    );
     return () => {
       clearTimeout(reloadTimerRef.current);
       reloadTimerRef.current = null;
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [accountId, accountScoped, currentSectionId, scheduleReload]);
 

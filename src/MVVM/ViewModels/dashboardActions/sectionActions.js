@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import { useCallback } from "react";
-import { supabase } from "../../../lib/supabaseClient";
+import { db } from "../../../lib/Firebase";
+import * as store from "../../../lib/accountDb";
 import {
   countOfflineMutations,
   listOfflineMutations,
@@ -38,7 +39,7 @@ export function useSectionActions(context) {
         year_level: String(changes?.year_level ?? "").trim() || null,
         section_no: String(changes?.section_no ?? "").trim() || null,
       };
-      if (browserIsOffline() || !supabase) {
+      if (browserIsOffline() || !db) {
         await queueOfflineChange("update-section", {
           sectionId,
           changes: sectionChanges,
@@ -55,11 +56,7 @@ export function useSectionActions(context) {
         );
         return;
       }
-      const { error } = await supabase
-        .from("sections")
-        .update(sectionChanges)
-        .eq("id", sectionId);
-      if (error) throw error;
+      await store.updateSection(accountId, sectionId, sectionChanges);
       await loadLiveData(sectionId);
     },
     [loadLiveData, queueOfflineChange],
@@ -67,7 +64,7 @@ export function useSectionActions(context) {
   const deleteSection = useCallback(
     async (sectionId) => {
       if (!sectionId) throw new Error("No class was selected for deletion.");
-      if (browserIsOffline() || !supabase) {
+      if (browserIsOffline() || !db) {
         await queueOfflineChange("delete-section", { sectionId });
         setSections((current) =>
           current.filter((item) => item.id !== sectionId),
@@ -75,31 +72,7 @@ export function useSectionActions(context) {
         if (currentSectionId === sectionId) clearLiveData();
         return;
       }
-      const { data: enrollments, error: enrollmentError } = await supabase
-        .from("enrollments")
-        .select("student_id")
-        .eq("section_id", sectionId);
-      if (enrollmentError) throw enrollmentError;
-      const { error: sectionError } = await supabase
-        .from("sections")
-        .delete()
-        .eq("id", sectionId);
-      if (sectionError) throw sectionError;
-      const studentIds = [
-        ...new Set((enrollments ?? []).map((item) => item.student_id)),
-      ];
-      if (studentIds.length) {
-        const { data: remaining } = await supabase
-          .from("enrollments")
-          .select("student_id")
-          .in("student_id", studentIds);
-        const remainingIds = new Set(
-          (remaining ?? []).map((item) => item.student_id),
-        );
-        const orphaned = studentIds.filter((id) => !remainingIds.has(id));
-        if (orphaned.length)
-          await supabase.from("students").delete().in("id", orphaned);
-      }
+      await store.deleteSection(accountId, sectionId);
       await loadLiveData();
     },
     [clearLiveData, currentSectionId, loadLiveData, queueOfflineChange],

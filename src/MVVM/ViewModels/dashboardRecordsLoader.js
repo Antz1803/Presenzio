@@ -1,244 +1,143 @@
-import { supabase } from "../../lib/supabaseClient";
+import { buildSessions, ensureGradingPeriods, read, rows } from "../../lib/accountDb";
 
-export async function loadDashboardRecords({ sectionData, sectionList }) {
-  const { data: enrollments, error: enrollmentError } = await supabase
-    .from("enrollments")
-    .select(
-      "id, ctrl_no, status, student:students(id, full_name, gender, student_no, course, year_level, contact_no, email, photo_url)",
-    )
-    .eq("section_id", sectionData.id)
-    .order("ctrl_no");
-  if (enrollmentError) throw enrollmentError;
+const byCreatedDesc = (a, b) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? ""));
 
-  // Every student saved in the database, independent of which section is
-  // currently selected. Used to power the "Total students" stat card so
-  // it reflects the whole roster rather than just the active class.
-  const sectionIds = (sectionList ?? []).map((item) => item.id);
-  const { data: allEnrollmentRows, error: allStudentsError } = sectionIds.length
-    ? await supabase
-        .from("enrollments")
-        .select("section_id, student:students(id, gender)")
-        .in("section_id", sectionIds)
-    : { data: [], error: null };
-  if (allStudentsError) throw allStudentsError;
-  const allStudentsData = (allEnrollmentRows ?? [])
-    .map((row) => row.student)
-    .filter(Boolean)
-    .filter(
-      (student, index, rows) =>
-        rows.findIndex((item) => item.id === student.id) === index,
+export async function loadDashboardRecords({ uid, sectionData, sectionList }) {
+  const sid = sectionData.id;
+  const [studentsMap, allEnrollments, periods, data] = await Promise.all([
+    read(uid, "students"),
+    read(uid, "enrollments"),
+    ensureGradingPeriods(uid),
+    read(uid, `sectionData/${sid}`),
+  ]);
+  const sd = data ?? {};
+  const studentById = (id) => (studentsMap?.[id] ? { id, ...studentsMap[id] } : null);
+
+  const enrollments = Object.entries(allEnrollments?.[sid] ?? {})
+    .map(([id, e]) => ({
+      id,
+      ctrl_no: e.ctrl_no,
+      status: e.status ?? "active",
+      student: studentById(e.student_id),
+    }))
+    .sort((a, b) => (a.ctrl_no ?? 1e9) - (b.ctrl_no ?? 1e9));
+
+  // Whole-account student count for the "Total students" card.
+  const unique = new Map();
+  (sectionList ?? []).forEach((s) =>
+    Object.values(allEnrollments?.[s.id] ?? {}).forEach((e) => {
+      const st = studentById(e.student_id);
+      if (st) unique.set(st.id, { id: st.id, gender: st.gender });
+    }),
+  );
+  const allStudentsData = [...unique.values()];
+
+  const periodGrades = Object.values(sd.periodGrades ?? {}).map((g) => ({
+    ...g,
+    period: { code: g.period_id },
+  }));
+  const combinedAssessmentScoreData = Object.values(sd.scores ?? {}).map((r) => ({
+    ...r,
+    period: { code: r.period_id },
+  }));
+
+  const liveStudentGroups = rows(sd.groups)
+    .sort(byCreatedDesc)
+    .map((g) => ({
+      id: g.id,
+      label: g.label,
+      groupCount: g.group_count,
+      assignments: g.assignments ?? {},
+      category: g.category ?? null,
+      period: g.period_code ?? null,
+      itemNo: g.item_no ?? null,
+      createdAt: g.created_at,
+    }));
+
+  const assessmentRows = rows(sd.assessments)
+    .sort(byCreatedDesc)
+    .map((a) => ({
+      ...a,
+      section_id: sid,
+      period: { code: a.period_id },
+      section: { id: sid, subject_code: sectionData.subject_code, subject_title: sectionData.subject_title },
+      questions: rows(sd.questions?.[a.id])
+        .map((q) => ({ ...q, assessment_id: a.id, choices: q.choices ?? [] })) // RTDB drops empty arrays
+        .sort((x, y) => Number(x.question_no) - Number(y.question_no)),
+    }));
+
+  const attemptRows = [];
+  const grantRows = [];
+  const violationRows = [];
+  assessmentRows.forEach((a) => {
+    rows(sd.attempts?.[a.id]).forEach((attempt) => {
+      const { answers, ...rest } = attempt;
+      attemptRows.push({
+        ...rest,
+        assessment_id: a.id,
+        answers: Object.entries(answers ?? {}).map(([question_id, ans]) => ({
+          id: `${attempt.id}:${question_id}`,
+          attempt_id: attempt.id,
+          question_id,
+          ...ans,
+        })),
+      });
+    });
+    Object.entries(sd.grants?.[a.id] ?? {}).forEach(([student_id, g]) =>
+      grantRows.push({ id: `${a.id}:${student_id}`, assessment_id: a.id, student_id, ...g }),
     );
+    rows(sd.violations?.[a.id]).forEach((v) => violationRows.push({ ...v, assessment_id: a.id }));
+  });
+  violationRows.sort((x, y) => String(y.occurred_at).localeCompare(String(x.occurred_at)));
 
-  let { data: periods, error: periodError } = await supabase
-    .from("grading_periods")
-    .select("id, code, sort_order, start_date, end_date, weights")
-    .order("sort_order");
-  if (periodError) {
-    // Keep existing classes visible until the date columns are added to
-    // an existing Supabase project through the schema migration.
-    const fallbackPeriods = await supabase
-      .from("grading_periods")
-      .select("id, code, sort_order")
-      .order("sort_order");
-    if (fallbackPeriods.error) throw periodError;
-    periods = fallbackPeriods.data ?? [];
-  }
-
-  const { data: periodGrades, error: gradeError } = await supabase
-    .from("period_grades")
-    .select(
-      "enrollment_id, own_period_grade, cumulative_grade, period:grading_periods(code)",
-    )
-    .eq("section_id", sectionData.id);
-  if (gradeError) throw gradeError;
-
-  const { data: assessmentScoreData, error: assessmentScoreError } =
-    await supabase
-      .from("assessment_scores")
-      .select(
-        "period_id, enrollment_id, category, item_no, score, max_score, recorded_at, period:grading_periods(code)",
-      )
-      .eq("section_id", sectionData.id);
-  if (assessmentScoreError) throw assessmentScoreError;
-
-  let combinedAssessmentScoreData = [...(assessmentScoreData ?? [])];
-
-  const { data: studentGroupData, error: studentGroupError } = await supabase
-    .from("student_groups")
-    .select(
-      "id, label, group_count, assignments, category, period_code, item_no, created_at",
-    )
-    .eq("section_id", sectionData.id)
-    .order("created_at", { ascending: false });
-  if (studentGroupError) throw studentGroupError;
-  const liveStudentGroups = (studentGroupData ?? []).map((row) => ({
-    id: row.id,
-    label: row.label,
-    groupCount: row.group_count,
-    assignments: row.assignments ?? {},
-    category: row.category ?? null,
-    period: row.period_code ?? null,
-    itemNo: row.item_no ?? null,
-    createdAt: row.created_at,
-  }));
-  // Assessment authoring is optional for existing projects. If the new
-  // tables have not been migrated yet, keep the class dashboard usable.
-  let { data: assessmentData, error: assessmentDataError } = await supabase
-    .from("assessments")
-    .select(
-      "id, section_id, period_id, category, item_no, access_key, title, instructions, time_limit_minutes, available_from, available_until, created_at, period:grading_periods(code), section:sections(id, subject_code, subject_title), questions:assessment_questions(id, question_no, question_type, prompt, points, choices, correct_answer, language, starter_code, expected_output, near_match_score_percent, incorrect_score_percent)",
-    )
-    .eq("section_id", sectionData.id)
-    .order("created_at", { ascending: false });
-  if (assessmentDataError) {
-    const fallbackAssessments = await supabase
-      .from("assessments")
-      .select(
-        "id, section_id, period_id, category, item_no, access_key, title, instructions, created_at, period:grading_periods(code), section:sections(id, subject_code, subject_title), questions:assessment_questions(id, question_no, question_type, prompt, points, choices, correct_answer, language, starter_code, expected_output, near_match_score_percent, incorrect_score_percent)",
-      )
-      .eq("section_id", sectionData.id)
-      .order("created_at", { ascending: false });
-    if (!fallbackAssessments.error) {
-      assessmentData = (fallbackAssessments.data ?? []).map((assessment) => ({
-        ...assessment,
-        time_limit_minutes: null,
-        available_from: null,
-        available_until: null,
-      }));
-      assessmentDataError = null;
-    }
-  }
-  const assessmentRows = assessmentDataError ? [] : (assessmentData ?? []);
-  const assessmentIds = assessmentRows.map((assessment) => assessment.id);
-  let attemptRows = [];
-  let grantRows = [];
-  let violationRows = [];
-  if (assessmentIds.length) {
-    const [attemptResult, grantResult, violationResult] = await Promise.all([
-      supabase
-        .from("assessment_attempts")
-        .select(
-          "id, assessment_id, student_id, attempt_no, score, max_score, status, submitted_at",
-        )
-        .in("assessment_id", assessmentIds),
-      supabase
-        .from("assessment_attempt_grants")
-        .select("id, assessment_id, student_id, extra_attempts, granted_at")
-        .in("assessment_id", assessmentIds),
-      supabase
-        .from("assessment_violations")
-        .select(
-          "id, assessment_id, student_id, attempt_no, violation_type, details, occurred_at",
-        )
-        .in("assessment_id", assessmentIds)
-        .order("occurred_at", { ascending: false }),
-    ]);
-    attemptRows = attemptResult.error ? [] : (attemptResult.data ?? []);
-    grantRows = grantResult.error ? [] : (grantResult.data ?? []);
-    violationRows = violationResult.error ? [] : (violationResult.data ?? []);
-  }
-  // Fetch each attempt's actual submitted answers (question_id, the raw
-  // answer text/choice, correctness, and points earned) and attach them
-  // to their attempt row.
-  let answerRows = [];
-  const attemptIds = attemptRows.map((attempt) => attempt.id).filter(Boolean);
-  if (attemptIds.length) {
-    const { data: answerData, error: answerError } = await supabase
-      .from("assessment_answers")
-      .select("id, attempt_id, question_id, answer, is_correct, points_earned")
-      .in("attempt_id", attemptIds);
-    if (answerError) {
-      console.error("Failed to load assessment_answers:", answerError);
-    }
-    answerRows = answerError ? [] : (answerData ?? []);
-  }
-  attemptRows = attemptRows.map((attempt) => ({
-    ...attempt,
-    answers: answerRows.filter(
-      (answer) => String(answer.attempt_id) === String(attempt.id),
-    ),
-  }));
-
-  // An assessment submission writes both an attempt and a record score. Use
-  // the latest submitted attempt as the local source of truth as well, so a
-  // slightly stale score query cannot make Record Score disagree with the
-  // score shown in Manage Assessments.
-  const latestAttemptByStudentAssessment = new Map();
+  // Latest submitted attempt fills in a missing Record Score (never overwrites one).
+  const latest = new Map();
   for (const attempt of attemptRows) {
     if (attempt.status === "in_progress") continue;
     const key = `${attempt.assessment_id}:${attempt.student_id}`;
-    const current = latestAttemptByStudentAssessment.get(key);
-    const attemptNumber = Number(attempt.attempt_no) || 0;
-    const currentNumber = Number(current?.attempt_no) || 0;
-    const submittedAt = new Date(attempt.submitted_at || 0).getTime();
-    const currentSubmittedAt = new Date(
-      current?.submitted_at || 0,
-    ).getTime();
-    if (
-      !current ||
-      attemptNumber > currentNumber ||
-      (attemptNumber === currentNumber && submittedAt > currentSubmittedAt)
-    ) {
-      latestAttemptByStudentAssessment.set(key, attempt);
-    }
+    const current = latest.get(key);
+    const n = Number(attempt.attempt_no) || 0;
+    const cn = Number(current?.attempt_no) || 0;
+    const t = new Date(attempt.submitted_at || 0).getTime();
+    const ct = new Date(current?.submitted_at || 0).getTime();
+    if (!current || n > cn || (n === cn && t > ct)) latest.set(key, attempt);
   }
-
-  for (const [key, attempt] of latestAttemptByStudentAssessment) {
-    const assessment = assessmentRows.find(
-      (item) => String(item.id) === String(attempt.assessment_id),
-    );
-    const enrollment = (enrollments ?? []).find(
-      (item) => String(item.student?.id) === String(attempt.student_id),
-    );
+  for (const attempt of latest.values()) {
+    const assessment = assessmentRows.find((a) => String(a.id) === String(attempt.assessment_id));
+    const enrollment = enrollments.find((e) => String(e.student?.id) === String(attempt.student_id));
     if (!assessment || !enrollment || !assessment.item_no) continue;
-
-    const scoreRow = {
-      section_id: sectionData.id,
-      period_id: assessment.period_id,
-      enrollment_id: enrollment.id,
-      category: assessment.category,
-      item_no: assessment.item_no,
-      score: attempt.score,
-      max_score: attempt.max_score,
-      period: assessment.period,
-    };
-    const rowIndex = combinedAssessmentScoreData.findIndex(
-      (row) =>
-        String(row.enrollment_id) === String(scoreRow.enrollment_id) &&
-        String(row.period_id) === String(scoreRow.period_id) &&
-        row.category === scoreRow.category &&
-        Number(row.item_no) === Number(scoreRow.item_no),
+    const exists = combinedAssessmentScoreData.some(
+      (r) =>
+        String(r.enrollment_id) === String(enrollment.id) &&
+        String(r.period_id) === String(assessment.period_id) &&
+        r.category === assessment.category &&
+        Number(r.item_no) === Number(assessment.item_no),
     );
-    if (rowIndex >= 0) {
-      // Keep an existing Record Score value. It may be a deliberate manual
-      // adjustment or extra credit and must not be overwritten by the latest
-      // automatically calculated assessment attempt score.
-    } else {
-      combinedAssessmentScoreData.push(scoreRow);
+    if (!exists) {
+      combinedAssessmentScoreData.push({
+        section_id: sid,
+        period_id: assessment.period_id,
+        enrollment_id: enrollment.id,
+        category: assessment.category,
+        item_no: assessment.item_no,
+        score: attempt.score,
+        max_score: attempt.max_score,
+        period: assessment.period,
+      });
     }
   }
 
-  const liveAssessmentDefinitions = assessmentRows.map((assessment) => ({
-    ...assessment,
-    attempts: attemptRows.filter(
-      (attempt) => attempt.assessment_id === assessment.id,
-    ),
-    attemptGrants: grantRows.filter(
-      (grant) => grant.assessment_id === assessment.id,
-    ),
-    violations: violationRows.filter(
-      (violation) => violation.assessment_id === assessment.id,
-    ),
+  const liveAssessmentDefinitions = assessmentRows.map((a) => ({
+    ...a,
+    attempts: attemptRows.filter((x) => x.assessment_id === a.id),
+    attemptGrants: grantRows.filter((g) => g.assessment_id === a.id),
+    violations: violationRows.filter((v) => v.assessment_id === a.id),
   }));
 
-  const { data: classSessions, error: sessionError } = await supabase
-    .from("class_sessions")
-    .select(
-      "id, period_id, session_date, session_time, attendance_records(enrollment_id, status)",
-    )
-    .eq("section_id", sectionData.id)
-    .order("session_date", { ascending: false });
-  if (sessionError) throw sessionError;
+  const classSessions = buildSessions(sd).sort((a, b) =>
+    String(b.session_date).localeCompare(String(a.session_date)),
+  );
+
   return {
     enrollments,
     allStudentsData,

@@ -8,6 +8,7 @@ export default function ProfileDetailsModal({ onClose }) {
   const { user, updateProfile } = useAuth();
   const [name, setName] = useState(user?.user_metadata?.full_name || "");
   const [email, setEmail] = useState(user?.email || "");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -42,14 +43,23 @@ export default function ProfileDetailsModal({ onClose }) {
       return;
     }
 
+    const emailChanged =
+      cleanEmail.toLowerCase() !== (user?.email || "").toLowerCase();
+    if ((emailChanged || password) && !currentPassword) {
+      setError("Enter your current password to change your email or password.");
+      return;
+    }
+
     setSaving(true);
     try {
       const result = await updateProfile({
         name: cleanName,
         email: cleanEmail,
         password,
+        currentPassword,
       });
 
+      setCurrentPassword("");
       setPassword("");
       setConfirmPassword("");
       setNotice(
@@ -131,8 +141,8 @@ export default function ProfileDetailsModal({ onClose }) {
               required
             />
             <span className="mt-1.5 block text-[11px] font-normal text-slate-400">
-              Changing your email may require confirmation from both email
-              addresses.
+              Changing your email sends a verification link to the new address.
+              The change applies after you click it.
             </span>
           </label>
 
@@ -142,6 +152,22 @@ export default function ProfileDetailsModal({ onClose }) {
               Leave these fields blank to keep your current password.
             </p>
           </div>
+
+          <label className="block text-xs font-bold text-slate-600">
+            Current password
+            <input
+              className={inputClass}
+              type="password"
+              name="currentPassword"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              autoComplete="current-password"
+              disabled={saving}
+            />
+            <span className="mt-1.5 block text-[11px] font-normal text-slate-400">
+              Required only when changing your email or password.
+            </span>
+          </label>
 
           <label className="block text-xs font-bold text-slate-600">
             New password

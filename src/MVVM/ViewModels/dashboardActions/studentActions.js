@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import { useCallback } from "react";
-import { supabase } from "../../../lib/supabaseClient";
+import { db } from "../../../lib/Firebase";
+import * as store from "../../../lib/accountDb";
 import {
   countOfflineMutations,
   listOfflineMutations,
@@ -57,8 +58,8 @@ export function useStudentActions(context) {
   } = helpers;
   const addStudent = useCallback(
     async (student) => {
-      if (!currentSectionId) throw new Error("No active Supabase section.");
-      if (browserIsOffline() || !supabase) {
+      if (!currentSectionId) throw new Error("No active Firebase section.");
+      if (browserIsOffline() || !db) {
         const studentId = createLocalId();
         const enrollmentId = createLocalId();
         const studentRow = {
@@ -102,20 +103,7 @@ export function useStudentActions(context) {
         ]);
         return;
       }
-      const { data: createdStudent, error: studentError } = await supabase
-        .from("students")
-        .insert({ ...student, gender: student.gender || null })
-        .select("id")
-        .single();
-      if (studentError) throw studentError;
-      const { error: enrollmentError } = await supabase
-        .from("enrollments")
-        .insert({
-          section_id: currentSectionId,
-          student_id: createdStudent.id,
-          status: "active",
-        });
-      if (enrollmentError) throw enrollmentError;
+      await store.addStudent(accountId, currentSectionId, student);
       await loadLiveData(currentSectionId);
     },
     [currentSectionId, loadLiveData, queueOfflineChange, students.length],
@@ -126,7 +114,7 @@ export function useStudentActions(context) {
       if (!enrollmentId || !sectionId) {
         throw new Error("Student information is incomplete.");
       }
-      if (browserIsOffline() || !supabase) {
+      if (browserIsOffline() || !db) {
         await queueOfflineChange("delete-student", {
           enrollmentId,
           sectionId,
@@ -136,15 +124,10 @@ export function useStudentActions(context) {
         );
         return;
       }
-      const { error: enrollmentError } = await supabase
-        .from("enrollments")
-        .delete()
-        .eq("id", enrollmentId)
-        .eq("section_id", sectionId);
-      if (enrollmentError) throw enrollmentError;
+      await store.deleteEnrollment(accountId, sectionId, enrollmentId);
       await loadLiveData(sectionId);
     },
-    [browserIsOffline, loadLiveData, queueOfflineChange, setStudents, supabase],
+    [accountId, browserIsOffline, loadLiveData, queueOfflineChange, setStudents],
   );
 
   const updateStudent = useCallback(
@@ -168,7 +151,7 @@ export function useStudentActions(context) {
       if (!Number.isInteger(nextCtrlNo) || nextCtrlNo < 1) {
         throw new Error("Control number must be a positive whole number.");
       }
-      if (browserIsOffline() || !supabase) {
+      if (browserIsOffline() || !db) {
         await queueOfflineChange("update-student", {
           student: studentPayload,
           enrollment: {
@@ -197,20 +180,15 @@ export function useStudentActions(context) {
         );
         return;
       }
-      const { error: studentError } = await supabase
-        .from("students")
-        .update(studentPayload)
-        .eq("id", studentId);
-      if (studentError) throw studentError;
-      const { error: enrollmentError } = await supabase
-        .from("enrollments")
-        .update({ ctrl_no: nextCtrlNo })
-        .eq("id", enrollmentId)
-        .eq("section_id", sectionId);
-      if (enrollmentError) throw enrollmentError;
+      await store.updateStudent(accountId, {
+        student: studentPayload,
+        sectionId,
+        enrollmentId,
+        ctrlNo: nextCtrlNo,
+      });
       await loadLiveData(sectionId);
     },
-    [browserIsOffline, loadLiveData, queueOfflineChange, setStudents, supabase],
+    [accountId, browserIsOffline, loadLiveData, queueOfflineChange, setStudents],
   );
 
   return { addStudent, updateStudent, deleteStudent };

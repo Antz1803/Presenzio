@@ -1,10 +1,10 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import { useCallback } from "react";
-import { importMasterListFile } from "../importMasterList";
-import { importGradeSheetFile } from "../importRecord";
+import { importMasterListFile } from "../importMasterListFirebase";
 import { syncGradeSheetToExcel } from "../syncGradeSheetToExcelPreservingTemplate";
 import { getPeriodGradingWeightPercentages } from "../dashboardConstants";
-import { supabase } from "../../../lib/supabaseClient";
+import { db } from "../../../lib/Firebase";
+import * as store from "../../../lib/accountDb";
 import {
   countOfflineMutations,
   listOfflineMutations,
@@ -68,7 +68,7 @@ export function useSetupActions(context) {
 
   const saveGradingPeriods = useCallback(
     async ({ dateRanges = {}, weightSettings = {} } = {}) => {
-      if (!supabase) throw new Error("Supabase is not configured.");
+      if (!db) throw new Error("Firebase is not configured.");
 
       const invalidPeriod = Object.entries(dateRanges).find(([, dates]) => {
         const hasStart = Boolean(dates.start);
@@ -102,7 +102,7 @@ export function useSetupActions(context) {
           ),
         };
       });
-      if (browserIsOffline() || !supabase) {
+      if (browserIsOffline() || !db) {
         await queueOfflineChange("save-grading-periods", { rows });
         setGradingPeriods((current) =>
           current.map((currentPeriod) => {
@@ -119,40 +119,8 @@ export function useSetupActions(context) {
         );
         return;
       }
-      const { error } = await supabase
-        .from("grading_periods")
-        .upsert(rows, { onConflict: "code" });
-      if (error) throw error;
-
-      // Keep existing attendance sessions aligned with the date ranges. This
-      // repairs sessions that were previously assigned from the selected tab
-      // instead of from their actual date.
-      const { data: existingSessions, error: existingSessionsError } =
-        await supabase
-          .from("class_sessions")
-          .select("id, session_date")
-          .eq("section_id", currentSectionId);
-      if (existingSessionsError) throw existingSessionsError;
-      for (const session of existingSessions ?? []) {
-        const matchingPeriod = rows
-          .filter((row) => row.start_date && row.end_date)
-          .sort((first, second) => first.sort_order - second.sort_order)
-          .find(
-            (row) =>
-              session.session_date >= row.start_date &&
-              session.session_date <= row.end_date,
-          );
-        if (!matchingPeriod) continue;
-        const periodId = gradingPeriods.find(
-          (periodItem) => periodItem.code === matchingPeriod.code,
-        )?.id;
-        if (!periodId) continue;
-        const { error: sessionUpdateError } = await supabase
-          .from("class_sessions")
-          .update({ period_id: periodId })
-          .eq("id", session.id);
-        if (sessionUpdateError) throw sessionUpdateError;
-      }
+      await store.saveGradingPeriods(accountId, rows);
+      await store.realignSessionPeriods(accountId, currentSectionId, rows);
       await loadLiveData(currentSectionId);
     },
     [
@@ -170,7 +138,7 @@ export function useSetupActions(context) {
     async (file) => {
       setImportState({ status: "working", message: "Reading master list…" });
       try {
-        if (browserIsOffline() || !supabase) {
+        if (browserIsOffline() || !db) {
           await queueOfflineChange("import-master-list", { file });
           setImportState({
             status: "success",
@@ -180,7 +148,6 @@ export function useSetupActions(context) {
         }
         const result = await importMasterListFile({
           file,
-          supabase,
           userId: accountId,
         });
         const preferredSectionId = result.sectionIds?.includes(currentSectionId)

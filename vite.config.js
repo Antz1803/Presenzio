@@ -8,8 +8,7 @@ dns.setDefaultResultOrder('ipv4first')
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "")
-  const supabaseUrl = env.VITE_SUPABASE_URL?.replace(/\/$/, "")
+  loadEnv(mode, process.cwd(), "")
 
   return {
     plugins: [
@@ -23,18 +22,5 @@ export default defineConfig(({ mode }) => {
     build: {
       chunkSizeWarningLimit: 1000,
     },
-    server: supabaseUrl
-      ? {
-          proxy: {
-            "/supabase": {
-              target: supabaseUrl,
-              changeOrigin: true,
-              secure: true,
-              ws: true,
-              rewrite: (path) => path.replace(/^\/supabase/, ""),
-            },
-          },
-        }
-      : undefined,
   }
 })

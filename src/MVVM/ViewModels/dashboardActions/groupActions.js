@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import { useCallback } from "react";
-import { supabase } from "../../../lib/supabaseClient";
+import { db } from "../../../lib/Firebase";
+import * as store from "../../../lib/accountDb";
 import {
   countOfflineMutations,
   listOfflineMutations,
@@ -11,6 +12,7 @@ import {
 
 export function useGroupActions(context) {
   const {
+    accountId,
     currentSectionId,
     studentGroups,
     loadLiveData,
@@ -32,9 +34,9 @@ export function useGroupActions(context) {
       itemNo,
     }) => {
       const targetSectionId = sectionId ?? currentSectionId;
-      if (!targetSectionId) throw new Error("No active Supabase section.");
+      if (!targetSectionId) throw new Error("No active Firebase section.");
       if (!label?.trim()) throw new Error("A grouping label is required.");
-      if (browserIsOffline() || !supabase) {
+      if (browserIsOffline() || !db) {
         const group = {
           id: createLocalId(),
           label: label.trim(),
@@ -61,33 +63,11 @@ export function useGroupActions(context) {
         setStudentGroups((current) => [group, ...current]);
         return group;
       }
-      const { data, error } = await supabase
-        .from("student_groups")
-        .insert({
-          section_id: targetSectionId,
-          label: label.trim(),
-          group_count: groupCount,
-          assignments,
-          category: category || null,
-          period_code: period || null,
-          item_no: itemNo ?? null,
-        })
-        .select(
-          "id, label, group_count, assignments, category, period_code, item_no, created_at",
-        )
-        .single();
-      if (error) throw error;
+      const group = await store.saveStudentGroup(accountId, targetSectionId, {
+        label: label.trim(), groupCount, assignments, category, period, itemNo,
+      });
       await loadLiveData(currentSectionId);
-      return {
-        id: data.id,
-        label: data.label,
-        groupCount: data.group_count,
-        assignments: data.assignments,
-        category: data.category,
-        period: data.period_code,
-        itemNo: data.item_no,
-        createdAt: data.created_at,
-      };
+      return group;
     },
     [currentSectionId, loadLiveData, queueOfflineChange],
   );
@@ -98,7 +78,7 @@ export function useGroupActions(context) {
       const hasScoringSlot = Boolean(
         target?.category && target?.period && target?.itemNo,
       );
-      if (browserIsOffline() || !supabase) {
+      if (browserIsOffline() || !db) {
         await queueOfflineChange("delete-student-group", {
           groupId,
           sectionId: currentSectionId,
@@ -126,28 +106,11 @@ export function useGroupActions(context) {
           );
         return;
       }
-      const { error } = await supabase
-        .from("student_groups")
-        .delete()
-        .eq("id", groupId);
-      if (error) throw error;
-      if (hasScoringSlot) {
-        const { data: periodRow, error: periodError } = await supabase
-          .from("grading_periods")
-          .select("id")
-          .eq("code", target.period)
-          .single();
-        if (periodError) throw periodError;
-        const { error: scoresError } = await supabase
-          .from("assessment_scores")
-          .delete()
-          .eq("section_id", currentSectionId)
-          .eq("period_id", periodRow.id)
-          .eq("category", target.category)
-          .eq("item_no", target.itemNo);
-        if (scoresError) throw scoresError;
-        await recalculatePeriodGrades(periodRow.id);
-      }
+      await store.deleteStudentGroup(
+        accountId, currentSectionId, groupId,
+        hasScoringSlot ? { periodId: target.period, category: target.category, itemNo: target.itemNo } : null,
+      );
+      if (hasScoringSlot) await recalculatePeriodGrades(target.period);
       await loadLiveData(currentSectionId);
     },
     [
@@ -164,9 +127,9 @@ export function useGroupActions(context) {
       const nextLabel = label?.trim();
       if (!groupId) throw new Error("No grouping selected.");
       if (!nextLabel) throw new Error("A grouping title is required.");
-      if (!targetSectionId) throw new Error("No active Supabase section.");
+      if (!targetSectionId) throw new Error("No active Firebase section.");
 
-      if (browserIsOffline() || !supabase) {
+      if (browserIsOffline() || !db) {
         await queueOfflineChange("update-student-group", {
           groupId,
           sectionId: targetSectionId,
@@ -180,12 +143,7 @@ export function useGroupActions(context) {
         return;
       }
 
-      const { error } = await supabase
-        .from("student_groups")
-        .update({ label: nextLabel })
-        .eq("id", groupId)
-        .eq("section_id", targetSectionId);
-      if (error) throw error;
+      await store.updateStudentGroup(accountId, targetSectionId, groupId, nextLabel);
       await loadLiveData(targetSectionId);
     },
     [currentSectionId, loadLiveData, queueOfflineChange, setStudentGroups],
