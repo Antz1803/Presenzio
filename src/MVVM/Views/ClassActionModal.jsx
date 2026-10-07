@@ -61,6 +61,17 @@ export default function K({
   instructor: instructorProfile,
 }) {
   const b = W(null);
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const visibleGradePeriods = B.filter((period) => {
+    const configured = m?.find((item) => item.code === period.key);
+    return Boolean(
+      configured?.start_date &&
+        configured?.end_date &&
+        configured.start_date <= today,
+    );
+  });
+  const showRemarks = visibleGradePeriods.some((period) => period.key === "final");
   return (
     V(() => {
       const a = b.current;
@@ -245,23 +256,15 @@ export default function K({
                                         null,
                                         "STUDENT",
                                       ),
-                                      React.createElement("th", null, "PRELIM"),
-                                      React.createElement(
-                                        "th",
-                                        null,
-                                        "MIDTERM",
+                                      visibleGradePeriods.map((period) =>
+                                        React.createElement(
+                                          "th",
+                                          { key: period.key },
+                                          period.label.toUpperCase(),
+                                        ),
                                       ),
-                                      React.createElement(
-                                        "th",
-                                        null,
-                                        "SEMI-FINAL",
-                                      ),
-                                      React.createElement("th", null, "FINAL"),
-                                      React.createElement(
-                                        "th",
-                                        null,
-                                        "REMARKS",
-                                      ),
+                                      showRemarks &&
+                                        React.createElement("th", null, "REMARKS"),
                                     ),
                                   ),
                                   React.createElement(
@@ -298,26 +301,32 @@ export default function K({
                                             ),
                                           ),
                                         ),
-                                        B.map((v) => {
+                                        visibleGradePeriods.map((v) => {
                                           const f = a.grades?.[v.key];
+                                          const hasGrade =
+                                            f !== null &&
+                                            f !== undefined &&
+                                            f !== "" &&
+                                            Number.isFinite(Number(f));
                                           return React.createElement(
                                             "td",
                                             {
                                               className: "grade-period-cell",
                                               key: v.key,
                                             },
-                                            Number.isFinite(Number(f))
+                                            hasGrade
                                               ? Number(f).toFixed(1)
                                               : "—",
                                           );
                                         }),
-                                        React.createElement(
-                                          "td",
-                                          {
-                                            className: `grade-remark ${S(a).toLowerCase()}`,
-                                          },
-                                          S(a),
-                                        ),
+                                        showRemarks &&
+                                          React.createElement(
+                                            "td",
+                                            {
+                                              className: `grade-remark ${S(a).toLowerCase()}`,
+                                            },
+                                            S(a),
+                                          ),
                                       ),
                                     ),
                                   ),

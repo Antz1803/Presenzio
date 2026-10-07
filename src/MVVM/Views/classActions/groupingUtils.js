@@ -19,19 +19,50 @@ export function toAssignments(groups) {
   );
 }
 
-function normalizeStudentName(value) {
+function removeInvisibleFormatting(value) {
   return String(value ?? "")
+    .replace(/[\u00a0\u200b-\u200f\u202a-\u202e\u2060\ufeff]/g, " ");
+}
+
+function normalizeStudentName(value) {
+  return removeInvisibleFormatting(value)
+    .normalize("NFKC")
     .toLowerCase()
-    .replace(/[.,]/g, "")
+    .replace(/[.,]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function studentNameTokens(value) {
+  return normalizeStudentName(value)
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+function namesMatch(rosterName, pastedName) {
+  const rosterTokens = studentNameTokens(rosterName);
+  const pastedTokens = studentNameTokens(pastedName);
+  if (!rosterTokens.length || !pastedTokens.length) return false;
+  if (rosterTokens.join(" ") === pastedTokens.join(" ")) return true;
+
+  // Accept a roster with an omitted/extra middle initial, or a surname-first
+  // variant, when all meaningful pasted name tokens are present.
+  const rosterSet = new Set(rosterTokens);
+  const pastedSet = new Set(pastedTokens);
+  const shared = pastedTokens.filter((token) => rosterSet.has(token));
+  return (
+    shared.length >= 2 &&
+    (pastedTokens.every((token) => rosterSet.has(token)) ||
+      rosterTokens.every((token) => pastedSet.has(token)))
+  );
 }
 
 export function parsePastedGroups(value, students) {
   const groups = [];
   const unmatched = [];
   const duplicates = [];
-  const lines = String(value ?? "")
+  const lines = removeInvisibleFormatting(value)
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
@@ -48,9 +79,7 @@ export function parsePastedGroups(value, students) {
       unmatched.push(line);
       return;
     }
-    const student = students.find(
-      (item) => normalizeStudentName(item.name) === normalizeStudentName(line),
-    );
+    const student = students.find((item) => namesMatch(item.name, line));
     if (!student) {
       unmatched.push(line);
     } else if (assigned.has(student.id)) {

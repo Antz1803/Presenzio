@@ -32,6 +32,7 @@ export function useGroupActions(context) {
       category,
       period,
       itemNo,
+      maxScore,
     }) => {
       const targetSectionId = sectionId ?? currentSectionId;
       if (!targetSectionId) throw new Error("No active Firebase section.");
@@ -58,13 +59,14 @@ export function useGroupActions(context) {
             category: group.category,
             period_code: group.period,
             item_no: group.itemNo,
+            max_score: group.maxScore,
           },
         });
         setStudentGroups((current) => [group, ...current]);
         return group;
       }
       const group = await store.saveStudentGroup(accountId, targetSectionId, {
-        label: label.trim(), groupCount, assignments, category, period, itemNo,
+        label: label.trim(), groupCount, assignments, category, period, itemNo, maxScore,
       });
       await loadLiveData(currentSectionId);
       return group;
@@ -122,28 +124,78 @@ export function useGroupActions(context) {
     ],
   );
   const updateStudentGroup = useCallback(
-    async ({ groupId, sectionId, label }) => {
+    async ({ groupId, sectionId, label, assignments, groupCount, category, period, itemNo, maxScore }) => {
       const targetSectionId = sectionId ?? currentSectionId;
       const nextLabel = label?.trim();
       if (!groupId) throw new Error("No grouping selected.");
-      if (!nextLabel) throw new Error("A grouping title is required.");
+      if (!nextLabel && assignments === undefined)
+        throw new Error("A grouping title or assignment is required.");
       if (!targetSectionId) throw new Error("No active Firebase section.");
+      const changes = {
+        ...(nextLabel !== undefined ? { label: nextLabel } : {}),
+        ...(assignments !== undefined ? { assignments } : {}),
+        ...(groupCount !== undefined ? { groupCount } : {}),
+        ...(category !== undefined ? { category } : {}),
+        ...(period !== undefined ? { period } : {}),
+        ...(itemNo !== undefined ? { itemNo } : {}),
+        ...(maxScore !== undefined ? { maxScore } : {}),
+      };
 
       if (browserIsOffline() || !db) {
         await queueOfflineChange("update-student-group", {
           groupId,
           sectionId: targetSectionId,
-          label: nextLabel,
+          ...changes,
         });
+        const previousGroup = studentGroups.find((group) => group.id === groupId);
+        const oldSlot = {
+          period: previousGroup?.period,
+          category: previousGroup?.category,
+          itemNo: previousGroup?.itemNo,
+        };
+        const nextSlot = {
+          period: changes.period ?? oldSlot.period,
+          category: changes.category ?? oldSlot.category,
+          itemNo: changes.itemNo ?? oldSlot.itemNo,
+        };
+        const completeSlot = (slot) =>
+          slot.period && slot.category && slot.itemNo !== null && slot.itemNo !== undefined;
+        const slotChanged =
+          completeSlot(oldSlot) &&
+          completeSlot(nextSlot) &&
+          (oldSlot.period !== nextSlot.period ||
+            oldSlot.category !== nextSlot.category ||
+            Number(oldSlot.itemNo) !== Number(nextSlot.itemNo));
+        if (completeSlot(oldSlot) && (slotChanged || changes.maxScore !== undefined)) {
+          setAssessmentScores((current) =>
+            current.map((row) => {
+              const matchesOldSlot =
+                row.period?.code === oldSlot.period &&
+                row.category === oldSlot.category &&
+                Number(row.item_no) === Number(oldSlot.itemNo);
+              if (!matchesOldSlot) return row;
+              return {
+                ...row,
+                period_id: nextSlot.period,
+                period: { ...(row.period ?? {}), code: nextSlot.period },
+                category: nextSlot.category,
+                item_no: Number(nextSlot.itemNo),
+                ...(changes.maxScore !== undefined
+                  ? { max_score: changes.maxScore }
+                  : {}),
+              };
+            }),
+          );
+        }
         setStudentGroups((current) =>
           current.map((group) =>
-            group.id === groupId ? { ...group, label: nextLabel } : group,
+            group.id === groupId ? { ...group, ...changes } : group,
           ),
         );
         return;
       }
 
-      await store.updateStudentGroup(accountId, targetSectionId, groupId, nextLabel);
+      await store.updateStudentGroup(accountId, targetSectionId, groupId, changes);
       await loadLiveData(targetSectionId);
     },
     [currentSectionId, loadLiveData, queueOfflineChange, setStudentGroups],

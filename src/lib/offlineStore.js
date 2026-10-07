@@ -171,12 +171,20 @@ export async function replayOfflineMutation({ uid, mutation, importMasterList, i
       const g = e.group;
       await store.saveStudentGroup(uid, e.sectionId, {
         id: g.id, label: g.label, groupCount: g.group_count, assignments: g.assignments,
-        category: g.category, period: g.period_code, itemNo: g.item_no,
+        category: g.category, period: g.period_code, itemNo: g.item_no, maxScore: g.max_score,
       });
       return { sectionId: e.sectionId };
     }
     case "update-student-group":
-      await store.updateStudentGroup(uid, e.sectionId, e.groupId, e.label);
+      await store.updateStudentGroup(uid, e.sectionId, e.groupId, {
+        label: e.label,
+        assignments: e.assignments,
+        groupCount: e.groupCount,
+        category: e.category,
+        period: e.period,
+        itemNo: e.itemNo,
+        maxScore: e.maxScore,
+      });
       return { sectionId: e.sectionId };
     case "delete-student-group":
       await store.deleteStudentGroup(

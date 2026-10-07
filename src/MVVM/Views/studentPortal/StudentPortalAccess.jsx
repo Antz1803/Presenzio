@@ -1,4 +1,4 @@
-import icon from "../../../assets/Icon.png";
+import { useBranding } from "../../../lib/branding";
 
 export default function StudentPortalAccess({
   accessKey,
@@ -10,12 +10,13 @@ export default function StudentPortalAccess({
   submitting,
   message,
 }) {
+  const { branding } = useBranding();
   return (
     <div className="student-portal-shell">
       <header className="student-portal-header">
         <a className="student-portal-brand" href="/">
-          <img className="brand-icon" src={icon} alt="Presenzio" />
-          <span>presenzio</span>
+          <img className="brand-icon" src={branding.logo} alt={branding.appName} />
+          <span>{branding.appName}</span>
         </a>
         <div className="student-portal-status">
           <span className={connectionStatus === "live" ? "live-dot" : ""} />

@@ -18,6 +18,13 @@
         ".write": false
       }
     },
+    "siteSettings": {
+      "branding": {
+        ".read": true,
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+        ".validate": "newData.hasChildren(['appName', 'tagline', 'loginTitle', 'loginDescription', 'accentColor', 'logoUrl']) && newData.child('appName').isString() && newData.child('appName').val().length <= 60 && newData.child('tagline').isString() && newData.child('tagline').val().length <= 80 && newData.child('loginTitle').isString() && newData.child('loginTitle').val().length <= 120 && newData.child('loginDescription').isString() && newData.child('loginDescription').val().length <= 240 && newData.child('accentColor').isString() && newData.child('accentColor').val().matches(/^#[0-9a-fA-F]{6}$/) && newData.child('logoUrl').isString() && newData.child('logoUrl').val().length <= 2500000"
+      }
+    },
     "registrationRequests": {
       ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$uid": {

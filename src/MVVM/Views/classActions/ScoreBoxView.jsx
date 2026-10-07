@@ -11,6 +11,7 @@ export function ScoreBoxView({
   assessmentScores = [],
   box,
   onBack,
+  onUpdateGroup,
   onSave,
 }) {
   const [category, setCategory] = useState(box.category || "quiz");
@@ -21,6 +22,7 @@ export function ScoreBoxView({
   const [groupCount, setGroupCount] = useState(String(box.groupCount || 1));
   const [groupScoreOverrides, setGroupScoreOverrides] = useState({});
   const [message, setMessage] = useState({ status: "", text: "" });
+  const [copying, setCopying] = useState(false);
   const [saving, setSaving] = useState(false);
   const sorted = useMemo(
     () =>
@@ -66,7 +68,58 @@ export function ScoreBoxView({
   };
   const maxScore =
     maxScoreOverrides[slotKey] ??
-    String(existing.maxScores[String(itemNo)] ?? "10");
+    String(box.maxScore ?? existing.maxScores[String(itemNo)] ?? "10");
+  const copyGroups = async () => {
+    const text = numbers
+      .map((number) => {
+        const members = sorted.filter(
+          (student) => assignments[student.id] === number,
+        );
+        return [`Group ${number}`, ...members.map((student) => student.name)].join("\n");
+      })
+      .join("\n\n");
+    try {
+      setCopying(true);
+      await navigator.clipboard.writeText(text);
+      setMessage({ status: "success", text: "Group format copied to the clipboard." });
+    } catch {
+      setMessage({ status: "error", text: "Could not copy the group format. Check browser clipboard permissions." });
+    } finally {
+      setCopying(false);
+    }
+  };
+  const saveAssignments = async () => {
+    if (!onUpdateGroup || !box.id) return;
+    const max = Number(maxScore);
+    if (!Number.isFinite(max) || max <= 0) {
+      setMessage({
+        status: "error",
+        text: "Enter a maximum score greater than 0.",
+      });
+      return;
+    }
+    setSaving(true);
+    setMessage({ status: "", text: "" });
+    try {
+      await onUpdateGroup({
+        groupId: box.id,
+        assignments,
+        groupCount: Number(groupCount) || 1,
+        category,
+        period,
+        itemNo: Number(itemNo) || 1,
+        maxScore: max,
+      });
+      setMessage({ status: "success", text: "Group assignments saved." });
+    } catch (error) {
+      setMessage({
+        status: "error",
+        text: error?.message || "Group assignments could not be saved.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
   const updateCategory = (value) => {
     setCategory(value);
     const limit = assessmentItemLimits[value] ?? 4;
@@ -117,6 +170,7 @@ export function ScoreBoxView({
         scores,
         maxScores: { ...existing.maxScores, [itemNo]: max },
       });
+      await onUpdateGroup?.({ groupId: box.id, maxScore: max });
       onBack();
     } catch (error) {
       setMessage({
@@ -127,10 +181,42 @@ export function ScoreBoxView({
     }
   };
   return (
-    <form className="assessment-builder" onSubmit={save}>
+    <form className="assessment-builder score-box-form" onSubmit={save}>
+      <div className="score-box-toolbar">
+        <button
+          type="button"
+          className="outline-button"
+          onClick={onBack}
+          disabled={saving}
+        >
+          ← Back to groupings
+        </button>
+        <div className="score-box-toolbar-actions">
+          <button
+            type="button"
+            className="outline-button"
+            onClick={() => void copyGroups()}
+            disabled={saving || copying}
+          >
+            {copying ? "Copying..." : "Copy groups"}
+          </button>
+          <button
+            type="button"
+            className="outline-button"
+            onClick={() => void saveAssignments()}
+            disabled={saving || copying}
+          >
+            {saving ? "Saving..." : "Save assignments & settings"}
+          </button>
+          <button type="submit" className="primary-button" disabled={saving || copying}>
+            {saving && <span className="button-spinner" aria-hidden="true" />}
+            {saving ? "Saving..." : "Save group scores"}
+          </button>
+        </div>
+      </div>
       <button
         type="button"
-        className="outline-button"
+        className="outline-button score-box-legacy-action"
         onClick={onBack}
         disabled={saving}
       >
@@ -140,6 +226,22 @@ export function ScoreBoxView({
         Scoring <strong>{box.label}</strong> — groups are preloaded from this
         box.
       </p>
+      <button
+        type="button"
+        className="outline-button score-box-legacy-action"
+        onClick={() => void copyGroups()}
+        disabled={saving || copying}
+      >
+        {copying ? "Copying..." : "Copy groups"}
+      </button>
+      <button
+        type="button"
+        className="primary-button score-box-legacy-action"
+        onClick={() => void saveAssignments()}
+        disabled={saving || copying}
+      >
+        {saving ? "Saving..." : "Save assignments & settings"}
+      </button>
       <div className="action-form-grid assessment-details-grid">
         <label>
           Type
@@ -281,7 +383,7 @@ export function ScoreBoxView({
           {message.text}
         </p>
       )}
-      <div className="action-modal-footer">
+      <div className="action-modal-footer score-box-legacy-footer">
         <button
           type="button"
           className="outline-button"

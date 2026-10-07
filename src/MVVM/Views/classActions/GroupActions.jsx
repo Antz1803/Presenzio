@@ -68,6 +68,7 @@ export function GroupActivities({
           assessmentScores={assessmentScores}
           box={activeBox}
           onBack={backToList}
+          onUpdateGroup={onUpdateGroup}
           onSave={onSave}
         />
       )}

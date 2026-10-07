@@ -13,6 +13,24 @@ const base = (uid) => `accounts/${uid}`;
 export const sec = (sid, path = "") => `sectionData/${sid}${path ? `/${path}` : ""}`;
 const nowIso = () => new Date().toISOString();
 
+// Realtime Database has JSON nodes rather than SQL tables. This creates the
+// account's empty collections only when they are genuinely missing and never
+// replaces data that the teacher has already created.
+export async function ensureAccountSchema(uid) {
+  if (!db || !uid) return;
+  const snapshot = await get(ref(db, base(uid)));
+  const existing = snapshot.val() ?? {};
+  const updates = {};
+  ["students", "enrollments", "sections", "schoolYears", "sectionData"].forEach((node) => {
+    if (!Object.prototype.hasOwnProperty.call(existing, node)) updates[node] = {};
+  });
+  if (!Object.prototype.hasOwnProperty.call(existing, "gradingPeriods")) {
+    updates.gradingPeriods = Object.fromEntries(DEFAULT_PERIODS.map((period) => [period.code, period]));
+  }
+  if (!Object.prototype.hasOwnProperty.call(existing, "schemaVersion")) updates.schemaVersion = 1;
+  if (Object.keys(updates).length) await update(ref(db, base(uid)), updates);
+}
+
 export const newId = () => push(ref(db)).key;
 export const rows = (obj) => Object.entries(obj ?? {}).map(([id, v]) => ({ id, ...v }));
 // RTDB rejects `undefined`, and null means "delete", so normalise everything.
@@ -301,6 +319,7 @@ export async function saveStudentGroup(uid, sid, g) {
       category: g.category ?? null,
       period_code: g.period ?? null,
       item_no: g.itemNo ?? null,
+      max_score: g.maxScore ?? null,
       created_at,
     },
   });
@@ -312,6 +331,7 @@ export async function saveStudentGroup(uid, sid, g) {
     category: g.category ?? null,
     period: g.period ?? null,
     itemNo: g.itemNo ?? null,
+    maxScore: g.maxScore ?? null,
     createdAt: created_at,
   };
 }
@@ -326,8 +346,59 @@ export async function deleteStudentGroup(uid, sid, groupId, clear) {
   return patch(uid, updates);
 }
 
-export function updateStudentGroup(uid, sid, groupId, label) {
-  return patch(uid, { [sec(sid, `groups/${groupId}/label`)]: label });
+export async function updateStudentGroup(uid, sid, groupId, changes) {
+  const values = typeof changes === "string" ? { label: changes } : changes ?? {};
+  const existingGroup = await read(uid, sec(sid, `groups/${groupId}`));
+  const updates = {};
+  if (values.label !== undefined) updates[sec(sid, `groups/${groupId}/label`)] = values.label;
+  if (values.assignments !== undefined) updates[sec(sid, `groups/${groupId}/assignments`)] = values.assignments;
+  if (values.groupCount !== undefined) updates[sec(sid, `groups/${groupId}/group_count`)] = values.groupCount;
+  if (values.category !== undefined) updates[sec(sid, `groups/${groupId}/category`)] = values.category;
+  if (values.period !== undefined) updates[sec(sid, `groups/${groupId}/period_code`)] = values.period;
+  if (values.itemNo !== undefined) updates[sec(sid, `groups/${groupId}/item_no`)] = values.itemNo;
+  if (values.maxScore !== undefined) updates[sec(sid, `groups/${groupId}/max_score`)] = values.maxScore;
+  const oldSlot = {
+    period: existingGroup?.period_code,
+    category: existingGroup?.category,
+    itemNo: existingGroup?.item_no,
+  };
+  const nextSlot = {
+    period: values.period ?? oldSlot.period,
+    category: values.category ?? oldSlot.category,
+    itemNo: values.itemNo ?? oldSlot.itemNo,
+  };
+  const hasCompleteSlot = (slot) =>
+    slot.period && slot.category && slot.itemNo !== null && slot.itemNo !== undefined;
+  const slotChanged =
+    hasCompleteSlot(oldSlot) &&
+    hasCompleteSlot(nextSlot) &&
+    (oldSlot.period !== nextSlot.period ||
+      oldSlot.category !== nextSlot.category ||
+      Number(oldSlot.itemNo) !== Number(nextSlot.itemNo));
+  const shouldUpdateMax = values.maxScore !== undefined;
+  if (hasCompleteSlot(nextSlot) && (slotChanged || shouldUpdateMax)) {
+    const scores = await read(uid, sec(sid, "scores"));
+    Object.entries(scores ?? {})
+      .filter(([, row]) => {
+        return (
+          row.period_id === oldSlot.period &&
+          row.category === oldSlot.category &&
+          Number(row.item_no) === Number(oldSlot.itemNo)
+        );
+      })
+      .forEach(([key, row]) => {
+        const movedRow = {
+          ...row,
+          period_id: nextSlot.period,
+          category: nextSlot.category,
+          item_no: Number(nextSlot.itemNo),
+          ...(shouldUpdateMax ? { max_score: values.maxScore } : {}),
+        };
+        updates[sec(sid, `scores/${key}`)] = null;
+        updates[sec(sid, `scores/${scoreKey(movedRow)}`)] = movedRow;
+      });
+  }
+  return patch(uid, updates);
 }
 
 /* ---------- assessments ---------- */

@@ -12,6 +12,7 @@ import {
 } from "firebase/auth";
 import { get, ref, set, update } from "firebase/database";
 import { auth, db, isFirebaseConfigured } from "../lib/Firebase";
+import { ensureAccountSchema } from "../lib/accountDb";
 import { AuthContext } from "./context";
 
 function configurationError() {
@@ -140,6 +141,16 @@ export function AuthProvider({ children }) {
           access.isAdmin ||
           (access.request?.status === "approved" && access.request?.active !== false);
         const profile = allowed ? await loadInstructorProfile(firebaseUser.uid) : null;
+        if (allowed) {
+          // Missing Realtime Database collections are created lazily for this
+          // signed-in teacher; existing records are never overwritten.
+          try {
+            await ensureAccountSchema(firebaseUser.uid);
+          } catch (schemaError) {
+            // Schema setup should never prevent an otherwise valid sign-in.
+            console.warn("Could not initialize the account database schema:", schemaError?.code || schemaError);
+          }
+        }
         if (mounted) {
           setUser(allowed ? toAppUser(firebaseUser, profile, access) : null);
         }

@@ -1,10 +1,11 @@
-import icon from "../../../assets/Icon.png";
+import { useBranding } from "../../../lib/branding";
 
 export default function StudentPortalResult({
   accessState,
   submittedResult,
   startNextAttempt,
 }) {
+  const { branding } = useBranding();
   const attemptsRemaining = Number(
     submittedResult.attemptsRemaining ?? accessState.attemptsRemaining ?? 0,
   );
@@ -12,8 +13,8 @@ export default function StudentPortalResult({
     <div className="student-portal-shell student-assessment-locked">
       <header className="student-portal-header">
         <a className="student-portal-brand" href="/">
-          <img className="brand-icon" src={icon} alt="Presenzio" />
-          <span>presenzio</span>
+          <img className="brand-icon" src={branding.logo} alt={branding.appName} />
+          <span>{branding.appName}</span>
         </a>
         <span className="student-portal-lock">Assessment submitted</span>
       </header>

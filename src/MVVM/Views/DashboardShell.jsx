@@ -18,9 +18,9 @@ import {
   LiveClock as ne,
   StudentModal as StudentModalView,
 } from "./DashboardOverlays";
-import ae from "../../assets/Logo.png";
 import "../../App.css";
 import { useAuth as ie } from "../../auth/useAuth";
+import { useBranding as useBrandingSettings } from "../../lib/branding";
 import re from "../../auth/ProfileDetailsModal";
 function studentViewSlug(section) {
   const parts = [section?.subject_code, section?.section_no]
@@ -41,6 +41,7 @@ export default function ce() {
     location = useRouterLocation(),
     navigate = useRouterNavigate(),
     { user: n, logout: T, updateInstructorProfile: I } = ie(),
+    { branding } = useBrandingSettings(),
     k = B(() => {
       const s = n?.user_metadata?.instructor_profile || {},
         t =
@@ -230,8 +231,8 @@ export default function ce() {
           { className: "brand !text-[#0B2A5B]" },
           React.createElement("img", {
             className: "brand-logo",
-            src: ae,
-            alt: "Presenzio",
+            src: branding.logo,
+            alt: branding.appName,
           }),
         ),
         React.createElement(

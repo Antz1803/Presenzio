@@ -21,7 +21,12 @@ export function getGradeRemark(student) {
   // The workbook's Summary remarks are based only on the Final grade. An
   // earlier passing period must not make an unfinished Final appear passed.
   const finalGrade = student.grades?.final;
-  if (finalGrade == null || !Number.isFinite(Number(finalGrade))) return "—";
+  if (
+    finalGrade == null ||
+    finalGrade === "" ||
+    !Number.isFinite(Number(finalGrade))
+  )
+    return "—";
   return Number(finalGrade) <= 3.05 ? "Passed" : "Failed";
 }
 

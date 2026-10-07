@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../auth/useAuth";
-import logo from "../assets/Logo.png";
+import { useBranding } from "../lib/branding";
 
 function safeRedirect(requestedPath) {
   if (requestedPath?.startsWith("/") && !requestedPath.startsWith("//"))
@@ -13,6 +13,7 @@ function safeRedirect(requestedPath) {
 
 export default function LoginPage({ redirectTo }) {
   const { configured, login, register } = useAuth();
+  const { branding } = useBranding();
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
@@ -70,16 +71,13 @@ export default function LoginPage({ redirectTo }) {
       <section className="auth-layout" aria-labelledby="auth-title">
         <aside className="auth-story">
           <div className="auth-brand">
-            <img src={logo} alt="Presenzio" />
-            <span>Presenzio</span>
+            <img src={branding.logo} alt={branding.appName} />
+            <span>{branding.appName}</span>
           </div>
           <div className="auth-story-copy">
-            <p className="auth-kicker">A calmer way to teach</p>
-            <h2>Keep every class moving forward.</h2>
-            <p>
-              One focused workspace for attendance, assessments, grades, and
-              the people who make learning happen.
-            </p>
+            <p className="auth-kicker">{branding.tagline}</p>
+            <h2>{branding.loginTitle}</h2>
+            <p>{branding.loginDescription}</p>
           </div>
           <div className="auth-quote">
             <span>“</span>
@@ -91,7 +89,7 @@ export default function LoginPage({ redirectTo }) {
           <div className="auth-card-heading">
             <p className="auth-kicker">Teacher workspace</p>
             <h1 id="auth-title">
-              {isRegistering ? "Create your account" : "Welcome to Presenzio"}
+              {isRegistering ? "Create your account" : `Welcome to ${branding.appName}`}
             </h1>
             <p>
               {isRegistering

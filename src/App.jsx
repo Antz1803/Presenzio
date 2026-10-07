@@ -1,10 +1,11 @@
 ﻿import DashboardView from "./MVVM/Views/DashboardShell";
 import StudentPortalView from "./MVVM/Views/StudentPortalView";
 import LoginPage from "./pages/LoginPage";
-import AdminDashboard from "./pages/AdminDashboard";
+import AdminDashboard from "./pages/AdminDashboardV2";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import AdminRoute from "./auth/AdminRoute";
 import { AuthProvider } from "./auth/AuthContext";
+import { BrandingProvider } from "./lib/branding";
 import {
   BrowserRouter,
   Navigate,
@@ -56,9 +57,11 @@ function ApplicationRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <ApplicationRoutes />
-      </BrowserRouter>
+      <BrandingProvider>
+        <BrowserRouter>
+          <ApplicationRoutes />
+        </BrowserRouter>
+      </BrandingProvider>
     </AuthProvider>
   );
 }

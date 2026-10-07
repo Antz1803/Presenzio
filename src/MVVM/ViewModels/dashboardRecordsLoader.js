@@ -51,6 +51,7 @@ export async function loadDashboardRecords({ uid, sectionData, sectionList }) {
       category: g.category ?? null,
       period: g.period_code ?? null,
       itemNo: g.item_no ?? null,
+      maxScore: g.max_score ?? null,
       createdAt: g.created_at,
     }));
 
