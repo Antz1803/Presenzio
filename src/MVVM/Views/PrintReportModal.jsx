@@ -28,6 +28,62 @@ const n =
   b = "border border-slate-300 px-2 py-1.5 text-center text-xs text-slate-700",
   x =
     "border border-slate-300 px-2 py-1.5 text-left text-xs font-semibold text-slate-800";
+function periodMatches(row, periodCode) {
+  const rowPeriod = String(
+    row?.periodCode ?? row?.period?.code ?? row?.period_id ?? "",
+  ).toLowerCase();
+  const wanted = periodCode === "semi-final" ? "semifinal" : periodCode;
+  return rowPeriod === wanted;
+}
+
+function hasAttendanceRecord(studentId, session) {
+  if (session.statuses && Object.prototype.hasOwnProperty.call(session.statuses, studentId))
+    return session.statuses[studentId] !== "" && session.statuses[studentId] != null;
+  return (session.attendance_records ?? []).some(
+    (record) =>
+      String(record.enrollment_id) === String(studentId) &&
+      record.status !== "" &&
+      record.status != null,
+  );
+}
+
+function sessionMatchesPeriod(session, period) {
+  if (!periodMatches(session, period.code)) return false;
+  const date = String(session.sessionDate ?? session.session_date ?? "").slice(0, 10);
+  return !date || !period.start_date || !period.end_date ||
+    (date >= period.start_date && date <= period.end_date);
+}
+
+function studentHasPeriodRecord(student, period, assessmentScores, attendanceSessions) {
+  const hasScore = (assessmentScores ?? []).some(
+    (row) =>
+      periodMatches(row, period.code) &&
+      String(row.enrollment_id) === String(student.id) &&
+      row.score != null &&
+      row.score !== "",
+  );
+  const hasAttendance = (attendanceSessions ?? []).some(
+    (session) =>
+      sessionMatchesPeriod(session, period) &&
+      hasAttendanceRecord(student.id, session),
+  );
+  return hasScore || hasAttendance;
+}
+
+function studentHasAnyRecord(student, assessmentScores, attendanceSessions) {
+  return (
+    (assessmentScores ?? []).some(
+      (row) =>
+        String(row.enrollment_id) === String(student.id) &&
+        row.score != null &&
+        row.score !== "",
+    ) ||
+    (attendanceSessions ?? []).some((session) =>
+      hasAttendanceRecord(student.id, session),
+    )
+  );
+}
+
 function monthKey(e) {
   return String(e ?? "").slice(0, 7);
 }
@@ -59,6 +115,29 @@ function PeriodReportTable({
   const i = m.find((t) => t.code === e),
     o = { start: i?.start_date ?? "", end: i?.end_date ?? "" },
     c = u.find((t) => t.key === e)?.label ?? e;
+  const studentIds = new Set(a.map((student) => String(student.id)));
+  const visibleGroups = h
+    .map((group) => ({
+      ...group,
+      items: Array.from({ length: group.count }, (_, index) => index + 1).filter(
+        (itemNo) =>
+          (r ?? []).some(
+            (row) =>
+              periodMatches(row, e) &&
+              row.category === group.key &&
+              Number(row.item_no) === itemNo &&
+              studentIds.has(String(row.enrollment_id)) &&
+              row.score != null &&
+              row.score !== "",
+          ),
+      ),
+    }))
+    .filter((group) => group.items.length);
+  const showAttendance = (s ?? []).some(
+    (session) =>
+      sessionMatchesPeriod(session, i) &&
+      a.some((student) => hasAttendanceRecord(student.id, session)),
+  );
   return !o.start || !o.end
     ? React.createElement(
         "p",
@@ -81,30 +160,31 @@ function PeriodReportTable({
               { className: n, rowSpan: "2" },
               "STUDENT NAME",
             ),
-            h.map((t) =>
+            visibleGroups.map((t) =>
               React.createElement(
                 "th",
-                { className: n, colSpan: t.count, key: t.key },
+                { className: n, colSpan: t.items.length, key: t.key },
                 t.label,
               ),
             ),
-            React.createElement(
-              "th",
-              { className: n, rowSpan: "2" },
-              "ATTENDANCE",
-            ),
+            showAttendance &&
+              React.createElement(
+                "th",
+                { className: n, rowSpan: "2" },
+                "ATTENDANCE",
+              ),
             React.createElement("th", { className: n, rowSpan: "2" }, "GRADE"),
           ),
           React.createElement(
             "tr",
             null,
-            h.flatMap((t) =>
-              Array.from({ length: t.count }, (d, l) =>
+            visibleGroups.flatMap((t) =>
+              t.items.map((itemNo) =>
                 React.createElement(
                   "th",
-                  { className: n, key: `${t.key}-${l + 1}` },
+                  { className: n, key: `${t.key}-${itemNo}` },
                   t.prefix,
-                  l + 1,
+                  itemNo,
                 ),
               ),
             ),
@@ -130,16 +210,17 @@ function PeriodReportTable({
                   t.number,
                 ),
               ),
-              h.flatMap((d) =>
-                Array.from({ length: d.count }, (l, p) =>
+              visibleGroups.flatMap((d) =>
+                d.items.map((itemNo) =>
                   React.createElement(
                     "td",
-                    { className: b, key: `${d.key}-${p + 1}` },
-                    v(t.id, d.key, p + 1, e, r),
+                    { className: b, key: `${d.key}-${itemNo}` },
+                    v(t.id, d.key, itemNo, e, r),
                   ),
                 ),
               ),
-              React.createElement("td", { className: b }, A(t.id, e, s, o)),
+              showAttendance &&
+                React.createElement("td", { className: b }, A(t.id, e, s, o)),
               React.createElement(
                 "td",
                 { className: b },
@@ -276,14 +357,30 @@ export default function _({
   gradingPeriods: i,
   onClose: o,
 }) {
+  const isGradeSheet = ["prelim", "midterm", "semifinal", "final"].includes(e);
+  const selectedPeriod = isGradeSheet
+    ? i.find((period) => period.code === e)
+    : null;
   const c = k(
-    () =>
-      [...r].sort((l, p) =>
+    () => {
+      const sorted = [...r].sort((l, p) =>
         (l.name || "").localeCompare(p.name || "", void 0, {
           sensitivity: "base",
         }),
-      ),
-    [r],
+      );
+      if (selectedPeriod)
+        return sorted.filter((student) =>
+          studentHasPeriodRecord(student, selectedPeriod, s, m),
+        );
+      if (e === "summary")
+        return sorted.filter((student) => studentHasAnyRecord(student, s, m));
+      if (e === "monthly-attendance")
+        return sorted.filter((student) =>
+          (m ?? []).some((session) => hasAttendanceRecord(student.id, session)),
+        );
+      return sorted;
+    },
+    [e, m, r, s, selectedPeriod],
   );
   w(() => {
     const l = document.title;
@@ -301,8 +398,8 @@ export default function _({
       }
     );
   }, [o]);
-  const t = ["prelim", "midterm", "semifinal", "final"].includes(e),
-    d = t ? i.find((l) => l.code === e) : null;
+  const t = isGradeSheet,
+    d = selectedPeriod;
   return S(
     React.createElement(
       "div",
@@ -419,7 +516,7 @@ export default function _({
           React.createElement(
             "p",
             { className: "py-12 text-center text-sm text-slate-500" },
-            "No students are enrolled in this class.",
+            "No students have records for this report.",
           ),
       ),
     ),

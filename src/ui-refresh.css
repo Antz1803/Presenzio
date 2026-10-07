@@ -12,7 +12,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .app-shell{background:linear-gradient(135deg,#f6f8fc 0%,#edf1fb 52%,#f7f9fc 100%) !important}
 .sidebar{width:252px;flex-basis:252px;padding:24px 15px 18px;background:rgba(255,255,255,.92) !important;border-right:1px solid #e5e9f1 !important;box-shadow:12px 0 40px rgba(34,48,84,.055) !important}
 .brand{height:64px;padding:0 14px;color:var(--presenzio-ink) !important;gap:9px}
-.brand-logo{width:152px;height:152px;object-fit:contain;margin:5}
+.brand-logo{width:152px;height:152px;object-fit:contain;margin-top:70}
 .sidebar-section{margin-top:98px}.nav-label,.section-kicker,.eyebrow{margin-left:14px;color:#9aa6b9;font-size:9px;letter-spacing:1.5px}
 .sidebar nav{gap:5px}.nav-item{color:#7a879c;padding:12px 13px;border-radius:12px;font-size:12px;transition:all .2s ease}.nav-item:hover{color:var(--presenzio-brand);background:#f5f5ff;transform:translateX(2px)}.nav-item.active{color:var(--presenzio-brand);background:linear-gradient(90deg,#eff0ff,#f7f7ff);box-shadow:inset 3px 0 var(--presenzio-brand);font-weight:700}
 .section-switcher{margin-top:32px}.section-select{border-color:#e6eaf2;border-radius:12px;padding:10px;background:#fbfcfe}.section-select:hover{border-color:#cfd2ff;background:#fff}.section-avatar{border-radius:9px;color:var(--presenzio-brand);background:var(--presenzio-brand-soft)}
