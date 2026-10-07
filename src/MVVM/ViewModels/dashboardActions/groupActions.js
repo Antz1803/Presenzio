@@ -127,8 +127,16 @@ export function useGroupActions(context) {
     async ({ groupId, sectionId, label, assignments, groupCount, category, period, itemNo, maxScore }) => {
       const targetSectionId = sectionId ?? currentSectionId;
       const nextLabel = label?.trim();
+      const hasGroupChanges = [
+        assignments,
+        groupCount,
+        category,
+        period,
+        itemNo,
+        maxScore,
+      ].some((value) => value !== undefined);
       if (!groupId) throw new Error("No grouping selected.");
-      if (!nextLabel && assignments === undefined)
+      if (!nextLabel && !hasGroupChanges)
         throw new Error("A grouping title or assignment is required.");
       if (!targetSectionId) throw new Error("No active Firebase section.");
       const changes = {
@@ -170,6 +178,7 @@ export function useGroupActions(context) {
           setAssessmentScores((current) =>
             current.map((row) => {
               const matchesOldSlot =
+                row.source !== "grade-sheet-import" &&
                 row.period?.code === oldSlot.period &&
                 row.category === oldSlot.category &&
                 Number(row.item_no) === Number(oldSlot.itemNo);

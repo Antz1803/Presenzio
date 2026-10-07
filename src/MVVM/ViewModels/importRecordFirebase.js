@@ -198,7 +198,7 @@ export async function importGradeSheetFile({ file, userId }) {
         const score = number(row[column]);
         if (maxScore == null || maxScore <= 0 || score == null) return;
         const key = periodCode + ":" + student.id + ":" + category + ":" + (index + 1);
-        scores.set(key, { section_id: section.id, period_id: periodCode, enrollment_id: student.id, category, item_no: index + 1, score: Math.max(0, Math.min(score, maxScore)), max_score: maxScore });
+        scores.set(key, { section_id: section.id, period_id: periodCode, enrollment_id: student.id, category, item_no: index + 1, score: Math.max(0, Math.min(score, maxScore)), max_score: maxScore, source: "grade-sheet-import" });
         touchedPeriods.add(periodCode);
       }));
       const own = number(row[gradeColumns.own]);
@@ -212,9 +212,8 @@ export async function importGradeSheetFile({ file, userId }) {
   });
 
   const existingData = (await read(userId, sec(section.id))) ?? {};
-  Object.entries(existingData.scores ?? {}).forEach(([key, score]) => {
-    if (touchedPeriods.has(score?.period_id) && !scores.has(key)) updates[sec(section.id, "scores/" + key)] = null;
-  });
+  // Grade-sheet imports are additive. Blank or missing cells must not erase
+  // scores that were already recorded in Firebase.
   scores.forEach((score, key) => {
     updates[sec(section.id, "scores/" + key)] = { ...score, recorded_at: new Date().toISOString() };
   });
@@ -252,7 +251,10 @@ export async function importGradeSheetFile({ file, userId }) {
     });
     sessions.forEach((session, sessionId) => {
       updates[sec(section.id, "sessions/" + sessionId)] = { period_id: session.periodCode, session_date: session.date, session_time: session.sessionTime };
-      updates[sec(section.id, "attendance/" + sessionId)] = session.statuses;
+      updates[sec(section.id, "attendance/" + sessionId)] = {
+        ...(existingData.attendance?.[sessionId] ?? {}),
+        ...session.statuses,
+      };
       attendanceCount += Object.keys(session.statuses).length;
       touchedPeriods.add(session.periodCode);
     });

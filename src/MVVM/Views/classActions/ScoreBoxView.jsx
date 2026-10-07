@@ -5,6 +5,7 @@ import {
   assessmentItemLimits,
   itemNoOptions,
 } from "./assessmentConfig";
+import { parsePastedGroups } from "./groupingUtils";
 
 export function ScoreBoxView({
   students,
@@ -21,6 +22,8 @@ export function ScoreBoxView({
   const [assignments, setAssignments] = useState({ ...box.assignments });
   const [groupCount, setGroupCount] = useState(String(box.groupCount || 1));
   const [groupScoreOverrides, setGroupScoreOverrides] = useState({});
+  const [additionalGroupPaste, setAdditionalGroupPaste] = useState("");
+  const [showAdditionalGroup, setShowAdditionalGroup] = useState(false);
   const [message, setMessage] = useState({ status: "", text: "" });
   const [copying, setCopying] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -119,6 +122,63 @@ export function ScoreBoxView({
     } finally {
       setSaving(false);
     }
+  };
+  const addPastedGroup = () => {
+    const value = additionalGroupPaste.trim();
+    if (!value) {
+      setMessage({ status: "error", text: "Paste at least one student name." });
+      return;
+    }
+    const nextGroup = numbers.length + 1;
+    const source = /^group\s+\d+\s*:?$/im.test(value)
+      ? value
+      : `Group ${nextGroup}\n${value}`;
+    const parsed = parsePastedGroups(source, students);
+    if (parsed.groups.length !== 1) {
+      setMessage({ status: "error", text: "Add one group at a time." });
+      return;
+    }
+    if (parsed.emptyGroups.length || parsed.unmatched.length) {
+      setMessage({
+        status: "error",
+        text: parsed.unmatched.length
+          ? `These names were not found in the roster: ${parsed.unmatched.join(", ")}`
+          : "The new group has no recognized members.",
+      });
+      return;
+    }
+    if (parsed.duplicates.length) {
+      setMessage({
+        status: "error",
+        text: `These students were listed more than once: ${parsed.duplicates.join(", ")}`,
+      });
+      return;
+    }
+    const alreadyAssigned = new Set(
+      Object.entries(assignments)
+        .filter(([, group]) => group)
+        .map(([studentId]) => studentId),
+    );
+    const overlap = parsed.groups[0].filter((student) =>
+      alreadyAssigned.has(student.id),
+    );
+    if (overlap.length) {
+      setMessage({
+        status: "error",
+        text: `These students are already assigned: ${overlap
+          .map((student) => student.name)
+          .join(", ")}`,
+      });
+      return;
+    }
+    setAssignments((current) => ({
+      ...current,
+      ...Object.fromEntries(parsed.groups[0].map((student) => [student.id, nextGroup])),
+    }));
+    setGroupCount(String(nextGroup));
+    setAdditionalGroupPaste("");
+    setShowAdditionalGroup(false);
+    setMessage({ status: "success", text: `Group ${nextGroup} added.` });
   };
   const updateCategory = (value) => {
     setCategory(value);
@@ -300,6 +360,59 @@ export function ScoreBoxView({
             onChange={(e) => setGroupCount(e.target.value)}
           />
         </label>
+      </div>
+      <div className="score-box-add-group">
+        {!showAdditionalGroup ? (
+          <button
+            type="button"
+            className="outline-button"
+            onClick={() => {
+              setShowAdditionalGroup(true);
+              setMessage({ status: "", text: "" });
+            }}
+            disabled={saving || copying}
+          >
+            + Add group
+          </button>
+        ) : (
+          <div className="group-add-panel">
+            <label htmlFor="score-box-additional-group">
+              Paste another group
+            </label>
+            <textarea
+              id="score-box-additional-group"
+              rows="4"
+              value={additionalGroupPaste}
+              onChange={(event) => setAdditionalGroupPaste(event.target.value)}
+              placeholder={`Group ${numbers.length + 1}\nStudent name\nStudent name`}
+              disabled={saving || copying}
+            />
+            <div className="group-paste-footer">
+              <span>Paste one student name per line. The new group is saved with the assignments.</span>
+              <div className="group-add-actions">
+                <button
+                  type="button"
+                  className="outline-button"
+                  onClick={() => {
+                    setShowAdditionalGroup(false);
+                    setAdditionalGroupPaste("");
+                  }}
+                  disabled={saving || copying}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={addPastedGroup}
+                  disabled={saving || copying || !additionalGroupPaste.trim()}
+                >
+                  Add this group
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <div className="assessment-question-list">
         {numbers.map((number) => {

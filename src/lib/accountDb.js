@@ -381,6 +381,7 @@ export async function updateStudentGroup(uid, sid, groupId, changes) {
     Object.entries(scores ?? {})
       .filter(([, row]) => {
         return (
+          row.source !== "grade-sheet-import" &&
           row.period_id === oldSlot.period &&
           row.category === oldSlot.category &&
           Number(row.item_no) === Number(oldSlot.itemNo)
