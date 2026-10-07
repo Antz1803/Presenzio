@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from "react";
-import { useState as a, useMemo as B, useEffect as useReactEffect } from "react";
+import { useState as a, useEffect as useReactEffect } from "react";
 import {
   useLocation as useRouterLocation,
   useNavigate as useRouterNavigate,
@@ -36,13 +36,13 @@ function studentViewSlug(section) {
       .replace(/^-+|-+$/g, "") || "class"
   );
 }
-export default function ce() {
+export default function DashboardShell() {
   const e = F(),
     location = useRouterLocation(),
     navigate = useRouterNavigate(),
     { user: n, logout: T, updateInstructorProfile: I } = ie(),
     { branding } = useBrandingSettings(),
-    k = B(() => {
+    k = (() => {
       const s = n?.user_metadata?.instructor_profile || {},
         t =
           s.name ||
@@ -66,7 +66,7 @@ export default function ce() {
         color: s.color || "bg-gradient-to-br from-indigo-500 to-violet-600",
         avatarUrl: s.avatarUrl || "",
       };
-    }, [n]),
+    })(),
     [R, f] = a(null),
     [p, g] = a(null),
     [l, b] = a(null),

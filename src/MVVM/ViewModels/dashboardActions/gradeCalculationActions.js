@@ -1,65 +1,17 @@
-/* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import { useCallback } from "react";
-import { importMasterListFile } from "../importMasterListFirebase";
-import { importGradeSheetFile } from "../importRecordFirebase";
-import { syncGradeSheetToExcel } from "../syncGradeSheetToExcelPreservingTemplate";
 import { db } from "../../../lib/Firebase";
 import * as store from "../../../lib/accountDb";
-import { getPeriodGradingWeights } from "../dashboardConstants";
-import {
-  countOfflineMutations,
-  listOfflineMutations,
-  readOfflineSnapshot,
-  removeOfflineMutation,
-  replayOfflineMutation,
-} from "../../../lib/offlineStore";
+import { calculateGradeDetailsFromRecords } from "../gradeCalculation";
 
 export function useGradeCalculationActions(context) {
   const {
     accountId,
-    accountScoped,
     currentSectionId,
-    period,
-    section,
-    sections,
     students,
-    gradingPeriods,
-    assessmentScores,
-    assessmentDefinitions,
-    studentGroups,
-    attendanceSessions,
     loadLiveData,
-    clearLiveData,
-    queueOfflineChange,
-    setSection,
-    setSections,
-    setStudents,
-    setGradingPeriods,
-    setAssessmentScores,
-    setAssessmentDefinitions,
-    setStudentGroups,
-    setAssessmentAttemptGrants,
-    setAttendanceSessions,
-    setConnectionStatus,
-    setConnectionMessage,
-    setPendingSyncCount,
-    setImportState,
-    setGradeSheetImportState,
     helpers,
   } = context;
-  const {
-    answerSimilarity,
-    assessmentItemLimits,
-    average,
-    browserIsOffline,
-    createAssessmentAccessKey,
-    createLocalId,
-    formatShortDate,
-    gradingWeights,
-    isNetworkError,
-    serializeAssessmentDate,
-    transmutePercentage,
-  } = helpers;
+  const { browserIsOffline } = helpers;
   const recalculatePeriodGrades = useCallback(
     async (
       periodId,
@@ -70,129 +22,29 @@ export function useGradeCalculationActions(context) {
       if (!periodId) return;
       const { assessmentRows, sessionRows, periods } =
         await store.getGradingInputs(accountId, sectionId);
-      const ownGrades = new Map();
-      periods.forEach((period) => {
-        const periodWeights = getPeriodGradingWeights(period);
-        const periodSessions = (sessionRows ?? []).filter((session) => {
-          if (session.period_id !== period.code) return false;
-          if (!period.start_date || !period.end_date) return true;
-          const sessionDate = String(session.session_date ?? "").slice(0, 10);
-          return (
-            sessionDate >= period.start_date && sessionDate <= period.end_date
-          );
-        });
-        const periodStudentGrades = new Map();
-        roster.forEach((student) => {
-          const categoryGrades = {};
-            Object.keys(periodWeights).forEach((categoryKey) => {
-            if (categoryKey === "attendance") return;
-            // Excel's point cells are blank for blank raw-score cells, and
-            // its category average uses COUNT/AVERAGE. Use only recorded
-            // numeric score rows here; an explicit zero is still included.
-            const itemGrades = (assessmentRows ?? [])
-              .filter(
-                (row) =>
-                  row.period_id === period.id &&
-                  row.enrollment_id === student.id &&
-                  row.category === categoryKey &&
-                  Number.isFinite(Number(row.score)) &&
-                  Number(row.max_score) > 0,
-              )
-              .map((row) =>
-                transmutePercentage(
-                  (Number(row.score) / Number(row.max_score)) * 100,
-                ),
-              )
-              .filter((grade) => grade !== null);
-            if (itemGrades.length)
-              categoryGrades[categoryKey] = average(itemGrades);
-          });
-
-          if (periodSessions.length) {
-            const records = periodSessions.flatMap(
-              (session) => session.attendance_records ?? [],
-            );
-            const attended = records.filter(
-              (record) =>
-                record.enrollment_id === student.id &&
-                (record.status === "present" || record.status === "late"),
-            ).length;
-            categoryGrades.attendance = transmutePercentage(
-              (attended / periodSessions.length) * 100,
-            );
-          }
-
-          const contributingGrades = Object.entries(periodWeights).filter(
-            ([categoryKey]) => categoryGrades[categoryKey] != null,
-          );
-
-          let gradePoint = null;
-          if (contributingGrades.length) {
-            gradePoint = contributingGrades.reduce(
-              (total, [categoryKey, weight]) =>
-                total + categoryGrades[categoryKey] * weight,
-              0,
-            );
-          } else {
-            const overrideOwn =
-              gradeOverrides?.[period.code]?.[student.id]?.own;
-            if (Number.isFinite(Number(overrideOwn)))
-              gradePoint = Number(overrideOwn);
-          }
-
-          if (gradePoint == null) return;
-          periodStudentGrades.set(student.id, gradePoint);
-        });
-        ownGrades.set(period.code, periodStudentGrades);
+      const calculated = calculateGradeDetailsFromRecords({
+        students: roster,
+        assessmentScores: assessmentRows ?? [],
+        attendanceSessions: sessionRows ?? [],
+        gradingPeriods: periods,
+        gradeOverrides,
       });
-
-      const averageDefined = (values) => {
-        const validValues = values.filter((value) => value != null);
-        return validValues.length
-          ? validValues.reduce((total, value) => total + value, 0) /
-              validValues.length
-          : null;
-      };
       const periodGradeRows = [];
       roster.forEach((student) => {
-        const overrideFor = (code) =>
-          gradeOverrides?.[code]?.[student.id]?.cumulative ?? null;
-        const prelim = ownGrades.get("prelim")?.get(student.id) ?? null;
-        const midterm = ownGrades.get("midterm")?.get(student.id) ?? null;
-        const semifinal = ownGrades.get("semifinal")?.get(student.id) ?? null;
-        const final = ownGrades.get("final")?.get(student.id) ?? null;
-
-        const cumulative = { prelim };
-        cumulative.midterm =
-          prelim != null && midterm != null
-            ? midterm * 0.7 + prelim * 0.3
-            : overrideFor("midterm");
-        cumulative.semifinal =
-          semifinal != null
-            ? averageDefined([prelim, cumulative.midterm, semifinal])
-            : overrideFor("semifinal");
-        cumulative.final =
-          final != null
-            ? averageDefined([
-                averageDefined([prelim, cumulative.midterm]),
-                averageDefined([cumulative.semifinal, final]),
-              ])
-            : overrideFor("final");
-
+        const cumulative = calculated.cumulativeByStudent.get(student.id) ?? {};
         periods.forEach((period) => {
-          const own = ownGrades.get(period.code)?.get(student.id) ?? null;
-          const cumulativeValue = cumulative[period.code] ?? null;
-          if (own == null && cumulativeValue == null) return;
+          const own = calculated.ownGrades.get(period.code)?.get(student.id) ?? null;
+          const cumulativeGrade = cumulative[period.code] ?? null;
+          if (own == null && cumulativeGrade == null) return;
           periodGradeRows.push({
             section_id: sectionId,
             period_id: period.id,
             enrollment_id: student.id,
             own_period_grade: own,
-            cumulative_grade: cumulativeValue,
+            cumulative_grade: cumulativeGrade,
           });
         });
       });
-
       await store.replacePeriodGrades(accountId, sectionId, periodGradeRows);
     },
     [accountId, currentSectionId, students],
@@ -221,7 +73,12 @@ export function useGradeCalculationActions(context) {
       );
       await loadLiveData(sectionId);
     },
-    [currentSectionId, loadLiveData, recalculatePeriodGrades],
+    [
+      browserIsOffline,
+      currentSectionId,
+      loadLiveData,
+      recalculatePeriodGrades,
+    ],
   );
 
   return { recalculatePeriodGrades, refreshGrades };

@@ -41,7 +41,22 @@ export function useDashboardOfflineData(context) {
     setAttendanceSessions([]);
     setSessions([]);
     setStats(emptyStats);
-  }, []);
+  }, [
+    setAssessmentAttemptGrants,
+    setAssessmentAttempts,
+    setAssessmentDefinitions,
+    setAssessmentScores,
+    setAssessmentViolations,
+    setAttendanceSessions,
+    setGradeRows,
+    setGradingPeriods,
+    setSection,
+    setSections,
+    setSessions,
+    setStats,
+    setStudentGroups,
+    setStudents,
+  ]);
 
   const applyOfflineSnapshot = useCallback((snapshot, sectionList = []) => {
     if (!snapshot) return false;
@@ -60,7 +75,22 @@ export function useDashboardOfflineData(context) {
     setSessions(snapshot.sessions ?? []);
     setStats(snapshot.stats ?? emptyStats);
     return true;
-  }, []);
+  }, [
+    setAssessmentAttemptGrants,
+    setAssessmentAttempts,
+    setAssessmentDefinitions,
+    setAssessmentScores,
+    setAssessmentViolations,
+    setAttendanceSessions,
+    setGradeRows,
+    setGradingPeriods,
+    setSection,
+    setSections,
+    setSessions,
+    setStats,
+    setStudentGroups,
+    setStudents,
+  ]);
 
   const loadOfflineData = useCallback(
     async (preferredSectionId, requestId) => {
@@ -88,7 +118,15 @@ export function useDashboardOfflineData(context) {
       }
       return snapshot;
     },
-    [applyOfflineSnapshot, clearLiveData],
+    [
+      applyOfflineSnapshot,
+      clearLiveData,
+      loadRequestIdRef,
+      setConnectionMessage,
+      setConnectionStatus,
+      setPendingSyncCount,
+      setSections,
+    ],
   );
   return { clearLiveData, applyOfflineSnapshot, loadOfflineData };
 }

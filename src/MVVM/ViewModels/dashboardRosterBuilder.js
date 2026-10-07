@@ -1,11 +1,3 @@
-import {
-  formatDate,
-  formatDay,
-  formatShortDate,
-  resolvePeriodCodeForSession,
-  average,
-} from "./dashboardUtils";
-
 export function buildRoster({
   classSessions,
   periodGrades,

@@ -5,19 +5,13 @@ import { useDashboardOfflineData } from "./dashboardOfflineData";
 import { useDashboardLiveLoader } from "./dashboardLiveLoader";
 import { useDashboardCoordinator } from "./dashboardCoordinator";
 import {
-  emptyStats,
   gradingWeights,
   assessmentItemLimits,
-  transmutationBreakpoints,
 } from "./dashboardConstants";
 import {
   transmutePercentage,
-  formatDate,
-  formatDay,
   formatShortDate,
-  resolvePeriodCodeForSession,
   average,
-  toGradeRows,
   createAssessmentAccessKey,
   browserIsOffline,
   createLocalId,
@@ -101,7 +95,7 @@ export function useDashboardViewModel({ accountScoped = true } = {}) {
     [query, students],
   );
 
-  const { clearLiveData, applyOfflineSnapshot, loadOfflineData } =
+  const { clearLiveData, loadOfflineData } =
     useDashboardOfflineData({
       setSection,
       setSections,
@@ -233,7 +227,6 @@ const {
   loadTransferPreview,
   updateSection,
   deleteSection,
-  flushOfflineMutations,
 } = actions;
 
   return {

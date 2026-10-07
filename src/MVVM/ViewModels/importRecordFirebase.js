@@ -15,10 +15,20 @@ const GRADE_COLUMNS = {
   semifinal: { own: 35, cumulative: 38 },
   final: { own: 35, cumulative: 39 },
 };
+// The workbook stores the grading weights in two blocks on Settings:
+// PRELIM/SEMIFINAL (rows 9-13) and MIDTERM/FINAL (rows 17-21).
+const WORKBOOK_WEIGHT_BLOCKS = {
+  prelim: { startRow: 8, labelColumn: 4, valueColumn: 5 },
+  midterm: { startRow: 16, labelColumn: 4, valueColumn: 5 },
+  semifinal: { startRow: 8, labelColumn: 7, valueColumn: 8 },
+  final: { startRow: 16, labelColumn: 7, valueColumn: 8 },
+};
 const NAME_SUFFIXES = new Set(["jr", "sr", "ii", "iii", "iv", "v"]);
 
 const text = (value) => String(value ?? "").trim();
 const number = (value) => {
+  if (value == null || (typeof value === "string" && value.trim() === ""))
+    return null;
   const result = Number(value);
   return Number.isFinite(result) ? result : null;
 };
@@ -40,6 +50,44 @@ function dateValue(value) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
   const match = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   return match ? match[3] + "-" + String(match[1]).padStart(2, "0") + "-" + String(match[2]).padStart(2, "0") : "";
+}
+
+function workbookPeriodSettings(settingsRows, existingPeriods) {
+  const periodCodes = {
+    prelim: "prelim",
+    midterm: "midterm",
+    "semi-final": "semifinal",
+    semifinal: "semifinal",
+    final: "final",
+  };
+  const dates = {};
+  settingsRows.forEach((row) => {
+    const code = periodCodes[text(row?.[0]).toLowerCase()];
+    if (!code) return;
+    dates[code] = {
+      start_date: dateValue(row?.[1]),
+      end_date: dateValue(row?.[2]),
+    };
+  });
+
+  return existingPeriods.map((period) => {
+    const block = WORKBOOK_WEIGHT_BLOCKS[period.code];
+    const weights = { ...(period.weights ?? {}) };
+    if (block) {
+      settingsRows.slice(block.startRow, block.startRow + 5).forEach((row) => {
+        const label = text(row?.[block.labelColumn]).toLowerCase();
+        const key = label === "graded activity" ? "activity" : label;
+        const value = number(row?.[block.valueColumn]);
+        if (
+          ["quiz", "assignment", "activity", "attendance", "exam"].includes(key) &&
+          value != null
+        ) {
+          weights[key] = value;
+        }
+      });
+    }
+    return { ...period, ...(dates[period.code] ?? {}), weights };
+  });
 }
 
 function lookup(rows, label) {
@@ -166,7 +214,8 @@ export async function importGradeSheetFile({ file, userId }) {
   if (!workbook.Sheets.Settings) throw new Error("This is a master list. Use Import master list for this file.");
   const settingsRows = XLSX.utils.sheet_to_json(workbook.Sheets.Settings, { header: 1, defval: "" });
   const section = await findSection(userId, settingsRows);
-  const periods = await ensureGradingPeriods(userId);
+  const existingPeriods = await ensureGradingPeriods(userId);
+  const periods = workbookPeriodSettings(settingsRows, existingPeriods);
   const periodMap = new Map(periods.map((period) => [period.code, period]));
   const updates = {};
   const rosterData = await ensureRoster(userId, section, workbook, updates);
@@ -212,6 +261,9 @@ export async function importGradeSheetFile({ file, userId }) {
   });
 
   const existingData = (await read(userId, sec(section.id))) ?? {};
+  periods.forEach((period) => {
+    updates[`gradingPeriods/${period.code}`] = period;
+  });
   // Grade-sheet imports are additive. Blank or missing cells must not erase
   // scores that were already recorded in Firebase.
   scores.forEach((score, key) => {

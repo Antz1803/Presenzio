@@ -1,4 +1,4 @@
-/* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
+/* eslint-disable no-unused-vars */
 import { importMasterListFile } from "../importMasterListFirebase";
 import { importGradeSheetFile } from "../importRecordFirebase";
 import { syncGradeSheetToExcel } from "../syncGradeSheetToExcelPreservingTemplate";

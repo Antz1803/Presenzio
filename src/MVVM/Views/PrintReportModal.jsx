@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { useEffect as w, useMemo as k } from "react";
 import { createPortal as S } from "react-dom";
 import {
@@ -7,7 +8,7 @@ import {
   getAssessmentItem as v,
   getAttendanceTotal as A,
   getGradeRemark as E,
-} from "./ClassActionModal";
+} from "./classActions/actionUtils";
 import M from "../../assets/Logo.png";
 if (typeof document < "u" && !document.getElementById("print-page-style")) {
   const e = document.createElement("style");
@@ -27,10 +28,10 @@ const n =
   b = "border border-slate-300 px-2 py-1.5 text-center text-xs text-slate-700",
   x =
     "border border-slate-300 px-2 py-1.5 text-left text-xs font-semibold text-slate-800";
-function y(e) {
+function monthKey(e) {
   return String(e ?? "").slice(0, 7);
 }
-function T(e) {
+function formatMonth(e) {
   const [a, r] = e.split("-").map(Number);
   return !a || !r
     ? e
@@ -39,8 +40,8 @@ function T(e) {
         year: "numeric",
       });
 }
-function R(e, a, r) {
-  const s = r.filter((i) => y(i.sessionDate) === a);
+function attendanceCount(e, a, r) {
+  const s = r.filter((i) => monthKey(i.sessionDate) === a);
   return `${
     s.filter((i) => {
       const o = i.statuses[e];
@@ -48,7 +49,7 @@ function R(e, a, r) {
     }).length
   }/${s.length}`;
 }
-function D({
+function PeriodReportTable({
   period: e,
   students: a,
   assessmentScores: r,
@@ -151,7 +152,7 @@ function D({
         ),
       );
 }
-function P({ students: e }) {
+function SummaryReportTable({ students: e }) {
   return React.createElement(
     "table",
     { className: "w-full border-collapse" },
@@ -203,8 +204,8 @@ function P({ students: e }) {
     ),
   );
 }
-function G({ students: e, attendanceSessions: a }) {
-  const r = [...new Set(a.map((s) => y(s.sessionDate)))].filter(Boolean).sort();
+function AttendanceReportTable({ students: e, attendanceSessions: a }) {
+  const r = [...new Set(a.map((s) => monthKey(s.sessionDate)))].filter(Boolean).sort();
   return r.length
     ? React.createElement(
         "table",
@@ -217,7 +218,7 @@ function G({ students: e, attendanceSessions: a }) {
             null,
             React.createElement("th", { className: n }, "STUDENT NAME"),
             r.map((s) =>
-              React.createElement("th", { className: n, key: s }, T(s)),
+              React.createElement("th", { className: n, key: s }, formatMonth(s)),
             ),
           ),
         ),
@@ -245,7 +246,7 @@ function G({ students: e, attendanceSessions: a }) {
                 React.createElement(
                   "td",
                   { className: b, key: m },
-                  R(s.id, m, a),
+                  attendanceCount(s.id, m, a),
                 ),
               ),
             ),
@@ -404,16 +405,16 @@ export default function _({
           }),
         ),
         t &&
-          React.createElement(D, {
+          React.createElement(PeriodReportTable, {
             period: e,
             students: c,
             assessmentScores: s,
             attendanceSessions: m,
             gradingPeriods: i,
           }),
-        e === "summary" && React.createElement(P, { students: c }),
+        e === "summary" && React.createElement(SummaryReportTable, { students: c }),
         e === "monthly-attendance" &&
-          React.createElement(G, { students: c, attendanceSessions: m }),
+          React.createElement(AttendanceReportTable, { students: c, attendanceSessions: m }),
         !c.length &&
           React.createElement(
             "p",

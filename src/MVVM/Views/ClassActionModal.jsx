@@ -21,14 +21,7 @@ import {
   getGradeRemark as S,
 } from "./classActions/actionUtils";
 import { GroupActivities as H } from "./classActions/GroupActions";
-export {
-  gradePeriods,
-  recordSummaryGroups,
-  formatDisplayDate,
-  getAssessmentItem,
-  getAttendanceTotal,
-  getGradeRemark,
-} from "./classActions/actionUtils";
+import { calculateGradesFromRecords } from "../ViewModels/gradeCalculation";
 export default function K({
   type: e,
   section: i,
@@ -72,6 +65,12 @@ export default function K({
     );
   });
   const showRemarks = visibleGradePeriods.some((period) => period.key === "final");
+  const showGradeStudents = calculateGradesFromRecords({
+    students: n,
+    assessmentScores: o,
+    attendanceSessions: d,
+    gradingPeriods: m,
+  });
   return (
     V(() => {
       const a = b.current;
@@ -270,7 +269,7 @@ export default function K({
                                   React.createElement(
                                     "tbody",
                                     null,
-                                    n.map((a) =>
+                                    showGradeStudents.map((a) =>
                                       React.createElement(
                                         "tr",
                                         { key: a.id },

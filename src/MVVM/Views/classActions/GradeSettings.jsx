@@ -30,6 +30,14 @@ function displayValue(value) {
   return value || "—";
 }
 
+// Avoids floating-point noise such as 30.000000000000004 in totals.
+const roundTo2 = (value) => Math.round(value * 100) / 100;
+
+const weightTotal = (values) =>
+  roundTo2(
+    distributionRows.reduce((sum, [, key]) => sum + Number(values?.[key] || 0), 0),
+  );
+
 const initialRanges = (saved) =>
   Object.fromEntries(
     gradePeriods.map((item) => {
@@ -57,6 +65,17 @@ const initialWeights = (saved) =>
         ),
       ];
     }),
+  );
+
+// Inputs return strings; the grade calculation needs real numbers.
+const toNumericWeights = (weightSettings) =>
+  Object.fromEntries(
+    Object.entries(weightSettings).map(([period, values]) => [
+      period,
+      Object.fromEntries(
+        Object.entries(values).map(([key, value]) => [key, Number(value)]),
+      ),
+    ]),
   );
 
 export function GradeSettings({ gradingPeriods, section, instructor, onSave, onClose }) {
@@ -98,17 +117,29 @@ export function GradeSettings({ gradingPeriods, section, instructor, onSave, onC
         status: "error",
         text: `${invalid.label} needs a valid start and end date.`,
       });
+
+    // Periods must not overlap, otherwise one record can be counted twice.
+    const dated = gradePeriods
+      .filter(({ key }) => dateRanges[key].start && dateRanges[key].end)
+      .sort((a, b) => dateRanges[a.key].start.localeCompare(dateRanges[b.key].start));
+    const overlap = dated.find(
+      (item, index) =>
+        index > 0 &&
+        dateRanges[dated[index - 1].key].end >= dateRanges[item.key].start,
+    );
+    if (overlap)
+      return setMessage({
+        status: "error",
+        text: `${overlap.label} starts before the previous period ends.`,
+      });
+
     const invalidWeights = gradePeriods.find((period) => {
       const values = weightSettings[period.key];
-      const total = distributionRows.reduce(
-        (sum, [, key]) => sum + Number(values?.[key]),
-        0,
-      );
       return (
         distributionRows.some(([, key]) => {
           const value = Number(values?.[key]);
           return !Number.isFinite(value) || value < 0 || value > 100;
-        }) || Math.abs(total - 100) > 0.0001
+        }) || Math.abs(weightTotal(values) - 100) > 0.0001
       );
     });
     if (invalidWeights)
@@ -121,7 +152,10 @@ export function GradeSettings({ gradingPeriods, section, instructor, onSave, onC
     try {
       const savedDean = dean.trim();
       setStoredDean(section?.id, savedDean);
-      await onSave({ dateRanges, weightSettings });
+      await onSave({
+        dateRanges,
+        weightSettings: toNumericWeights(weightSettings),
+      });
       setMessage({
         status: "success",
         text: "Grade settings saved successfully.",
@@ -292,12 +326,7 @@ export function GradeSettings({ gradingPeriods, section, instructor, onSave, onC
                   ))}
                   <div className="grade-sheet-distribution-total">
                     <span>Total</span>
-                    <strong>
-                      {distributionRows.reduce(
-                        (total, [, key]) => total + Number(weightSettings[period.key][key] || 0),
-                        0,
-                      )}
-                    </strong>
+                    <strong>{weightTotal(weightSettings[period.key])}</strong>
                   </div>
                 </div>
               ))}

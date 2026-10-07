@@ -1,6 +1,7 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { useMemo as E, useState as g } from "react";
 import { Icon as s } from "./DashboardShared";
-function S(t) {
+function formatSectionTime(t) {
   if (!t) return "—";
   const [l, c] = String(t).split(":").map(Number),
     n = l >= 12 ? "PM" : "AM";
@@ -41,7 +42,7 @@ function compareSections(first, second) {
     )
   );
 }
-function M({ item: t, onClose: l, onSave: c }) {
+function EditClassModal({ item: t, onClose: l, onSave: c }) {
   const [n, b] = g(() => z(t)),
     [i, d] = g(!1),
     [u, m] = g(""),
@@ -239,7 +240,7 @@ export default function $({
         "relative flex min-h-full flex-col gap-8 text-slate-900",
     },
     f &&
-      React.createElement(M, {
+      React.createElement(EditClassModal, {
         item: f,
         onClose: () => x(null),
         onSave: async (e, _) => {
@@ -516,9 +517,9 @@ export default function $({
                         React.createElement(
                           "span",
                           { className: "text-slate-700" },
-                          S(e.time_start),
+                          formatSectionTime(e.time_start),
                           " – ",
-                          S(e.time_end),
+                          formatSectionTime(e.time_end),
                         ),
                       ),
                       e.room &&
