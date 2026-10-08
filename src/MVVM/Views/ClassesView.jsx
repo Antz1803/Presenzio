@@ -218,11 +218,18 @@ export default function $({
     k = E(
       () =>
         t
-          .filter((e) =>
-            `${e.subject_code} ${e.subject_title} ${e.room} ${e.edp_code} ${e.section_no} ${e.year_level}`
-              .toLowerCase()
-              .includes(r.toLowerCase()),
-          )
+          .filter((e) => {
+            const searchText = [
+              e.edp_code,
+              e.edpCode,
+              e.student_names,
+              e.studentNames,
+            ]
+              .filter(Boolean)
+              .join(" ")
+              .toLowerCase();
+            return searchText.includes(r.trim().toLowerCase());
+          })
           .sort(compareSections),
       [t, r],
     ),
@@ -369,8 +376,7 @@ export default function $({
               name: "classSearch",
               className:
                 "w-full border-0 bg-transparent text-sm font-normal text-slate-800 outline-none placeholder:text-slate-400",
-              placeholder:
-                "Search by EDP Code",
+              placeholder: "Search by EDP Code or Student Name",
               value: r,
               onChange: (e) => p(e.target.value),
             }),

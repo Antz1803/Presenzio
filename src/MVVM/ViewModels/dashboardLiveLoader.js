@@ -91,6 +91,7 @@ export function useDashboardLiveLoader(context) {
         const {
           enrollments,
           allStudentsData,
+          studentNamesBySection,
           periods,
           periodGrades,
           combinedAssessmentScoreData,
@@ -144,8 +145,15 @@ export function useDashboardLiveLoader(context) {
           });
 
         if (!isStale()) {
-          setSection(sectionData);
-          setSections(sectionList ?? []);
+          const sectionsWithStudentNames = (sectionList ?? []).map((item) => ({
+            ...item,
+            student_names: studentNamesBySection?.[item.id] ?? [],
+          }));
+          setSection({
+            ...sectionData,
+            student_names: studentNamesBySection?.[sectionData.id] ?? [],
+          });
+          setSections(sectionsWithStudentNames);
           setStudents(liveRoster);
           setGradeRows(toGradeRows(liveRoster));
           setGradingPeriods(periods ?? []);

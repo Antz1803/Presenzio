@@ -22,6 +22,15 @@ export async function loadDashboardRecords({ uid, sectionData, sectionList }) {
     }))
     .sort((a, b) => (a.ctrl_no ?? 1e9) - (b.ctrl_no ?? 1e9));
 
+  const studentNamesBySection = Object.fromEntries(
+    (sectionList ?? []).map((section) => [
+      section.id,
+      Object.values(allEnrollments?.[section.id] ?? {})
+        .map((enrollment) => studentById(enrollment.student_id)?.full_name)
+        .filter(Boolean),
+    ]),
+  );
+
   // Whole-account student count for the "Total students" card.
   const unique = new Map();
   (sectionList ?? []).forEach((s) =>
@@ -141,6 +150,7 @@ export async function loadDashboardRecords({ uid, sectionData, sectionList }) {
 
   return {
     enrollments,
+    studentNamesBySection,
     allStudentsData,
     periods,
     periodGrades,
