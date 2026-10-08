@@ -55,6 +55,8 @@ function instructorMetadata(profile = {}) {
     initials: String(profile.initials || "").trim(),
     color: profile.color || "plum",
     avatarUrl: String(profile.avatarUrl || "").trim(),
+    printLogoLeftUrl: String(profile.printLogoLeftUrl || "").trim(),
+    printLogoRightUrl: String(profile.printLogoRightUrl || "").trim(),
   };
 
   return Object.fromEntries(
@@ -275,6 +277,8 @@ export function AuthProvider({ children }) {
           initials: profile.initials.trim(),
           color: profile.color,
           avatarUrl: profile.avatarUrl || "",
+          printLogoLeftUrl: profile.printLogoLeftUrl || "",
+          printLogoRightUrl: profile.printLogoRightUrl || "",
         };
         const metadataProfile = instructorMetadata(normalizedProfile);
 
@@ -287,7 +291,12 @@ export function AuthProvider({ children }) {
           throw friendlyError(error);
         }
 
-        setUser(toAppUser(auth.currentUser, metadataProfile));
+        setUser(
+          toAppUser(auth.currentUser, metadataProfile, {
+            isAdmin: user?.isAdmin,
+            request: { status: user?.approvalStatus },
+          }),
+        );
         return normalizedProfile;
       },
 

@@ -65,6 +65,8 @@ export default function DashboardShell() {
             .toUpperCase(),
         color: s.color || "bg-gradient-to-br from-indigo-500 to-violet-600",
         avatarUrl: s.avatarUrl || "",
+        printLogoLeftUrl: s.printLogoLeftUrl || "",
+        printLogoRightUrl: s.printLogoRightUrl || "",
       };
     })(),
     [R, f] = a(null),
@@ -422,6 +424,9 @@ export default function DashboardShell() {
                 assessmentScores: e.assessmentScores,
                 attendanceSessions: e.attendanceSessions,
                 gradingPeriods: e.gradingPeriods,
+                instructorName: k.name,
+                printLogoLeftUrl: k.printLogoLeftUrl,
+                printLogoRightUrl: k.printLogoRightUrl,
                 onClose: j,
               }),
             )

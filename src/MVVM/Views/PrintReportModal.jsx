@@ -9,6 +9,7 @@ import {
   getAttendanceTotal as A,
   getGradeRemark as E,
 } from "./classActions/actionUtils";
+import { getStoredDean } from "../Models/deanStorage";
 import M from "../../assets/Logo.png";
 if (typeof document < "u" && !document.getElementById("print-page-style")) {
   const e = document.createElement("style");
@@ -355,9 +356,16 @@ export default function _({
   assessmentScores: s,
   attendanceSessions: m,
   gradingPeriods: i,
+  instructorName: teacherName,
+  printLogoLeftUrl: leftLogo,
+  printLogoRightUrl: rightLogo,
   onClose: o,
 }) {
   const isGradeSheet = ["prelim", "midterm", "semifinal", "final"].includes(e);
+  const signatureInstructor =
+    teacherName || a?.teacher_name || a?.instructor?.name || "Instructor";
+  const signatureDean =
+    a?.dean || a?.dean_name || getStoredDean(a?.id) || "Dean";
   const selectedPeriod = isGradeSheet
     ? i.find((period) => period.code === e)
     : null;
@@ -459,9 +467,9 @@ export default function _({
               "mb-6 flex items-center gap-4 border-b border-slate-200 pb-4 break-after-avoid",
           },
           React.createElement("img", {
-            src: M,
-            alt: "Presenzio",
-            className: "h-25 w-25 shrink-0 object-contain",
+            src: leftLogo || M,
+            alt: "Left report logo",
+            className: "h-20 w-20 shrink-0 object-contain print:h-24 print:w-24",
           }),
           React.createElement(
             "div",
@@ -496,10 +504,16 @@ export default function _({
                 f(d.end_date),
               ),
           ),
-          React.createElement("div", {
-            className: "h-14 w-14 shrink-0",
-            "aria-hidden": "true",
-          }),
+          rightLogo
+            ? React.createElement("img", {
+                src: rightLogo,
+                alt: "Right report logo",
+                className: "h-20 w-20 shrink-0 object-contain print:h-24 print:w-24",
+              })
+            : React.createElement("div", {
+                className: "h-20 w-20 shrink-0 print:h-24 print:w-24",
+                "aria-hidden": "true",
+              }),
         ),
         t &&
           React.createElement(PeriodReportTable, {
@@ -518,6 +532,49 @@ export default function _({
             { className: "py-12 text-center text-sm text-slate-500" },
             "No students have records for this report.",
           ),
+        React.createElement(
+          "footer",
+          {
+            className:
+              "mt-16 grid grid-cols-2 gap-16 px-8 break-inside-avoid print:mt-20",
+          },
+          React.createElement(
+            "div",
+            { className: "text-center text-xs font-semibold text-slate-700" },
+            React.createElement(
+              "p",
+              { className: "text-slate-900" },
+              signatureInstructor,
+            ),
+            React.createElement("div", {
+              className: "mt-1 border-t border-slate-700",
+              "aria-hidden": "true",
+            }),
+            React.createElement(
+              "p",
+              { className: "mt-0.5 font-normal" },
+              "Instructor",
+            ),
+          ),
+          React.createElement(
+            "div",
+            { className: "text-center text-xs font-semibold text-slate-700" },
+            React.createElement(
+              "p",
+              { className: "text-slate-900" },
+              signatureDean,
+            ),
+            React.createElement("div", {
+              className: "mt-1 border-t border-slate-700",
+              "aria-hidden": "true",
+            }),
+            React.createElement(
+              "p",
+              { className: "mt-0.5 font-normal" },
+              "Dean",
+            ),
+          ),
+        ),
       ),
     ),
     document.body,

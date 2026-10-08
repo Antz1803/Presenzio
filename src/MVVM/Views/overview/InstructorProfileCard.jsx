@@ -51,6 +51,8 @@ export default function T({
         initials: a?.initials || I(a?.name),
         color: a?.color || "bg-gradient-to-br from-indigo-500 to-violet-600",
         avatarUrl: a?.avatarUrl || "",
+        printLogoLeftUrl: a?.printLogoLeftUrl || "",
+        printLogoRightUrl: a?.printLogoRightUrl || "",
       }),
       [a],
     ),
