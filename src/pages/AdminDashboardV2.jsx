@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(Boolean(db));
   const [savingUid, setSavingUid] = useState("");
   const [savingBranding, setSavingBranding] = useState(false);
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [brandingMessage, setBrandingMessage] = useState("");
   const [error, setError] = useState(() => db ? "" : "Firebase Realtime Database is not configured.");
   const [draft, setDraft] = useState({ ...DEFAULT_BRANDING });
@@ -29,7 +30,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     // Branding is loaded asynchronously from the public settings node.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDraft({ appName: branding.appName, tagline: branding.tagline, loginTitle: branding.loginTitle, loginDescription: branding.loginDescription, accentColor: branding.accentColor, logoUrl: branding.logoUrl });
+    setDraft({ appName: branding.appName, tagline: branding.tagline, loginTitle: branding.loginTitle, loginDescription: branding.loginDescription, accentColor: branding.accentColor, logoUrl: branding.logoUrl, logoWidth: branding.logoWidth, logoHeight: branding.logoHeight, logoMarginTop: branding.logoMarginTop, logoMarginRight: branding.logoMarginRight, logoMarginBottom: branding.logoMarginBottom, logoMarginLeft: branding.logoMarginLeft });
   }, [branding]);
 
   useEffect(() => {
@@ -101,8 +102,13 @@ export default function AdminDashboard() {
     }
   };
 
-  const restoreDefaults = async () => {
-    if (!window.confirm("Restore the default Presenzio branding?")) return;
+  const restoreDefaults = () => {
+    setBrandingMessage("");
+    setConfirmResetOpen(true);
+  };
+
+  const confirmRestoreDefaults = async () => {
+    setConfirmResetOpen(false);
     setSavingBranding(true);
     try {
       await resetBranding();
@@ -112,6 +118,23 @@ export default function AdminDashboard() {
     } finally {
       setSavingBranding(false);
     }
+  };
+
+  const previewLogoWidth = Number(draft.logoWidth) || DEFAULT_BRANDING.logoWidth;
+  const previewLogoHeight = Number(draft.logoHeight) || DEFAULT_BRANDING.logoHeight;
+  const previewLogoMarginTop = Number(draft.logoMarginTop) || 0;
+  const previewLogoMarginBottom = Number(draft.logoMarginBottom) || 0;
+  const previewBrandHeight = Math.max(
+    72,
+    previewLogoHeight + previewLogoMarginTop + previewLogoMarginBottom,
+  );
+  const previewLogoStyle = {
+    width: `${previewLogoWidth}px`,
+    height: `${previewLogoHeight}px`,
+    marginTop: `${previewLogoMarginTop}px`,
+    marginRight: `${Number(draft.logoMarginRight) || 0}px`,
+    marginBottom: `${previewLogoMarginBottom}px`,
+    marginLeft: `${Number(draft.logoMarginLeft) || 0}px`,
   };
 
   return <main className="min-h-screen bg-[#f5f7fb] px-4 py-5 text-slate-900 sm:px-8 sm:py-8">
@@ -132,6 +155,70 @@ export default function AdminDashboard() {
           <form onSubmit={saveSettings} className="space-y-4"><div className="flex items-center gap-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3"><div className="grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-white p-2 shadow-sm"><img src={draft.logoUrl || branding.logo} alt="Logo preview" className="max-h-full max-w-full object-contain" /></div><div className="min-w-0"><p className="text-xs font-bold text-slate-800">Logo preview</p><p className="mt-1 truncate text-[11px] text-slate-500">Shown on login, dashboard, admin, and student pages.</p></div></div>
             <label className="block text-xs font-bold text-slate-700">Upload a logo<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} className="mt-2 block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-100 file:px-3 file:py-2 file:font-bold file:text-indigo-700 hover:file:bg-indigo-200" /></label>
             <label className="block text-xs font-bold text-slate-700">Or use a logo URL<input name="logoUrl" value={draft.logoUrl} onChange={updateDraft} className={`${inputClass} mt-2`} placeholder="https://example.com/logo.png" /></label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block text-xs font-bold text-slate-700">Teacher logo width (px)<input name="logoWidth" type="number" min="24" max="320" step="1" value={draft.logoWidth} onChange={updateDraft} className={`${inputClass} mt-2`} /></label>
+              <label className="block text-xs font-bold text-slate-700">Teacher logo height (px)<input name="logoHeight" type="number" min="24" max="320" step="1" value={draft.logoHeight} onChange={updateDraft} className={`${inputClass} mt-2`} /></label>
+            </div>
+            <p className="-mt-2 text-[11px] text-slate-400">These dimensions control the logo in the teacher dashboard sidebar.</p>
+            <div>
+              <p className="text-xs font-bold text-slate-700">Teacher logo margins (px)</p>
+              <div className="mt-2 grid grid-cols-2 gap-3">
+                <label className="block text-[11px] font-semibold text-slate-600">Top<input name="logoMarginTop" type="number" min="0" max="200" step="1" value={draft.logoMarginTop} onChange={updateDraft} className={`${inputClass} mt-1`} /></label>
+                <label className="block text-[11px] font-semibold text-slate-600">Right<input name="logoMarginRight" type="number" min="0" max="200" step="1" value={draft.logoMarginRight} onChange={updateDraft} className={`${inputClass} mt-1`} /></label>
+                <label className="block text-[11px] font-semibold text-slate-600">Bottom<input name="logoMarginBottom" type="number" min="0" max="200" step="1" value={draft.logoMarginBottom} onChange={updateDraft} className={`${inputClass} mt-1`} /></label>
+                <label className="block text-[11px] font-semibold text-slate-600">Left<input name="logoMarginLeft" type="number" min="0" max="200" step="1" value={draft.logoMarginLeft} onChange={updateDraft} className={`${inputClass} mt-1`} /></label>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold text-slate-800">Teacher dashboard preview</p>
+                  <p className="mt-1 text-[11px] text-slate-500">Live preview: {previewLogoWidth} × {previewLogoHeight} px</p>
+                </div>
+                <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold text-indigo-600 shadow-sm">Live</span>
+              </div>
+              <div className="mt-3 overflow-auto rounded-xl border border-slate-200 bg-white p-3">
+                <div className="flex min-w-[500px] items-stretch overflow-hidden rounded-lg bg-[#f7f8fa]">
+                  <div
+                    className="w-[244px] shrink-0 border-r border-slate-200 bg-white"
+                    style={{ padding: "28px 16px 18px", minHeight: "360px" }}
+                  >
+                    <div
+                      className="flex items-center gap-[10px] px-3"
+                      style={{
+                        height: `${previewBrandHeight}px`,
+                        minHeight: `${previewBrandHeight}px`,
+                      }}
+                    >
+                      <img
+                        src={draft.logoUrl || branding.logo}
+                        alt="Teacher dashboard logo preview"
+                        style={previewLogoStyle}
+                        className="block shrink-0 object-fill"
+                      />
+                    </div>
+                    <p
+                      className="px-3 text-[9px] font-bold tracking-[0.18em] text-slate-400"
+                      style={{ marginTop: "20px" }}
+                    >
+                      WORKSPACE
+                    </p>
+                    <div className="mt-4 space-y-2">
+                      <div className="h-8 rounded-lg bg-indigo-100" />
+                      <div className="h-8 rounded-lg bg-slate-100" />
+                      <div className="h-8 rounded-lg bg-slate-100" />
+                    </div>
+                  </div>
+                  <div className="min-w-[256px] flex-1 p-4">
+                    <div className="h-7 rounded-lg bg-white" />
+                    <div className="mt-4 h-28 rounded-xl border border-white bg-white/70 p-4">
+                      <div className="h-3 w-24 rounded-full bg-indigo-100" />
+                      <div className="mt-3 h-5 w-36 rounded-full bg-slate-200" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             <label className="block text-xs font-bold text-slate-700">App name<input name="appName" value={draft.appName} onChange={updateDraft} maxLength={60} className={`${inputClass} mt-2`} /></label><label className="block text-xs font-bold text-slate-700">Short tagline<input name="tagline" value={draft.tagline} onChange={updateDraft} maxLength={80} className={`${inputClass} mt-2`} /></label><label className="block text-xs font-bold text-slate-700">Login headline<input name="loginTitle" value={draft.loginTitle} onChange={updateDraft} maxLength={120} className={`${inputClass} mt-2`} /></label><label className="block text-xs font-bold text-slate-700">Login description<textarea name="loginDescription" value={draft.loginDescription} onChange={updateDraft} maxLength={240} rows={3} className={`${inputClass} mt-2 resize-none`} /></label>
             <label className="block text-xs font-bold text-slate-700">Accent color<span className="mt-2 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-2"><input type="color" name="accentColor" value={draft.accentColor} onChange={updateDraft} className="h-9 w-12 cursor-pointer rounded-lg border-0 bg-transparent p-0" /><input name="accentColor" value={draft.accentColor} onChange={updateDraft} className="min-w-0 flex-1 bg-transparent px-1 text-sm font-semibold text-slate-700 outline-none" pattern="^#[0-9a-fA-F]{6}$" /></span></label>
             {brandingMessage && <p className="rounded-xl bg-slate-50 p-3 text-xs font-semibold text-slate-600" role="status">{brandingMessage}</p>}<div className="flex flex-wrap gap-2 pt-1"><button type="submit" disabled={savingBranding} className="flex-1 rounded-xl bg-indigo-600 px-4 py-3 text-xs font-bold text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-500 disabled:opacity-50">{savingBranding ? "Saving…" : "Save branding"}</button><button type="button" disabled={savingBranding} onClick={restoreDefaults} className="rounded-xl border border-slate-200 px-4 py-3 text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50">Reset</button></div>
@@ -139,5 +226,20 @@ export default function AdminDashboard() {
         </aside>
       </div>
     </div>
+    {confirmResetOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !savingBranding && setConfirmResetOpen(false)}>
+      <section className="w-full max-w-md rounded-3xl border border-white/70 bg-white p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="reset-branding-title">
+        <div className="flex items-start gap-4">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-amber-100 text-xl text-amber-700">!</div>
+          <div>
+            <h2 id="reset-branding-title" className="text-lg font-extrabold text-slate-900">Restore default branding?</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-500">This will reset the logo, dimensions, margins, colors, and branding text to the Presenzio defaults.</p>
+          </div>
+        </div>
+        <div className="mt-6 flex justify-end gap-3">
+          <button type="button" onClick={() => setConfirmResetOpen(false)} disabled={savingBranding} className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50">Cancel</button>
+          <button type="button" onClick={confirmRestoreDefaults} disabled={savingBranding} className="rounded-xl bg-amber-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-amber-200 transition hover:bg-amber-500 disabled:opacity-50">Restore defaults</button>
+        </div>
+      </section>
+    </div>}
   </main>;
 }

@@ -69,6 +69,12 @@ export default function DashboardShell() {
         printLogoRightUrl: s.printLogoRightUrl || "",
       };
     })(),
+    logoBrandHeight = Math.max(
+      30,
+      Number(branding.logoHeight || 0) +
+        Number(branding.logoMarginTop || 0) +
+        Number(branding.logoMarginBottom || 0),
+    ),
     [R, f] = a(null),
     [p, g] = a(null),
     [l, b] = a(null),
@@ -230,16 +236,30 @@ export default function DashboardShell() {
         },
         React.createElement(
           "div",
-          { className: "brand !text-[#0B2A5B]" },
+          {
+            className: "brand !text-[#0B2A5B]",
+            style: {
+              height: `${logoBrandHeight}px`,
+              minHeight: `${logoBrandHeight}px`,
+            },
+          },
           React.createElement("img", {
             className: "brand-logo",
             src: branding.logo,
             alt: branding.appName,
+            style: {
+              width: `${branding.logoWidth}px`,
+              height: `${branding.logoHeight}px`,
+              marginTop: `${branding.logoMarginTop}px`,
+              marginRight: `${branding.logoMarginRight}px`,
+              marginBottom: `${branding.logoMarginBottom}px`,
+              marginLeft: `${branding.logoMarginLeft}px`,
+            },
           }),
         ),
         React.createElement(
           "div",
-          { className: "sidebar-section" },
+          { className: "sidebar-section", style: { marginTop: "20px" } },
           React.createElement("p", { className: "nav-label" }, "WORKSPACE"),
           React.createElement(
             "nav",

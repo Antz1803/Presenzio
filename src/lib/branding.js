@@ -11,6 +11,12 @@ export const DEFAULT_BRANDING = {
     "One focused workspace for attendance, assessments, grades, and the people who make learning happen.",
   accentColor: "#4d47d9",
   logoUrl: "",
+  logoWidth: 200,
+  logoHeight: 200,
+  logoMarginTop: 0,
+  logoMarginRight: 0,
+  logoMarginBottom: 0,
+  logoMarginLeft: 0,
 };
 
 const BrandingContext = createContext({
@@ -24,6 +30,21 @@ function cleanBranding(value = {}) {
   const next = { ...DEFAULT_BRANDING };
   Object.keys(DEFAULT_BRANDING).forEach((key) => {
     if (typeof value[key] === "string") next[key] = value[key].trim();
+  });
+  [
+    "logoWidth",
+    "logoHeight",
+    "logoMarginTop",
+    "logoMarginRight",
+    "logoMarginBottom",
+    "logoMarginLeft",
+  ].forEach((key) => {
+    const size = Number(value[key]);
+    if (Number.isFinite(size)) {
+      const minimum = key.startsWith("logoMargin") ? 0 : 24;
+      const maximum = key.startsWith("logoMargin") ? 200 : 320;
+      next[key] = Math.min(maximum, Math.max(minimum, Math.round(size)));
+    }
   });
   if (!/^#[0-9a-f]{6}$/i.test(next.accentColor)) {
     next.accentColor = DEFAULT_BRANDING.accentColor;
