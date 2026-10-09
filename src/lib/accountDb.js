@@ -428,6 +428,85 @@ export async function createAssessment(uid, { assessment, questions, scoreRows =
   return { id: aid, access_key: fields.access_key };
 }
 
+const publicAssessmentPath = (accessKey) => `publicAssessments/${accessKey}`;
+const publicSubmissionPath = (accessKey, studentId) =>
+  `publicSubmissions/${accessKey}/${studentId}`;
+
+export async function readPublicAssessment(accessKey) {
+  if (!db || !accessKey) return null;
+  return (await get(ref(db, publicAssessmentPath(accessKey)))).val();
+}
+
+export async function readPublicSubmissions(accessKey) {
+  if (!db || !accessKey) return {};
+  return (await get(ref(db, `publicSubmissions/${accessKey}`))).val() ?? {};
+}
+
+export async function readPublicSubmission(accessKey, studentId) {
+  if (!db || !accessKey || !studentId) return null;
+  return (await get(ref(db, publicSubmissionPath(accessKey, studentId)))).val();
+}
+
+export async function savePublicAssessmentSubmission(accessKey, studentId, submission) {
+  if (!db || !accessKey || !studentId) throw new Error("The public assessment is not available.");
+  await update(ref(db), {
+    [publicSubmissionPath(accessKey, studentId)]: clean(submission),
+  });
+}
+
+// Publishes only the assessment payload needed by the student portal. Teacher
+// account data remains under the authenticated account path.
+export async function publishPublicAssessment(uid, sid, aid) {
+  const [section, studentsMap, enrollments, data] = await Promise.all([
+    read(uid, `sections/${sid}`),
+    read(uid, "students"),
+    read(uid, `enrollments/${sid}`),
+    read(uid, sec(sid)),
+  ]);
+  const assessment = data?.assessments?.[aid];
+  if (!assessment?.access_key) return null;
+
+  const students = {};
+  Object.entries(enrollments ?? {}).forEach(([enrollmentId, enrollment]) => {
+    const studentId = enrollment?.student_id;
+    const student = studentsMap?.[studentId];
+    if (!studentId || !student || enrollment?.status === "inactive") return;
+    students[studentId] = {
+      id: studentId,
+      enrollmentId,
+      number: student.number ?? student.student_no ?? "",
+      name: student.name ?? student.full_name ?? "",
+    };
+  });
+
+  const questions = Object.fromEntries(
+    rows(data?.questions?.[aid]).map((question) => [question.id, question]),
+  );
+  const payload = {
+    uid,
+    section_id: sid,
+    section: {
+      id: sid,
+      subject_code: section?.subject_code ?? "",
+      subject_title: section?.subject_title ?? "",
+    },
+    assessment: { id: aid, ...assessment },
+    questions,
+    students,
+    published_at: nowIso(),
+  };
+
+  await update(ref(db), {
+    [publicAssessmentPath(assessment.access_key)]: clean(payload),
+  });
+  return payload;
+}
+
+export async function deletePublicAssessment(accessKey) {
+  if (!db || !accessKey) return;
+  await update(ref(db), { [publicAssessmentPath(accessKey)]: null });
+}
+
 export async function updateAssessment(uid, sid, aid, { assessment, questions, maxScore, itemNo }) {
   const existing = await read(uid, sec(sid, `assessments/${aid}`));
   if (!existing) throw new Error("The assessment no longer exists.");
@@ -465,7 +544,16 @@ export async function deleteAssessment(uid, sid, aid) {
       updates[sec(sid, `scores/${key}`)] = null;
     });
   }
-  await patch(uid, updates, a?.access_key ? { [`accessKeys/${a.access_key}`]: null } : {});
+  await patch(
+    uid,
+    updates,
+    a?.access_key
+      ? {
+          [`accessKeys/${a.access_key}`]: null,
+          [`publicAssessments/${a.access_key}`]: null,
+        }
+      : {},
+  );
   return a ? { id: aid, ...a } : null;
 }
 

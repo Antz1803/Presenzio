@@ -68,7 +68,15 @@ export function useStudentAssessmentSession() {
           (c.current = []),
           D([]),
           x(null),
-          h(null),
+          h(
+            s.previousSubmission
+              ? {
+                  ...s.previousSubmission,
+                  maxScore: s.previousSubmission.max_score,
+                  attemptsRemaining: 0,
+                }
+              : null,
+          ),
           A(""),
           (l.current = !1));
       } catch (s) {

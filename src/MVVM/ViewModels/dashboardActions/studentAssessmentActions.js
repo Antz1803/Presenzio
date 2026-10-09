@@ -38,7 +38,49 @@ export function useStudentAssessmentActions(context) {
           student: { id: cachedStudent.studentId ?? cachedStudent.id, number: cachedStudent.number, name: cachedStudent.name },
         };
       }
-      if (!accountId) throw new Error("Sign in before opening an assessment.");
+      if (!accountId) {
+        const publicPayload = await store.readPublicAssessment(normalizedKey);
+        if (!publicPayload?.assessment) throw new Error("Assessment Key ID not found.");
+        const publicStudent = Object.values(publicPayload.students ?? {}).find(
+          (student) => String(student.number ?? "").trim() === normalizedStudentNumber,
+        );
+        if (!publicStudent) throw new Error("Student ID number not found in this assessment class.");
+        const previousSubmission = await store.readPublicSubmission(
+          normalizedKey,
+          publicStudent.id,
+        );
+        const publicQuestions = Object.values(publicPayload.questions ?? {})
+          .map((question) => ({
+            ...question,
+            assessment_id: publicPayload.assessment.id,
+            choices: question.choices ?? [],
+          }))
+          .sort((a, b) => Number(a.question_no) - Number(b.question_no));
+        return {
+          assessment: {
+            ...publicPayload.assessment,
+            period: { code: publicPayload.assessment.period_id },
+            section: publicPayload.section,
+            questions: publicQuestions,
+            public_access_key: normalizedKey,
+            attemptGrants: [],
+          },
+          enrollmentId: publicStudent.enrollmentId,
+          attemptsUsed: previousSubmission ? 1 : 0,
+          attemptsRemaining: previousSubmission ? 0 : 1,
+          attemptNumber: previousSubmission ? 2 : 1,
+          attemptLimit: 1,
+          availableFrom: publicPayload.assessment.available_from || null,
+          availableUntil: publicPayload.assessment.available_until || null,
+          serverNow: new Date().toISOString(),
+          student: {
+            id: publicStudent.id,
+            number: publicStudent.number,
+            name: publicStudent.name,
+          },
+          previousSubmission,
+        };
+      }
       const sectionList = await store.listSections(accountId);
       const studentsMap = (await store.read(accountId, "students")) ?? {};
       for (const section of sectionList) {

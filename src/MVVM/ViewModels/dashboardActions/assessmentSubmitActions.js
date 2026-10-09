@@ -131,7 +131,33 @@ export function useAssessmentSubmitActions(context) {
         "This assessment is missing its Record Score column. Re-run the latest schema migration.",
       );
     }
-    if (!accountId) throw new Error("Sign in before submitting an assessment.");
+    if (!accountId) {
+      const publicAccessKey = loadedAssessment?.public_access_key;
+      if (!publicAccessKey) throw new Error("This assessment is not available publicly.");
+      await store.savePublicAssessmentSubmission(publicAccessKey, studentId, {
+        access_key: publicAccessKey,
+        assessment_id: assessmentId,
+        student_id: studentId,
+        enrollment_id: enrollmentId,
+        attempt_no: Number(attemptNumber) || 1,
+        status: needsReview ? "needs_review" : "submitted",
+        score,
+        max_score: maxScore,
+        submitted_at: new Date().toISOString(),
+        answers: Object.fromEntries(
+          answerRows.map(({ question_id, ...answer }) => [question_id, answer]),
+        ),
+        violations,
+      });
+      return {
+        score,
+        maxScore,
+        needsReview,
+        attemptNumber: Number(attemptNumber) || 1,
+        attemptsRemaining: 0,
+        autoSubmitted: autoSubmit,
+      };
+    }
     await store.saveAssessmentAttempt(accountId, targetSectionId, {
       assessmentId,
       studentId,

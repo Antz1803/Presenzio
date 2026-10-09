@@ -1,4 +1,11 @@
-import { buildSessions, ensureGradingPeriods, read, rows } from "../../lib/accountDb";
+import {
+  buildSessions,
+  ensureGradingPeriods,
+  publishPublicAssessment,
+  read,
+  readPublicSubmissions,
+  rows,
+} from "../../lib/accountDb";
 
 const byCreatedDesc = (a, b) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? ""));
 
@@ -76,10 +83,27 @@ export async function loadDashboardRecords({ uid, sectionData, sectionList }) {
         .sort((x, y) => Number(x.question_no) - Number(y.question_no)),
     }));
 
+  // Keep the public student portal in sync for assessments that existed before
+  // the public access flow was added.
+  void Promise.all(
+    assessmentRows.map((assessment) =>
+      publishPublicAssessment(uid, sid, assessment.id).catch((error) =>
+        console.warn("[public assessment sync] failed:", error),
+      ),
+    ),
+  );
+  const publicSubmissionMaps = await Promise.all(
+    assessmentRows.map((assessment) =>
+      assessment.access_key
+        ? readPublicSubmissions(assessment.access_key).catch(() => ({}))
+        : {},
+    ),
+  );
+
   const attemptRows = [];
   const grantRows = [];
   const violationRows = [];
-  assessmentRows.forEach((a) => {
+  assessmentRows.forEach((a, assessmentIndex) => {
     rows(sd.attempts?.[a.id]).forEach((attempt) => {
       const { answers, ...rest } = attempt;
       attemptRows.push({
@@ -97,6 +121,28 @@ export async function loadDashboardRecords({ uid, sectionData, sectionList }) {
       grantRows.push({ id: `${a.id}:${student_id}`, assessment_id: a.id, student_id, ...g }),
     );
     rows(sd.violations?.[a.id]).forEach((v) => violationRows.push({ ...v, assessment_id: a.id }));
+    Object.entries(publicSubmissionMaps[assessmentIndex] ?? {}).forEach(
+      ([studentId, submission]) => {
+        const { answers, ...rest } = submission ?? {};
+        const answerRows = Array.isArray(answers)
+          ? answers
+          : Object.entries(answers ?? {}).map(([question_id, answer]) => ({
+              question_id,
+              ...answer,
+            }));
+        attemptRows.push({
+          ...rest,
+          id: rest.id ?? `public:${a.id}:${studentId}`,
+          assessment_id: a.id,
+          student_id: rest.student_id ?? studentId,
+          answers: answerRows.map((answer) => ({
+            id: `${rest.id ?? `public:${a.id}:${studentId}`}:${answer.question_id}`,
+            attempt_id: rest.id ?? `public:${a.id}:${studentId}`,
+            ...answer,
+          })),
+        });
+      },
+    );
   });
   violationRows.sort((x, y) => String(y.occurred_at).localeCompare(String(x.occurred_at)));
 

@@ -38,6 +38,23 @@
         ".read": false,
         ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (root.child('registrationRequests').child(auth.uid).child('status').val() === 'approved' && (newData.child('uid').val() === auth.uid || data.child('uid').val() === auth.uid)))"
       }
+    },
+    "publicAssessments": {
+      "$key": {
+        ".read": true,
+        ".write": "auth != null && root.child('accessKeys').child($key).child('uid').val() === auth.uid",
+        ".validate": "newData.hasChildren(['uid', 'section_id', 'assessment', 'questions', 'students']) && newData.child('assessment').child('access_key').val() === $key"
+      }
+    },
+    "publicSubmissions": {
+      "$key": {
+        ".read": "auth != null && root.child('accessKeys').child($key).child('uid').val() === auth.uid",
+        "$studentId": {
+          ".read": true,
+          ".write": "!data.exists() && root.child('publicAssessments').child($key).child('students').child($studentId).exists() && newData.child('access_key').val() === $key && newData.child('assessment_id').val() === root.child('publicAssessments').child($key).child('assessment').child('id').val() && newData.child('student_id').val() === $studentId",
+          ".validate": "newData.hasChildren(['access_key', 'assessment_id', 'student_id', 'enrollment_id', 'attempt_no', 'status', 'score', 'max_score', 'submitted_at', 'answers']) && newData.child('score').isNumber() && newData.child('max_score').isNumber()"
+        }
+      }
     }
   }
 }

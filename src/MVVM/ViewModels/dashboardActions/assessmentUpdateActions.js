@@ -192,6 +192,7 @@ export function useAssessmentUpdateActions(context) {
       maxScore,
       itemNo,
     });
+    await store.publishPublicAssessment(accountId, currentSectionId, assessment.id);
     await loadLiveData(currentSectionId);
     return assessment;
   };

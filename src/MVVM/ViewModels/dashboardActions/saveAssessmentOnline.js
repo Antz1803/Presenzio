@@ -67,7 +67,7 @@ export async function saveAssessmentOnline(context, input, periodRow) {
   }));
   const maxScore = questions.reduce((t, q) => t + Number(q.points || 0), 0);
 
-  await store.createAssessment(accountId, {
+  const createdAssessment = await store.createAssessment(accountId, {
     assessment: {
       section_id: currentSectionId,
       period_id: periodRow.id,
@@ -91,5 +91,10 @@ export async function saveAssessmentOnline(context, input, periodRow) {
       max_score: maxScore,
     })),
   });
+  await store.publishPublicAssessment(
+    accountId,
+    currentSectionId,
+    createdAssessment.id,
+  );
   await loadLiveData(currentSectionId);
 }

@@ -54,6 +54,15 @@ export function useDashboardLiveLoader(context) {
       const requestId = ++loadRequestIdRef.current;
       const isStale = () => loadRequestIdRef.current !== requestId;
 
+      if (!accountScoped && !accountId) {
+        if (!isStale()) {
+          clearLiveData();
+          setConnectionStatus("live");
+          setConnectionMessage("Public student portal");
+        }
+        return null;
+      }
+
       if (accountScoped && !accountId) {
         if (!isStale()) {
           clearLiveData();
