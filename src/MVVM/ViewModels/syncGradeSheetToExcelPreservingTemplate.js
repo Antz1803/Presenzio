@@ -921,6 +921,8 @@ export async function syncGradeSheetToExcel({
   assessmentDefinitions = [],
   attendanceSessions,
   gradingPeriods = [],
+  useFilePicker = true,
+  directoryHandle = null,
 }) {
   const periodsById = validateExportSnapshot({
     students,
@@ -1012,7 +1014,16 @@ export async function syncGradeSheetToExcel({
   const filename = `${safeFilePart(section?.subject_code)}-${safeFilePart(section?.days || "Schedule")}-${time}.xlsm`;
   const blob = new Blob([output], { type: "application/vnd.ms-excel.sheet.macroEnabled.12" });
 
+  if (directoryHandle) {
+    const fileHandle = await directoryHandle.getFileHandle(filename, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    return;
+  }
+
   if (
+    useFilePicker &&
     typeof window !== "undefined" &&
     "showSaveFilePicker" in window
   ) {

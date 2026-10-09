@@ -144,6 +144,7 @@ export default function DashboardShell() {
             section: i,
             importMasterList: e.importMasterList,
             importGradeSheet: e.importGradeSheet,
+            onSyncAllToExcel: e.syncAllToExcel,
             importState: e.importState,
             gradeSheetImportState: e.gradeSheetImportState,
             connectionStatus: e.connectionStatus,

@@ -9,6 +9,7 @@ export function useTransferActions(context) {
     instructorName,
     currentSectionId,
     section,
+    sections,
     loadLiveData,
     queueOfflineChange,
     setStudents,
@@ -75,5 +76,84 @@ export function useTransferActions(context) {
     });
   }, [browserIsOffline, instructorName, loadLiveData, section]);
 
-  return { loadTransferPreview, transferStudent, syncToExcel };
+  const syncAllToExcel = useCallback(
+    async ({ onProgress } = {}) => {
+      if (!sections?.length) throw new Error("No classes are available to sync.");
+      if (browserIsOffline() || !db) {
+        throw new Error("Excel sync requires a live Firebase connection.");
+      }
+
+      let directoryHandle = null;
+      if (typeof window !== "undefined" && "showDirectoryPicker" in window) {
+        try {
+          directoryHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+        } catch (error) {
+          if (error?.name === "AbortError") return { cancelled: true, total: 0, results: [] };
+          throw error;
+        }
+      }
+
+      const originalSectionId = section?.id || currentSectionId;
+      const results = [];
+
+      for (let index = 0; index < sections.length; index += 1) {
+        const classSection = sections[index];
+        onProgress?.({ completed: index, total: sections.length, section: classSection });
+
+        try {
+          const fresh = await loadLiveData(classSection.id);
+          if (!fresh?.live || fresh.sectionId !== classSection.id) {
+            throw new Error("The latest class records could not be loaded.");
+          }
+
+          await syncGradeSheetToExcel({
+            section: fresh.section,
+            instructor: { name: instructorName },
+            students: fresh.students,
+            assessmentScores: fresh.assessmentScores,
+            assessmentDefinitions: fresh.assessmentDefinitions,
+            attendanceSessions: fresh.attendanceSessions,
+            gradingPeriods: fresh.periods,
+            useFilePicker: false,
+            directoryHandle,
+          });
+          results.push({ section: classSection, ok: true });
+        } catch (error) {
+          results.push({ section: classSection, ok: false, error });
+        }
+      }
+
+      onProgress?.({ completed: sections.length, total: sections.length });
+
+      // Loading each class updates the dashboard selection. Restore the class
+      // the instructor had open before starting the batch export.
+      if (originalSectionId && originalSectionId !== sections.at(-1)?.id) {
+        await loadLiveData(originalSectionId);
+      }
+
+      const failed = results.filter((result) => !result.ok);
+      if (failed.length) {
+        const failedNames = failed
+          .map((result) => result.section.subject_code || result.section.subject_title || result.section.id)
+          .join(", ");
+        const error = new Error(
+          `${results.length - failed.length} of ${results.length} class files synced. Failed: ${failedNames}.`,
+        );
+        error.results = results;
+        throw error;
+      }
+
+      return { total: results.length, results };
+    },
+    [
+      browserIsOffline,
+      currentSectionId,
+      instructorName,
+      loadLiveData,
+      section,
+      sections,
+    ],
+  );
+
+  return { loadTransferPreview, transferStudent, syncToExcel, syncAllToExcel };
 }

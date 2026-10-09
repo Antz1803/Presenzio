@@ -203,6 +203,7 @@ export default function $({
   section: l,
   importMasterList: c,
   importGradeSheet: n,
+  onSyncAllToExcel: q,
   importState: b,
   gradeSheetImportState: i,
   connectionStatus: d = "connecting",
@@ -215,6 +216,7 @@ export default function $({
 }) {
   const [r, p] = g(""),
     [f, x] = g(null),
+    [syncAllState, setSyncAllState] = g(null),
     k = E(
       () =>
         t
@@ -240,6 +242,43 @@ export default function $({
       const j = e.target.files?.[0];
       (j && _(j), (e.target.value = ""));
     };
+  const syncAll = async () => {
+    if (!q || syncAllState?.working || !k.length) return;
+    setSyncAllState({ completed: 0, total: k.length, working: true, error: false, message: "" });
+    try {
+      const result = await q({
+        onProgress: ({ completed, total }) =>
+          setSyncAllState({ completed, total, working: true, error: false, cancelled: false, message: "" }),
+      });
+      if (result.cancelled) {
+        setSyncAllState({
+          completed: 0,
+          total: 0,
+          working: false,
+          error: false,
+          cancelled: true,
+          message: "Sync cancelled.",
+        });
+        return;
+      }
+      setSyncAllState({
+        completed: result.total,
+        total: result.total,
+        working: false,
+        error: false,
+        cancelled: false,
+        message: `${result.total} Excel file${result.total === 1 ? "" : "s"} synced.`,
+      });
+    } catch (error) {
+      setSyncAllState((current) => ({
+        ...(current || {}),
+        working: false,
+        error: true,
+        cancelled: false,
+        message: error?.message || "Excel synchronization failed.",
+      }));
+    }
+  };
   return React.createElement(
     "div",
     {
@@ -381,7 +420,31 @@ export default function $({
               onChange: (e) => p(e.target.value),
             }),
           ),
+          React.createElement(
+            "button",
+            {
+              className:
+                "inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-3 text-xs font-semibold text-white shadow-md shadow-indigo-500/20 transition hover:from-indigo-500 hover:to-indigo-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60",
+              type: "button",
+              disabled: !k.length || syncAllState?.working,
+              title: "Sync every class to its own Excel file",
+              onClick: syncAll,
+            },
+            React.createElement(s, { name: "file", size: 16 }),
+            syncAllState?.working
+              ? `Syncing ${syncAllState.completed}/${syncAllState.total}...`
+              : "Sync All Excel",
+          ),
         ),
+        syncAllState?.message &&
+          React.createElement(
+            "p",
+            {
+              className: `mb-4 text-xs font-medium ${syncAllState.error ? "text-rose-600" : syncAllState.cancelled ? "text-amber-700" : "text-emerald-700"}`,
+              role: "status",
+            },
+            syncAllState.message,
+          ),
         React.createElement(
           "div",
           {
