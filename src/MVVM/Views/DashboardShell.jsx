@@ -293,27 +293,37 @@ export default function DashboardShell() {
           ),
           React.createElement(
             "div",
-            { className: "profile" },
-            React.createElement(D, {
-              initials: x || "T",
-              color: "blue",
-              small: !0,
-            }),
+            { className: "profile profile-card" },
             React.createElement(
-              "span",
-              null,
-              React.createElement("b", null, O),
-              React.createElement("small", null, n?.email || "Teacher account"),
+              "div",
+              { className: "profile-avatar-wrap" },
+              React.createElement(D, {
+                initials: x || "T",
+                color: "blue",
+                small: !0,
+              }),
+            ),
+            React.createElement(
+              "div",
+              { className: "profile-copy" },
+              React.createElement("b", { title: O }, O),
+              React.createElement(
+                "small",
+                { title: n?.email || "Teacher account" },
+                n?.email || "Teacher account",
+              ),
             ),
             React.createElement(
               "button",
               {
-                className:
-                  "ml-auto text-xs font-semibold text-slate-400 transition hover:text-rose-500",
+                className: "profile-logout",
                 type: "button",
                 onClick: W,
+                title: "Log out",
+                "aria-label": "Log out",
               },
-              "Log out",
+              React.createElement("span", null, "Log out"),
+              React.createElement("span", { className: "profile-logout-icon", "aria-hidden": "true" }, "↗"),
             ),
           ),
         ),
