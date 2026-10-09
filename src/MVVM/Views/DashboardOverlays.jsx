@@ -288,6 +288,7 @@ function we({
     [pendingDeleteStudent, setPendingDeleteStudent] = d(null),
     [isDeletingStudent, setIsDeletingStudent] = d(!1),
     [deleteStudentError, setDeleteStudentError] = d(""),
+    [copyStatus, setCopyStatus] = d(""),
     Q = G(
       () =>
         [...s].sort((e, a) =>
@@ -297,6 +298,24 @@ function we({
         ),
       [s],
     ),
+    copyCurrentStudentData = async () => {
+      const text = Q.map((student) =>
+        `${student.name || ""}\t${student.number ?? ""}`.trimEnd(),
+      ).join("\n");
+
+      if (!text) {
+        setCopyStatus("No students");
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopyStatus("Copied!");
+      } catch {
+        setCopyStatus("Copy failed");
+      }
+      setTimeout(() => setCopyStatus(""), 1800);
+    },
     X = G(() => i.filter((e) => e.id !== t?.id), [i, t]),
     le = (e) => {
       (b(null),
@@ -565,14 +584,30 @@ function we({
             ),
           ),
           React.createElement(
-            "button",
-            {
-              type: "button",
-              className:
-                "shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-100",
-              onClick: () => ne((e) => !e),
-            },
-            Y ? "Hide" : "Open",
+            "div",
+            { className: "flex shrink-0 items-center gap-2" },
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                className:
+                  "rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50 disabled:opacity-50",
+                onClick: copyCurrentStudentData,
+                disabled: !Q.length,
+                title: "Copy current names and Student IDs",
+              },
+              copyStatus || "Copy Name + ID",
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                className:
+                  "rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-100",
+                onClick: () => ne((e) => !e),
+              },
+              Y ? "Hide" : "Open",
+            ),
           ),
         ),
         Y &&
