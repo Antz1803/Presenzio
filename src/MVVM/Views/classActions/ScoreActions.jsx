@@ -121,6 +121,7 @@ function w({
     [A, p] = y({ status: "", text: "" }),
     [P, T] = y(""),
     [copiedStudentId, setCopiedStudentId] = y(""),
+    [copyingMissing, setCopyingMissing] = y(!1),
     j = s.find((e) => e.code === m),
     x = { start: j?.start_date ?? "", end: j?.end_date ?? "" },
     c = C.find((e) => e.key === n),
@@ -236,6 +237,40 @@ function w({
       } catch {
         // Clipboard access can be unavailable outside a secure browser context.
       }
+    },
+    copyMissingStudents = async () => {
+      const expectedItems = Array.from({ length: c.count }, (e, r) => r + 1).filter(
+        (item) => Number(v[String(item)]) > 0,
+      );
+      const missingStudents = i.filter((student) =>
+        expectedItems.some((item) => {
+          const score = d[n][student.id + ":" + item];
+          return score === "" || !Number.isFinite(Number(score));
+        }),
+      );
+
+      if (!missingStudents.length) {
+        p({ status: "success", text: "No students have missing scores." });
+        return;
+      }
+
+      try {
+        setCopyingMissing(!0);
+        await navigator.clipboard.writeText(
+          missingStudents.map((student) => student.name).join("\n"),
+        );
+        p({
+          status: "success",
+          text: `${missingStudents.length} student${missingStudents.length === 1 ? "" : "s"} with missing scores copied.`,
+        });
+      } catch {
+        p({
+          status: "error",
+          text: "Could not copy students with missing scores. Check browser clipboard permissions.",
+        });
+      } finally {
+        setCopyingMissing(!1);
+      }
     };
   ee(() => {
     M(L(u, m, g));
@@ -325,7 +360,23 @@ function w({
             React.createElement(
               "th",
               { className: "record-student-col" },
-              "STUDENT",
+              React.createElement(
+                "div",
+                { className: "record-student-heading" },
+                React.createElement("span", null, "STUDENT"),
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    className: "copy-name-button copy-missing-button",
+                    title: "Copy students with missing scores",
+                    "aria-label": "Copy students with missing scores",
+                    onClick: () => void copyMissingStudents(),
+                    disabled: N || F || copyingMissing,
+                  },
+                  copyingMissing ? "Copying..." : "Copy missing",
+                ),
+              ),
             ),
             Array.from({ length: c.count }, (e, r) => {
               const a = r + 1,

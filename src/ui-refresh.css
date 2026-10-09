@@ -65,3 +65,4 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .sidebar{width:303px;flex-basis:303px;left:-303px}
   .sidebar-open{left:0}
 }
+.record-student-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}.copy-missing-button{margin-left:auto;white-space:nowrap}
