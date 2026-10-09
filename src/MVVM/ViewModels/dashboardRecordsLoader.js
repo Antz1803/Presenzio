@@ -133,6 +133,7 @@ export async function loadDashboardRecords({ uid, sectionData, sectionList }) {
         attemptRows.push({
           ...rest,
           id: rest.id ?? `public:${a.id}:${studentId}`,
+          public: true,
           assessment_id: a.id,
           student_id: rest.student_id ?? studentId,
           answers: answerRows.map((answer) => ({
@@ -162,14 +163,14 @@ export async function loadDashboardRecords({ uid, sectionData, sectionList }) {
     const assessment = assessmentRows.find((a) => String(a.id) === String(attempt.assessment_id));
     const enrollment = enrollments.find((e) => String(e.student?.id) === String(attempt.student_id));
     if (!assessment || !enrollment || !assessment.item_no) continue;
-    const exists = combinedAssessmentScoreData.some(
+    const existingIndex = combinedAssessmentScoreData.findIndex(
       (r) =>
         String(r.enrollment_id) === String(enrollment.id) &&
         String(r.period_id) === String(assessment.period_id) &&
         r.category === assessment.category &&
         Number(r.item_no) === Number(assessment.item_no),
     );
-    if (!exists) {
+    if (existingIndex === -1) {
       combinedAssessmentScoreData.push({
         section_id: sid,
         period_id: assessment.period_id,
@@ -180,6 +181,22 @@ export async function loadDashboardRecords({ uid, sectionData, sectionList }) {
         max_score: attempt.max_score,
         period: assessment.period,
       });
+    } else if (attempt.public) {
+      const existingScore = combinedAssessmentScoreData[existingIndex];
+      const existingRecordedAt = Date.parse(existingScore.recorded_at || "");
+      const submittedAt = Date.parse(attempt.submitted_at || "");
+      if (
+        !Number.isFinite(existingRecordedAt) ||
+        !Number.isFinite(submittedAt) ||
+        existingRecordedAt <= submittedAt
+      ) {
+        combinedAssessmentScoreData[existingIndex] = {
+          ...existingScore,
+          score: attempt.score,
+          max_score: attempt.max_score,
+          period: assessment.period,
+        };
+      }
     }
   }
 
