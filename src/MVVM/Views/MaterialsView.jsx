@@ -18,14 +18,52 @@ import { Icon } from "./DashboardShared";
 const MAX_FILE_SIZE = 7 * 1024 * 1024;
 const categories = ["Lesson plan", "Learning material", "Assessment", "Other"];
 
-const btnSoft =
-  "rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50";
-const btnDanger =
-  "rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50";
-const btnPlain =
-  "rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
-const inputCls =
-  "w-full rounded-xl border border-slate-200 bg-white/70 px-3 py-2.5 text-sm font-normal outline-none focus:border-indigo-400";
+const FOCUS = "focus-visible:outline-accent!";
+const BTN_PRIMARY = `inline-flex items-center justify-center gap-2 rounded bg-accent px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-canvas transition hover:shadow-halo active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`;
+const BTN_SECONDARY = `inline-flex items-center justify-center gap-2 rounded border border-accent/40 px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`;
+const BTN_GHOST = `inline-flex items-center justify-center gap-2 rounded border border-white/10 px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-ink-2 transition hover:border-accent/40 hover:text-accent disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`;
+const BTN_DANGER = `inline-flex items-center justify-center gap-2 rounded bg-rose-400 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-canvas transition hover:bg-rose-300 disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`;
+const ICON_BTN = `grid size-8 shrink-0 place-items-center rounded border border-white/10 bg-surface-1 text-ink-2 transition hover:border-accent/40 hover:text-accent disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`;
+const ICON_BTN_DANGER = `grid size-8 shrink-0 place-items-center rounded border border-white/10 bg-surface-1 text-ink-2 transition hover:border-rose-400/50 hover:bg-rose-400/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`;
+const INPUT =
+  "w-full rounded border border-ink-3/30 bg-surface-1 px-3 py-2.5 font-sans! text-sm font-normal normal-case tracking-normal text-ink placeholder:text-ink-3 transition focus:border-accent focus:shadow-focus focus:outline-none disabled:opacity-50";
+const LABEL =
+  "flex flex-col gap-1.5 font-mono text-[11px] uppercase tracking-wider text-ink-3";
+const PANEL =
+  "rounded-xl border border-accent/20 bg-surface-1/85 p-5 backdrop-blur-xl";
+const EYEBROW =
+  "font-mono text-[10px] font-bold uppercase tracking-wider text-accent";
+const ROW =
+  "flex flex-wrap items-center gap-3 rounded-lg border border-white/5 bg-surface-2/70 p-3 transition hover:border-accent/30";
+const STATUS_TONES = {
+  error: "border-rose-400/30 bg-rose-500/10 text-rose-300",
+  success: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300",
+  info: "border-white/10 bg-surface-2 text-ink-2",
+};
+const FILE_TONES = {
+  pdf: "border-rose-400/30 bg-rose-400/10 text-rose-300",
+  doc: "border-accent-2/30 bg-accent-2/15 text-accent-4",
+  sheet: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
+  slide: "border-orange-400/30 bg-orange-400/10 text-orange-300",
+  image: "border-violet-400/30 bg-violet-400/10 text-violet-300",
+  other: "border-accent/30 bg-accent/10 text-accent",
+};
+
+// Colour-code files by type so a long list can be scanned at a glance.
+function fileTone(name = "") {
+  const ext = name.includes(".") ? name.split(".").pop().toLowerCase() : "";
+  if (ext === "pdf") return FILE_TONES.pdf;
+  if (["doc", "docx"].includes(ext)) return FILE_TONES.doc;
+  if (["xls", "xlsx", "csv"].includes(ext)) return FILE_TONES.sheet;
+  if (["ppt", "pptx"].includes(ext)) return FILE_TONES.slide;
+  if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) return FILE_TONES.image;
+  return FILE_TONES.other;
+}
+
+function fileExtLabel(name = "") {
+  const ext = name.includes(".") ? name.split(".").pop() : "";
+  return ext ? ext.slice(0, 4).toUpperCase() : "FILE";
+}
 
 function formatSize(bytes) {
   if (!bytes) return "0 KB";
@@ -62,11 +100,18 @@ function Dialog({ title, onClose, children }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/70 p-4 backdrop-blur-xl"
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
-      <div className="w-full max-w-md rounded-3xl border border-white/80 bg-white p-6 shadow-2xl" role="dialog" aria-modal="true" aria-label={title}>
-        <h3 className="text-base font-bold text-slate-900">{title}</h3>
+      <div
+        className="max-h-[calc(100vh-2rem)] w-full max-w-md overflow-y-auto rounded-xl border border-accent/35 border-b-accent-2/20 bg-surface-3 p-6 shadow-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
+        <h3 className="border-b border-white/5 pb-4 font-display text-base font-semibold tracking-tight text-ink">
+          {title}
+        </h3>
         {children}
       </div>
     </div>
@@ -323,90 +368,117 @@ export default function MaterialsView() {
   /* ---------- render ---------- */
   const isEmptyFolder = !loading && !visibleFolders.length && !visibleMaterials.length;
   const dialogKind = dialog?.kind;
+  const totalSize = materials.reduce((sum, material) => sum + Number(material.size || 0), 0);
+  const isDeleteDialog = dialogKind?.endsWith("delete");
 
   return (
-    <div className="relative flex min-h-full flex-col gap-8 text-slate-900">
-      <header className="relative overflow-hidden rounded-3xl border border-white/80 bg-white/40 p-6 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] backdrop-blur-xl">
-        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-indigo-500/10 blur-3xl" />
-        <div className="relative z-10 flex items-center justify-between gap-6 max-md:flex-col max-md:items-start">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/80 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-lg shadow-indigo-500/20">
-              <Icon name="folder" size={26} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">DOCUMENT CENTER</p>
-              <h1 className="mt-0.5 text-3xl font-extrabold tracking-tight text-slate-900">Materials</h1>
-              <p className="mt-0.5 text-xs font-medium text-slate-500">Store lesson plans and learning materials for easy access.</p>
-            </div>
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4">
+      {/* Page header */}
+      <header className="relative flex flex-col justify-between gap-4 overflow-hidden rounded-xl border border-accent/20 bg-surface-1 p-6 shadow-xl shadow-black/40 md:flex-row md:items-center">
+        <div className="pointer-events-none absolute -right-10 -top-10 size-48 rounded-full bg-accent/5 blur-3xl" />
+        <div className="relative z-10 flex items-start gap-4">
+          <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-linear-to-br from-accent via-sky-600 to-[#0D82FF] text-canvas shadow-lg shadow-accent/30">
+            <Icon name="folder" size={24} />
+          </div>
+          <div>
+            <span className={EYEBROW}>Document center</span>
+            <h1 className="font-display text-2xl font-bold tracking-tight text-ink">Materials</h1>
+            <p className="mt-0.5 text-xs text-ink-2">Store lesson plans and learning materials for easy access.</p>
           </div>
         </div>
+        <dl className="relative z-10 flex flex-wrap gap-2 font-mono text-[10px] font-bold uppercase tracking-wider">
+          {[
+            [materials.length, materials.length === 1 ? "file" : "files"],
+            [folders.length, folders.length === 1 ? "folder" : "folders"],
+            [formatSize(totalSize), "used"],
+          ].map(([value, label]) => (
+            <div key={label} className="flex items-baseline gap-1.5 rounded border border-accent/30 bg-accent/10 px-2.5 py-1.5">
+              <dt className="sr-only">{label}</dt>
+              <dd className="text-accent">{value}</dd>
+              <span className="text-ink-2" aria-hidden="true">{label}</span>
+            </div>
+          ))}
+        </dl>
       </header>
 
-      <section className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <section className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         {/* Upload */}
-        <article className="h-fit rounded-3xl border border-white/80 bg-white/50 p-6 shadow-[0_8px_32px_0_rgba(31,38,135,0.05)] backdrop-blur-xl">
-          <h2 className="font-bold text-slate-800">Upload a file</h2>
-          <p className="mt-1 text-xs leading-5 text-slate-500">PDF, Word, PowerPoint, Excel, images, and text files up to 7 MB.</p>
-          <p className="mt-3 rounded-xl bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-700">
-            Saving to: {breadcrumb.length ? breadcrumb.map((item) => item.name).join(" / ") : "Materials (main folder)"}
-          </p>
-          <label className="mt-4 flex flex-col gap-2 text-xs font-semibold text-slate-700">
+        <article className={`${PANEL} lg:sticky lg:top-4`}>
+          <h2 className="font-display text-base font-semibold tracking-tight text-ink">Upload a file</h2>
+          <p className="mt-1 text-xs leading-5 text-ink-2">PDF, Word, PowerPoint, Excel, images, and text files up to 7 MB.</p>
+
+          <div className="mt-4 flex items-start gap-2 rounded-lg border border-accent/20 bg-accent/5 px-3 py-2.5">
+            <span className="mt-0.5 shrink-0 text-accent"><Icon name="folder" size={14} /></span>
+            <p className="min-w-0 break-words font-mono text-[11px] leading-4 text-ink-2">
+              Saving to{" "}
+              <span className="font-bold text-accent">
+                {breadcrumb.length ? breadcrumb.map((item) => item.name).join(" / ") : "Materials (main folder)"}
+              </span>
+            </p>
+          </div>
+
+          <label className={`${LABEL} mt-4`}>
             File category
-            <select id="material-upload-category" name="uploadCategory" className={inputCls} value={category} onChange={(event) => setCategory(event.target.value)}>
+            <select id="material-upload-category" name="uploadCategory" className={INPUT} value={category} onChange={(event) => setCategory(event.target.value)}>
               {categories.map((item) => <option key={item}>{item}</option>)}
             </select>
           </label>
+
           <button
-            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-3 text-xs font-semibold text-white shadow-md shadow-indigo-500/20 transition hover:from-indigo-500 hover:to-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className={`${BTN_PRIMARY} mt-4 w-full`}
             type="button"
             disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
           >
-            <Icon name="file" size={16} />
+            <Icon name="upload" size={16} />
             {uploading ? "Uploading…" : "Choose files"}
           </button>
           <input ref={fileInputRef} id="material-file-input" name="materialFiles" className="hidden" type="file" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.jpeg,.png" onChange={handleUpload} />
         </article>
 
         {/* Browser */}
-        <article className="rounded-3xl border border-white/80 bg-white/50 p-6 shadow-[0_8px_32px_0_rgba(31,38,135,0.05)] backdrop-blur-xl">
+        <article className={PANEL}>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">YOUR FILES</p>
-              <nav className="mt-1 flex flex-wrap items-center gap-1 text-sm font-bold text-slate-800" aria-label="Folder path">
-                <button type="button" className={`rounded-md px-1 hover:bg-indigo-50 ${currentFolderId ? "text-indigo-600" : ""}`} onClick={() => setCurrentFolderId(null)}>
-                  Materials
-                </button>
-                {breadcrumb.map((item, index) => (
-                  <span className="flex items-center gap-1" key={item.id}>
-                    <span className="text-slate-400">/</span>
-                    <button
-                      type="button"
-                      className={`rounded-md px-1 hover:bg-indigo-50 ${index < breadcrumb.length - 1 ? "text-indigo-600" : ""}`}
-                      onClick={() => setCurrentFolderId(item.id)}
-                    >
-                      {item.name}
-                    </button>
-                  </span>
-                ))}
-              </nav>
-            </div>
+            <nav className="flex min-w-0 flex-wrap items-center gap-1 font-mono text-sm font-bold text-ink" aria-label="Folder path">
+              <button type="button" className={`rounded px-1.5 py-0.5 transition hover:bg-accent/10 hover:text-accent ${FOCUS} ${currentFolderId ? "text-accent" : ""}`} onClick={() => setCurrentFolderId(null)}>
+                Materials
+              </button>
+              {breadcrumb.map((item, index) => (
+                <span className="flex items-center gap-1" key={item.id}>
+                  <span className="text-ink-3" aria-hidden="true">/</span>
+                  <button
+                    type="button"
+                    className={`rounded px-1.5 py-0.5 transition hover:bg-accent/10 hover:text-accent ${FOCUS} ${index < breadcrumb.length - 1 ? "text-accent" : ""}`}
+                    onClick={() => setCurrentFolderId(item.id)}
+                  >
+                    {item.name}
+                  </button>
+                </span>
+              ))}
+            </nav>
             <div className="flex flex-wrap items-center gap-2">
               {currentFolder && (
-                <button className={btnPlain} type="button" onClick={() => setCurrentFolderId(currentFolder.parentId || null)}>Back</button>
+                <button className={BTN_GHOST} type="button" onClick={() => setCurrentFolderId(currentFolder.parentId || null)}>Back</button>
               )}
-              <button className={btnSoft} type="button" onClick={() => openDialog("folder-create")}>New folder</button>
-              <button className={btnSoft} type="button" onClick={() => void refresh()} disabled={loading}>Refresh</button>
+              <button className={BTN_SECONDARY} type="button" onClick={() => openDialog("folder-create")}>
+                <Icon name="plus" size={14} /> New folder
+              </button>
+              <button className={BTN_GHOST} type="button" onClick={() => void refresh()} disabled={loading}>
+                <Icon name="refresh" size={14} /> Refresh
+              </button>
             </div>
           </div>
 
-          <div className="mb-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_150px_130px]">
-            <input id="material-search" name="materialSearch" className={inputCls} type="search" placeholder="Search all files and folders…" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Search materials" />
-            <select id="material-filter-category" name="filterCategory" className={inputCls} value={filterCategory} onChange={(event) => setFilterCategory(event.target.value)} aria-label="Filter by category">
+          <div className="mb-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_160px_130px]">
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3"><Icon name="search" size={16} /></span>
+              <input id="material-search" name="materialSearch" className={`${INPUT} pl-10`} type="search" placeholder="Search all files and folders…" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Search materials" />
+            </div>
+            <select id="material-filter-category" name="filterCategory" className={INPUT} value={filterCategory} onChange={(event) => setFilterCategory(event.target.value)} aria-label="Filter by category">
               <option>All</option>
               {categories.map((item) => <option key={item}>{item}</option>)}
             </select>
-            <select id="material-sort" name="sortBy" className={inputCls} value={sort} onChange={(event) => setSort(event.target.value)} aria-label="Sort files">
+            <select id="material-sort" name="sortBy" className={INPUT} value={sort} onChange={(event) => setSort(event.target.value)} aria-label="Sort files">
               <option value="newest">Newest</option>
               <option value="oldest">Oldest</option>
               <option value="name">Name</option>
@@ -416,20 +488,24 @@ export default function MaterialsView() {
 
           {status.message && (
             <p
-              className={`mb-4 flex items-start justify-between gap-3 rounded-xl border p-3 text-xs font-medium ${status.type === "error" ? "border-rose-200 bg-rose-50 text-rose-600" : status.type === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-600"}`}
+              className={`mb-4 flex items-start justify-between gap-3 rounded-lg border px-3 py-2.5 text-xs font-medium ${STATUS_TONES[status.type] || STATUS_TONES.info}`}
               role="status"
             >
               <span>{status.message}</span>
-              {!uploading && <button type="button" className="font-bold" onClick={() => setStatus({ type: "", message: "" })} aria-label="Dismiss">×</button>}
+              {!uploading && (
+                <button type="button" className={`shrink-0 rounded p-0.5 opacity-80 transition hover:opacity-100 ${FOCUS}`} onClick={() => setStatus({ type: "", message: "" })} aria-label="Dismiss">
+                  <Icon name="x" size={14} />
+                </button>
+              )}
             </p>
           )}
 
           {loading ? (
-            <p className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-xs text-slate-500">Loading materials…</p>
+            <p className="rounded-lg border border-dashed border-white/10 p-8 text-center font-mono text-xs text-ink-3">Loading materials…</p>
           ) : isEmptyFolder ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-xs text-slate-500">
-              <Icon name="folder" size={28} />
-              <p className="mt-3">
+            <div className="grid place-items-center gap-3 rounded-lg border border-dashed border-white/10 px-6 py-10 text-center text-xs text-ink-2">
+              <span className="grid size-12 place-items-center rounded-xl border border-accent/20 bg-accent/5 text-accent"><Icon name="folder" size={24} /></span>
+              <p className="max-w-xs leading-5">
                 {searching || filterCategory !== "All"
                   ? "Nothing matches your search or filter."
                   : currentFolder
@@ -438,24 +514,26 @@ export default function MaterialsView() {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <ul className="flex flex-col gap-2">
               {visibleFolders.map((folder) => {
                 const stats = folderStats.get(folder.id) || { files: 0, folders: 0 };
                 return (
-                  <div className="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white/60 p-4" key={folder.id}>
-                    <button type="button" className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => { setQuery(""); setCurrentFolderId(folder.id); }}>
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600"><Icon name="folder" size={19} /></span>
+                  <li className={ROW} key={folder.id}>
+                    <button type="button" className={`flex min-w-0 flex-1 items-center gap-3 rounded text-left ${FOCUS}`} onClick={() => { setQuery(""); setCurrentFolderId(folder.id); }}>
+                      <span className="grid size-10 shrink-0 place-items-center rounded-lg border border-amber-400/30 bg-amber-400/10 text-amber-300"><Icon name="folder" size={19} /></span>
                       <span className="min-w-0">
-                        <span className="block truncate text-sm font-semibold text-slate-800" title={folder.name}>{folder.name}</span>
-                        <span className="mt-1 block text-[11px] text-slate-500">
+                        <span className="block truncate text-sm font-semibold text-ink" title={folder.name}>{folder.name}</span>
+                        <span className="mt-0.5 block text-[11px] text-ink-3">
                           {stats.files} file{stats.files === 1 ? "" : "s"}, {stats.folders} folder{stats.folders === 1 ? "" : "s"}
                           {searching && folder.parentId ? ` in ${pathOf(folder.parentId).map((item) => item.name).join(" / ")}` : ""}
                         </span>
                       </span>
                     </button>
-                    <button className={btnPlain} type="button" onClick={() => openDialog("folder-rename", folder)}>Rename</button>
-                    <button className={btnDanger} type="button" onClick={() => openDialog("folder-delete", folder)}>Delete</button>
-                  </div>
+                    <div className="flex items-center gap-1.5">
+                      <button className={ICON_BTN} type="button" title="Rename folder" aria-label={`Rename folder ${folder.name}`} onClick={() => openDialog("folder-rename", folder)}><Icon name="edit" size={15} /></button>
+                      <button className={ICON_BTN_DANGER} type="button" title="Delete folder" aria-label={`Delete folder ${folder.name}`} onClick={() => openDialog("folder-delete", folder)}><Icon name="trash" size={15} /></button>
+                    </div>
+                  </li>
                 );
               })}
 
@@ -463,25 +541,36 @@ export default function MaterialsView() {
                 const busy = busyId === material.id;
                 const location = searching && material.folderId ? pathOf(material.folderId).map((item) => item.name).join(" / ") : "";
                 return (
-                  <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200/70 bg-white/60 p-4" key={material.id}>
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600"><Icon name="file" size={19} /></div>
+                  <li className={ROW} key={material.id}>
+                    <span className={`grid size-10 shrink-0 place-items-center rounded-lg border font-mono text-[10px] font-bold ${fileTone(material.name)}`} aria-hidden="true">
+                      {fileExtLabel(material.name)}
+                    </span>
                     <div className="min-w-0 flex-1 basis-48">
-                      <p className="truncate text-sm font-semibold text-slate-800" title={material.name}>{material.name}</p>
-                      <p className="mt-1 text-[11px] text-slate-500">
+                      <p className="truncate text-sm font-semibold text-ink" title={material.name}>{material.name}</p>
+                      <p className="mt-0.5 text-[11px] text-ink-3">
                         {material.category} · {formatSize(material.size)} · {formatDate(material.updatedAt)}{location ? ` · ${location}` : ""}
                       </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {canPreview(material) && <button className={btnPlain} type="button" disabled={busy} onClick={() => void handleOpen(material)}>Open</button>}
-                      <button className={btnSoft} type="button" disabled={busy} onClick={() => void handleDownload(material)}>{busy ? "Working…" : "Download"}</button>
-                      <button className={btnPlain} type="button" onClick={() => openDialog("file-rename", material)}>Rename</button>
-                      <button className={btnPlain} type="button" onClick={() => openDialog("file-move", material)}>Move</button>
-                      <button className={btnDanger} type="button" onClick={() => openDialog("file-delete", material)}>Delete</button>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {canPreview(material) ? (
+                        <button className={`${BTN_GHOST} sm:w-[88px]`} type="button" disabled={busy} onClick={() => void handleOpen(material)}>
+                          <Icon name="external" size={13} /> Open
+                        </button>
+                      ) : (
+                        <span className="hidden w-[88px] sm:block" aria-hidden="true" />
+                      )}
+                      <button className={BTN_SECONDARY} type="button" disabled={busy} onClick={() => void handleDownload(material)}>
+                        <Icon name="download" size={13} /> {busy ? "Working…" : "Download"}
+                      </button>
+                      <span className="mx-0.5 hidden h-5 w-px bg-white/10 sm:block" aria-hidden="true" />
+                      <button className={ICON_BTN} type="button" title="Rename file" aria-label={`Rename ${material.name}`} onClick={() => openDialog("file-rename", material)}><Icon name="edit" size={15} /></button>
+                      <button className={ICON_BTN} type="button" title="Move file" aria-label={`Move ${material.name}`} onClick={() => openDialog("file-move", material)}><Icon name="move" size={15} /></button>
+                      <button className={ICON_BTN_DANGER} type="button" title="Delete file" aria-label={`Delete ${material.name}`} onClick={() => openDialog("file-delete", material)}><Icon name="trash" size={15} /></button>
                     </div>
-                  </div>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           )}
         </article>
       </section>
@@ -495,28 +584,28 @@ export default function MaterialsView() {
         >
           <form onSubmit={submitDialog} className="mt-4 flex flex-col gap-4">
             {(dialogKind === "folder-create" || dialogKind === "folder-rename") && (
-              <label className="flex flex-col gap-2 text-xs font-semibold text-slate-700">
+              <label className={LABEL}>
                 Folder name
-                <input id="material-folder-name" name="folderName" className={inputCls} autoFocus maxLength={80} value={inputValue} onChange={(event) => setInputValue(event.target.value)} />
+                <input id="material-folder-name" name="folderName" className={INPUT} autoFocus maxLength={80} value={inputValue} onChange={(event) => setInputValue(event.target.value)} />
               </label>
             )}
             {dialogKind === "file-rename" && (
-              <label className="flex flex-col gap-2 text-xs font-semibold text-slate-700">
+              <label className={LABEL}>
                 File name{splitName(dialog.target.name).ext ? ` (${splitName(dialog.target.name).ext} is kept)` : ""}
-                <input id="material-file-name" name="fileName" className={inputCls} autoFocus maxLength={140} value={inputValue} onChange={(event) => setInputValue(event.target.value)} />
+                <input id="material-file-name" name="fileName" className={INPUT} autoFocus maxLength={140} value={inputValue} onChange={(event) => setInputValue(event.target.value)} />
               </label>
             )}
             {dialogKind === "file-move" && (
-              <label className="flex flex-col gap-2 text-xs font-semibold text-slate-700">
+              <label className={LABEL}>
                 Move “{dialog.target.name}” to
-                <select id="material-move-target" name="moveTarget" className={inputCls} value={inputValue} onChange={(event) => setInputValue(event.target.value)}>
+                <select id="material-move-target" name="moveTarget" className={INPUT} value={inputValue} onChange={(event) => setInputValue(event.target.value)}>
                   <option value="">Materials (main folder)</option>
                   {moveOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
                 </select>
               </label>
             )}
             {dialogKind === "file-delete" && (
-              <p className="text-sm text-slate-600">Delete “{dialog.target.name}”? This cannot be undone.</p>
+              <p className="text-sm leading-6 text-ink-2">Delete <span className="font-semibold text-ink">“{dialog.target.name}”</span>? This cannot be undone.</p>
             )}
             {dialogKind === "folder-delete" && (() => {
               const ids = new Set([dialog.target.id]);
@@ -529,21 +618,17 @@ export default function MaterialsView() {
               }
               const fileCount = materials.filter((material) => material.folderId && ids.has(material.folderId)).length;
               return (
-                <p className="text-sm text-slate-600">
-                  Delete “{dialog.target.name}”? This also deletes {ids.size - 1} subfolder{ids.size - 1 === 1 ? "" : "s"} and {fileCount} file{fileCount === 1 ? "" : "s"} inside it. This cannot be undone.
+                <p className="text-sm leading-6 text-ink-2">
+                  Delete <span className="font-semibold text-ink">“{dialog.target.name}”</span>? This also deletes {ids.size - 1} subfolder{ids.size - 1 === 1 ? "" : "s"} and {fileCount} file{fileCount === 1 ? "" : "s"} inside it. This cannot be undone.
                 </p>
               );
             })()}
 
-            {dialogError && <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-600" role="alert">{dialogError}</p>}
+            {dialogError && <p className={`rounded-lg border px-3 py-2.5 text-xs font-medium ${STATUS_TONES.error}`} role="alert">{dialogError}</p>}
 
-            <div className="flex justify-end gap-2">
-              <button type="button" className={btnPlain} onClick={closeDialog} disabled={dialogBusy}>Cancel</button>
-              <button
-                type="submit"
-                disabled={dialogBusy}
-                className={`rounded-xl px-4 py-2 text-xs font-semibold text-white transition disabled:opacity-60 ${dialogKind?.endsWith("delete") ? "bg-rose-600 hover:bg-rose-500" : "bg-indigo-600 hover:bg-indigo-500"}`}
-              >
+            <div className="flex justify-end gap-2 border-t border-white/5 pt-4">
+              <button type="button" className={`${BTN_GHOST} px-4 py-2.5`} onClick={closeDialog} disabled={dialogBusy}>Cancel</button>
+              <button type="submit" disabled={dialogBusy} className={isDeleteDialog ? BTN_DANGER : BTN_PRIMARY}>
                 {dialogBusy
                   ? "Working…"
                   : { "folder-create": "Create folder", "folder-rename": "Save name", "folder-delete": "Delete folder", "file-rename": "Save name", "file-move": "Move file", "file-delete": "Delete file" }[dialogKind]}

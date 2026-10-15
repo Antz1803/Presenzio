@@ -1,14 +1,5 @@
 import { useState } from "react";
 
-const PRINT_OPTIONS = [
-  ["prelim", "Print Prelim"],
-  ["midterm", "Print Midterm"],
-  ["semifinal", "Print Semi-Final"],
-  ["final", "Print Final"],
-  ["summary", "Print Summary"],
-  ["monthly-attendance", "Print Monthly Attendance"],
-];
-
 const ACTIONS = [
   ["attendance", "Take Attendance"],
   ["attendance-list", "Attendance List"],
@@ -28,7 +19,6 @@ export default function ClassOptionsModal({
   section,
   onClose,
   onOpenAction,
-  onOpenPrint,
   onOpenStudentView,
   onSyncToExcel,
   syncReady,
@@ -37,6 +27,7 @@ export default function ClassOptionsModal({
 
   const handleSync = async () => {
     setSyncing(true);
+
     try {
       await onSyncToExcel();
       onClose();
@@ -51,7 +42,9 @@ export default function ClassOptionsModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/70 p-4 backdrop-blur-xl print:hidden"
-      onMouseDown={(e) => e.target === e.currentTarget && !syncing && onClose()}
+      onMouseDown={(e) =>
+        e.target === e.currentTarget && !syncing && onClose()
+      }
     >
       <section
         className="max-h-[calc(100vh-2rem)] w-full max-w-md overflow-y-auto rounded-xl border border-accent/35 border-b-accent-2/20 bg-surface-3 p-6 shadow-modal"
@@ -59,35 +52,44 @@ export default function ClassOptionsModal({
         aria-modal="true"
         aria-labelledby="class-options-title"
       >
+        {/* Header */}
         <div className="mb-5 flex items-center justify-between border-b border-white/5 pb-4">
           <h2
             id="class-options-title"
             className="font-mono text-xs font-bold uppercase tracking-wider text-accent"
           >
-            Class options
+            Class Options
           </h2>
+
           <button
             type="button"
             onClick={onClose}
             disabled={syncing}
             aria-label="Close class options"
-            className="grid size-8 place-items-center rounded-full text-lg text-ink-3 transition hover:bg-surface-2 hover:text-accent"
+            className="grid size-8 place-items-center rounded-full text-lg text-ink-3 transition hover:bg-surface-2 hover:text-accent disabled:opacity-50"
           >
             ×
           </button>
         </div>
 
         <div className="flex flex-col gap-2.5">
-          <div className="mb-1 rounded-lg border border-white/5 bg-surface-1 p-3.5">
+          {/* Class Information */}
+          <div className="mb-2 rounded-lg border border-white/5 bg-surface-1 p-3.5">
             <h3 className="font-display text-sm font-semibold text-ink">
               {section?.subject_code || "Class"} -{" "}
               {section?.subject_title || "Class subject"}
             </h3>
+
             <p className="mt-0.5 font-mono text-xs text-ink-2">
               {section?.days || "Schedule not set"} ·{" "}
               {section?.room || "Room not set"}
             </p>
           </div>
+
+          {/* Class Actions */}
+          <p className="mb-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-ink-3">
+            Class Actions
+          </p>
 
           {ACTIONS.map(([id, label]) => (
             <button
@@ -101,46 +103,36 @@ export default function ClassOptionsModal({
             </button>
           ))}
 
-          <p className="mb-0.5 mt-2 font-mono text-[10px] font-bold uppercase tracking-wider text-ink-3">
-            Print records
-          </p>
-          {PRINT_OPTIONS.map(([id, label]) => (
+          {/* Student View */}
+          <div className="mt-3 border-t border-white/10 pt-3">
             <button
               type="button"
-              key={id}
               className={OPTION}
               disabled={syncing}
-              onClick={() => onOpenPrint(id, section.id)}
+              onClick={() => {
+                onClose();
+                onOpenStudentView(section);
+              }}
             >
-              {label}
+              Open Student View
             </button>
-          ))}
+          </div>
 
-          <button
-            type="button"
-            className={`${OPTION} mt-1`}
-            disabled={syncing}
-            onClick={() => {
-              onClose();
-              onOpenStudentView(section);
-            }}
-          >
-            Open Student View
-          </button>
-
+          {/* Excel Synchronization */}
           <button
             type="button"
             disabled={!syncReady || syncing}
             onClick={handleSync}
-            className="block w-full rounded bg-accent px-4 py-2.5 text-left font-mono text-xs font-bold uppercase tracking-wider text-canvas transition hover:shadow-halo disabled:cursor-not-allowed disabled:opacity-60"
+            className="block w-full rounded-lg bg-accent px-4 py-3 text-left font-mono text-xs font-bold uppercase tracking-wider text-canvas transition hover:shadow-halo disabled:cursor-not-allowed disabled:opacity-60"
           >
             {syncing
-              ? "Syncing to Excel…"
+              ? "Syncing to Excel..."
               : syncReady
                 ? "Sync to Excel"
                 : "Loading class data..."}
           </button>
 
+          {/* Add Student */}
           <button
             type="button"
             className={OPTION}

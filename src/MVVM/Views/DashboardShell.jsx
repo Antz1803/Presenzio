@@ -160,7 +160,11 @@ export default function DashboardShell() {
           onUpdateClass={e.updateSection}
         />
       ) : routeActive === "reports" ? (
-        <Z />
+        <Z
+          sections={e.sections}
+          section={i}
+          onOpenPrint={E}
+        />
       ) : routeActive === "materials" ? (
         <MaterialsView />
       ) : (

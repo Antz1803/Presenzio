@@ -1,8 +1,16 @@
 import { useState } from "react";
 import { useAuth } from "./useAuth";
+import { Icon } from "../MVVM/Views/DashboardShared";
 
-const inputClass =
-  "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10";
+const FOCUS = "focus-visible:outline-accent!";
+const INPUT =
+  "w-full rounded border border-ink-3/30 bg-surface-1 px-3 py-2.5 font-sans! text-sm font-normal normal-case tracking-normal text-ink placeholder:text-ink-3 transition focus:border-accent focus:shadow-focus focus:outline-none disabled:opacity-50";
+const LABEL =
+  "flex flex-col gap-1.5 font-mono text-[11px] uppercase tracking-wider text-ink-3";
+const HINT = "font-sans text-[11px] font-normal normal-case tracking-normal text-ink-3";
+const SECTION_TITLE = "font-display text-sm font-semibold tracking-tight text-ink";
+const BTN_PRIMARY = `inline-flex items-center justify-center gap-2 rounded bg-accent px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-canvas transition hover:shadow-halo active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`;
+const BTN_GHOST = `inline-flex items-center justify-center gap-2 rounded border border-white/10 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-ink-2 transition hover:border-accent/40 hover:text-accent disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`;
 
 export default function ProfileDetailsModal({ onClose }) {
   const { user, updateProfile, updateInstructorProfile } = useAuth();
@@ -125,79 +133,88 @@ export default function ProfileDetailsModal({ onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm print:hidden"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/70 p-4 backdrop-blur-xl print:hidden"
       onMouseDown={(event) =>
         event.target === event.currentTarget && !saving && onClose()
       }
     >
       <section
-        className="max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"
+        className="max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-xl border border-accent/35 border-b-accent-2/20 bg-surface-3 p-6 shadow-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="profile-details-title"
       >
-        <div className="mb-5 flex items-start justify-between border-b border-slate-100 pb-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">
-              Account Settings
-            </p>
-            <h2
-              id="profile-details-title"
-              className="mt-1 text-lg font-bold text-slate-900"
-            >
-              Edit Profile Details
-            </h2>
-            <p className="mt-0.5 text-xs text-slate-500">
-              Update your teacher account information.
-            </p>
+        <div className="mb-5 flex items-start justify-between gap-3 border-b border-white/5 pb-4">
+          <div className="flex items-start gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-linear-to-br from-accent via-sky-600 to-[#0D82FF] text-canvas shadow-lg shadow-accent/30">
+              <Icon name="settings" size={20} />
+            </span>
+            <div>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-accent">
+                Account settings
+              </p>
+              <h2
+                id="profile-details-title"
+                className="font-display text-lg font-semibold tracking-tight text-ink"
+              >
+                Edit profile details
+              </h2>
+              <p className="mt-0.5 text-xs text-ink-2">
+                Update your teacher account information.
+              </p>
+            </div>
           </div>
           <button
-            className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            className={`grid size-8 shrink-0 place-items-center rounded-full text-ink-3 transition hover:bg-surface-2 hover:text-accent disabled:opacity-50 ${FOCUS}`}
             type="button"
             onClick={onClose}
             disabled={saving}
             aria-label="Close profile details"
           >
-            ×
+            <Icon name="x" size={16} />
           </button>
         </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <label className="block text-xs font-bold text-slate-600">
-            Full name
-            <input
-              className={inputClass}
-              type="text"
-              name="fullName"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              autoComplete="name"
-              disabled={saving}
-              required
-            />
-          </label>
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          {/* Profile */}
+          <div className="space-y-4">
+            <label className={LABEL}>
+              Full name
+              <input
+                className={INPUT}
+                type="text"
+                name="fullName"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                autoComplete="name"
+                disabled={saving}
+                required
+              />
+            </label>
 
-          <label className="block text-xs font-bold text-slate-600">
-            Email address
-            <input
-              className={inputClass}
-              type="email"
-              name="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
-              disabled={saving}
-              required
-            />
-            <span className="mt-1.5 block text-[11px] font-normal text-slate-400">
-              Changing your email sends a verification link to the new address.
-              The change applies after you click it.
-            </span>
-          </label>
+            <label className={LABEL}>
+              Email address
+              <input
+                className={INPUT}
+                type="email"
+                name="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
+                disabled={saving}
+                required
+              />
+              <span className={HINT}>
+                Changing your email sends a verification link to the new
+                address. The change applies after you click it.
+              </span>
+            </label>
+          </div>
 
-          <div className="border-t border-slate-100 pt-4">
-            <p className="text-xs font-bold text-slate-600">Printing logos</p>
-            <p className="mt-1 text-[11px] font-normal text-slate-400">
+          {/* Printing logos */}
+          <div className="border-t border-white/5 pt-5">
+            <p className={SECTION_TITLE}>Printing logos</p>
+            <p className={`${HINT} mt-1`}>
               Upload PNG logos for the left and right sides of printed reports.
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -215,9 +232,10 @@ export default function ProfileDetailsModal({ onClose }) {
               ].map((logo) => (
                 <div
                   key={logo.label}
-                  className="rounded-xl border border-slate-200 bg-slate-50 p-3"
+                  className="rounded-lg border border-white/5 bg-surface-1 p-3"
                 >
-                  <div className="mb-2 flex h-20 items-center justify-center rounded-lg bg-white p-2">
+                  {/* Reports print on white paper, so preview logos on white. */}
+                  <div className="mb-3 flex h-20 items-center justify-center rounded border border-white/10 bg-white p-2">
                     {logo.value ? (
                       <img
                         src={logo.value}
@@ -228,11 +246,14 @@ export default function ProfileDetailsModal({ onClose }) {
                       <span className="text-[11px] text-slate-400">Not set</span>
                     )}
                   </div>
-                  <p className="text-[11px] font-bold text-slate-600">{logo.label}</p>
+                  <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-ink-2">
+                    {logo.label}
+                  </p>
                   <input
-                    className="mt-2 block w-full text-[11px] text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-100 file:px-2.5 file:py-1.5 file:font-semibold file:text-indigo-700 hover:file:bg-indigo-200"
+                    className="mt-2 block w-full text-[11px] text-ink-3 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-accent/15 file:px-2.5 file:py-1.5 file:font-mono file:text-[11px] file:font-bold file:text-accent hover:file:bg-accent/25"
                     type="file"
                     accept="image/png"
+                    aria-label={`Upload ${logo.label.toLowerCase()}`}
                     onChange={(event) =>
                       handleLogoUpload(event, logo.setValue, logo.label)
                     }
@@ -240,7 +261,7 @@ export default function ProfileDetailsModal({ onClose }) {
                   />
                   {logo.value && (
                     <button
-                      className="mt-2 text-[11px] font-semibold text-rose-600 hover:text-rose-700"
+                      className={`mt-2 rounded text-[11px] font-semibold text-rose-300 transition hover:text-rose-200 ${FOCUS}`}
                       type="button"
                       onClick={() => logo.setValue("")}
                       disabled={saving}
@@ -253,82 +274,89 @@ export default function ProfileDetailsModal({ onClose }) {
             </div>
           </div>
 
-          <div className="border-t border-slate-100 pt-4">
-            <p className="text-xs font-bold text-slate-600">Change password</p>
-            <p className="mt-1 text-[11px] text-slate-400">
-              Leave these fields blank to keep your current password.
-            </p>
+          {/* Password */}
+          <div className="space-y-4 border-t border-white/5 pt-5">
+            <div>
+              <p className={SECTION_TITLE}>Change password</p>
+              <p className={`${HINT} mt-1`}>
+                Leave these fields blank to keep your current password.
+              </p>
+            </div>
+
+            <label className={LABEL}>
+              Current password
+              <input
+                className={INPUT}
+                type="password"
+                name="currentPassword"
+                value={currentPassword}
+                onChange={(event) => setCurrentPassword(event.target.value)}
+                autoComplete="current-password"
+                disabled={saving}
+              />
+              <span className={HINT}>
+                Required only when changing your email or password.
+              </span>
+            </label>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className={LABEL}>
+                New password
+                <input
+                  className={INPUT}
+                  type="password"
+                  name="newPassword"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="new-password"
+                  disabled={saving}
+                  minLength={6}
+                />
+              </label>
+
+              <label className={LABEL}>
+                Confirm new password
+                <input
+                  className={INPUT}
+                  type="password"
+                  name="confirmPassword"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  autoComplete="new-password"
+                  disabled={saving}
+                  minLength={6}
+                />
+              </label>
+            </div>
           </div>
 
-          <label className="block text-xs font-bold text-slate-600">
-            Current password
-            <input
-              className={inputClass}
-              type="password"
-              name="currentPassword"
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-              autoComplete="current-password"
-              disabled={saving}
-            />
-            <span className="mt-1.5 block text-[11px] font-normal text-slate-400">
-              Required only when changing your email or password.
-            </span>
-          </label>
-
-          <label className="block text-xs font-bold text-slate-600">
-            New password
-            <input
-              className={inputClass}
-              type="password"
-              name="newPassword"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="new-password"
-              disabled={saving}
-              minLength={6}
-            />
-          </label>
-
-          <label className="block text-xs font-bold text-slate-600">
-            Confirm new password
-            <input
-              className={inputClass}
-              type="password"
-              name="confirmPassword"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              autoComplete="new-password"
-              disabled={saving}
-              minLength={6}
-            />
-          </label>
-
           {error && (
-            <p className="rounded-xl bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-600">
+            <p
+              className="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3.5 py-2.5 text-xs font-medium text-rose-300"
+              role="alert"
+            >
               {error}
             </p>
           )}
           {notice && (
-            <p className="rounded-xl bg-emerald-50 px-3.5 py-2.5 text-xs font-medium text-emerald-700">
+            <p
+              className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3.5 py-2.5 text-xs font-medium text-emerald-300"
+              role="status"
+            >
               {notice}
             </p>
           )}
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="sticky -bottom-6 -mx-6 -mb-6 flex justify-end gap-3 border-t border-white/5 bg-surface-3/95 px-6 py-4 backdrop-blur">
             <button
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+              className={BTN_GHOST}
               type="button"
               onClick={onClose}
               disabled={saving}
             >
               Cancel
             </button>
-            <button
-              className="rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
-              type="submit"
-              disabled={saving}
-            >
+            <button className={BTN_PRIMARY} type="submit" disabled={saving}>
               {saving ? "Saving..." : "Save changes"}
             </button>
           </div>
