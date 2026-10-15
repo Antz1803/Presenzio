@@ -13,13 +13,11 @@ const Z = lazy(() => import("./ReportsView"));
 const MaterialsView = lazy(() => import("./MaterialsView"));
 const PrintReportModal = lazy(() => import("./PrintReportModal"));
 import { Icon as G } from "./DashboardShared";
-import {
-  ClassOptionsModal as ClassOptionsModalView,
-  DeleteClassModal as DeleteClassModalView,
-  StudentModal as StudentModalView,
-  LiveClock,
-} from "./DashboardOverlays";
+import ClassOptionsModalView from "./shell/ClassOptionsModal";
+import DeleteClassModalView from "./shell/DeleteClassModal";
+import { StudentModal as StudentModalView } from "./DashboardOverlays";
 import "../../App.css"; // legacy: still used by Classes/Materials/modals until migrated
+import LiveClock from "./shell/LiveClock";
 import { useAuth as ie } from "../../auth/useAuth";
 import { useBranding as useBrandingSettings } from "../../lib/branding";
 import ProfileDetailsModal from "../../auth/ProfileDetailsModal";

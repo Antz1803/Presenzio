@@ -1,168 +1,6 @@
-import React, { useEffect as xe, useMemo as G, useState as d } from "react";
+import React, { useMemo as G, useState as d } from "react";
 import { Icon as be } from "./DashboardShared";
 import { StudentPhotoPicker } from "./classActions/StudentPhotoPicker";
-const fe = [
-  ["prelim", "Print Prelim"],
-  ["midterm", "Print Midterm"],
-  ["semifinal", "Print Semi-Final"],
-  ["final", "Print Final"],
-  ["summary", "Print Summary"],
-  ["monthly-attendance", "Print Monthly Attendance"],
-];
-function ge({
-  section: t,
-  onClose: s,
-  onOpenAction: i,
-  onOpenPrint: r,
-  onOpenStudentView: c,
-  onSyncToExcel: n,
-  syncReady: m,
-}) {
-  const [l, b] = d(!1),
-    g = async () => {
-      b(!0);
-      try {
-        (await n(), s());
-      } catch (u) {
-        (console.error("Excel sync failed:", u),
-          window.alert(u?.message || "Excel synchronization failed."));
-      } finally {
-        b(!1);
-      }
-    },
-    v = [
-      ["attendance", "Take Attendance"],
-      ["attendance-list", "Attendance List"],
-      ["create-assessment", "Create Assessment"],
-      ["manage-assessments", "Manage Assessments"],
-      ["record-score", "Record Score"],
-      ["group-activities", "Group Activities"],
-      ["show-grades", "Show Grades"],
-      ["grade-summary", "Record Summary"],
-      ["grade-settings", "Grade Sheet Settings"],
-    ],
-    f =
-      "block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-50";
-  return React.createElement(
-    "div",
-    {
-      className:
-        "fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm print:hidden",
-      onMouseDown: (u) => u.target === u.currentTarget && !l && s(),
-    },
-    React.createElement(
-      "section",
-      {
-        className:
-          "max-h-[calc(100vh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl",
-        role: "dialog",
-        "aria-modal": "true",
-        "aria-labelledby": "class-options-title",
-      },
-      React.createElement(
-        "div",
-        {
-          className:
-            "mb-5 flex items-center justify-between border-b border-slate-100 pb-4",
-        },
-        React.createElement(
-          "h2",
-          {
-            id: "class-options-title",
-            className:
-              "text-sm font-extrabold uppercase tracking-wide text-slate-800",
-          },
-          "Class Options",
-        ),
-        React.createElement(
-          "button",
-          {
-            className:
-              "flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700",
-            onClick: s,
-            disabled: l,
-            "aria-label": "Close class options",
-          },
-          "\xD7",
-        ),
-      ),
-      React.createElement(
-        "div",
-        { className: "flex flex-col gap-2.5" },
-        React.createElement(
-          "div",
-          { className: "mb-1 rounded-2xl bg-slate-50 p-3.5" },
-          React.createElement(
-            "h3",
-            { className: "text-sm font-bold text-slate-800" },
-            t?.subject_code || "Class",
-            " - ",
-            t?.subject_title || "Class subject",
-          ),
-          React.createElement(
-            "p",
-            { className: "mt-0.5 text-xs text-slate-500" },
-            t?.days || "Schedule not set",
-            " \xB7 ",
-            t?.room || "Room not set",
-          ),
-        ),
-        v.map(([u, N]) =>
-          React.createElement(
-            "button",
-            { className: f, key: u, disabled: l, onClick: () => i(u, t.id) },
-            N,
-          ),
-        ),
-        React.createElement(
-          "p",
-          {
-            className:
-              "mb-0.5 mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400",
-          },
-          "Print Records",
-        ),
-        fe.map(([u, N]) =>
-          React.createElement(
-            "button",
-            { className: f, key: u, disabled: l, onClick: () => r(u, t.id) },
-            N,
-          ),
-        ),
-        React.createElement(
-          "button",
-          {
-            className: `${f} mt-1`,
-            disabled: l,
-            onClick: () => {
-              (s(), c(t));
-            },
-          },
-          "Open Student View",
-        ),
-        React.createElement(
-          "button",
-          {
-            className:
-              "block w-full rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-2.5 text-left text-sm font-semibold text-white shadow-md shadow-indigo-500/20 transition hover:from-indigo-500 hover:to-indigo-600 disabled:cursor-not-allowed disabled:opacity-60",
-            disabled: !m || l,
-            onClick: g,
-          },
-          l
-            ? "Syncing to Excel\u2026"
-            : m
-              ? "Sync to Excel"
-              : "Loading class data...",
-        ),
-        React.createElement(
-          "button",
-          { className: f, disabled: l, onClick: () => i("add-student", t.id) },
-          "Add Student",
-        ),
-      ),
-    ),
-  );
-}
 function he(t) {
   const s = Number(t);
   return Number.isFinite(s)
@@ -498,14 +336,14 @@ function we({
     "div",
     {
       className:
-        "fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm print:hidden",
+        "fixed inset-0 z-50 flex items-center justify-center bg-canvas/70 p-4 backdrop-blur-sm print:hidden",
       onMouseDown: (e) => e.target === e.currentTarget && r(),
     },
     React.createElement(
       "section",
       {
         className:
-          "max-h-[calc(100vh-2rem)] w-full max-w-3xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl",
+          "max-h-[calc(100vh-2rem)] w-full max-w-3xl overflow-y-auto rounded-xl border border-accent/35 border-b-accent-2/20 bg-surface-3 p-6 shadow-modal",
         role: "dialog",
         "aria-modal": "true",
         "aria-labelledby": "student-modal-title",
@@ -514,7 +352,7 @@ function we({
         "div",
         {
           className:
-            "mb-5 flex items-start justify-between border-b border-slate-100 pb-4",
+            "mb-5 flex items-start justify-between border-b border-white/5 pb-4",
         },
         React.createElement(
           "div",
@@ -523,7 +361,7 @@ function we({
             "p",
             {
               className:
-                "text-[10px] font-bold uppercase tracking-wider text-indigo-600",
+                "text-[10px] font-bold uppercase tracking-wider text-accent",
             },
             "Class Students",
           ),
@@ -531,13 +369,13 @@ function we({
             "h2",
             {
               id: "student-modal-title",
-              className: "mt-1 text-lg font-bold text-slate-900",
+              className: "mt-1 text-lg font-bold text-ink",
             },
             t?.subject_code || "Students",
           ),
           React.createElement(
             "p",
-            { className: "mt-0.5 text-xs text-slate-500" },
+            { className: "mt-0.5 text-xs text-ink-2" },
             t?.subject_title || "Students enrolled in this class",
           ),
         ),
@@ -545,7 +383,7 @@ function we({
           "button",
           {
             className:
-              "flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700",
+              "flex h-8 w-8 items-center justify-center rounded-full text-ink-3 transition hover:bg-surface-3 hover:text-ink",
             onClick: r,
             "aria-label": "Close students",
           },
@@ -556,7 +394,7 @@ function we({
         "div",
         {
           className:
-            "mb-5 rounded-2xl border border-slate-200 bg-slate-50/60 p-4",
+            "mb-5 rounded-2xl border border-white/10 bg-surface-2/60 p-4",
         },
         React.createElement(
           "div",
@@ -568,18 +406,18 @@ function we({
               "p",
               {
                 className:
-                  "text-[10px] font-bold uppercase tracking-wider text-slate-500",
+                  "text-[10px] font-bold uppercase tracking-wider text-ink-2",
               },
               "Bulk update",
             ),
             React.createElement(
               "h3",
-              { className: "mt-0.5 text-sm font-bold text-slate-800" },
+              { className: "mt-0.5 text-sm font-bold text-ink" },
               "Update Student IDs by pasting a list",
             ),
             React.createElement(
               "p",
-              { className: "mt-0.5 text-xs text-slate-500" },
+              { className: "mt-0.5 text-xs text-ink-2" },
               "Paste rows of a name and a Student ID (straight from Excel/Sheets works) \u2014 each row is matched to a student here by name, so nothing saves until you review the matches below.",
             ),
           ),
@@ -591,7 +429,7 @@ function we({
               {
                 type: "button",
                 className:
-                  "rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50 disabled:opacity-50",
+                  "rounded-lg border border-accent/40 bg-surface-2 px-3 py-1.5 text-[11px] font-semibold text-accent hover:bg-accent/10 disabled:opacity-50",
                 onClick: copyCurrentStudentData,
                 disabled: !Q.length,
                 title: "Copy current names and Student IDs",
@@ -603,7 +441,7 @@ function we({
               {
                 type: "button",
                 className:
-                  "rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-100",
+                  "rounded-lg border border-white/10 bg-surface-2 px-3 py-1.5 text-[11px] font-semibold text-ink-2 hover:bg-surface-3",
                 onClick: () => ne((e) => !e),
               },
               Y ? "Hide" : "Open",
@@ -617,7 +455,7 @@ function we({
             React.createElement("textarea", {
               rows: "6",
               className:
-                "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-mono text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100",
+                "w-full rounded-xl border border-white/10 bg-surface-1 px-3 py-2 text-xs font-mono text-ink outline-none focus:border-accent focus:shadow-focus",
               placeholder: `ANTIPASO, JEORGE REY M.        2414456
 MANCILLA, JEORGE REY        2414456
 (also works with tabs or a plain comma, with or without a middle initial)`,
@@ -630,7 +468,7 @@ MANCILLA, JEORGE REY        2414456
                 "div",
                 {
                   className:
-                    "mt-3 overflow-x-auto rounded-xl border border-slate-200",
+                    "mt-3 overflow-x-auto rounded-xl border border-white/10",
                 },
                 React.createElement(
                   "table",
@@ -642,7 +480,7 @@ MANCILLA, JEORGE REY        2414456
                       "tr",
                       {
                         className:
-                          "border-b border-slate-200 bg-slate-50 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500",
+                          "border-b border-white/10 bg-surface-2 text-left text-[10px] font-bold uppercase tracking-wide text-ink-2",
                       },
                       React.createElement(
                         "th",
@@ -673,29 +511,29 @@ MANCILLA, JEORGE REY        2414456
                   ),
                   React.createElement(
                     "tbody",
-                    { className: "divide-y divide-slate-100" },
+                    { className: "divide-y divide-white/5" },
                     S.map((e, a) =>
                       React.createElement(
                         "tr",
                         { key: a },
                         React.createElement(
                           "td",
-                          { className: "py-1.5 px-3 text-slate-700" },
+                          { className: "py-1.5 px-3 text-ink" },
                           e.name ||
                             React.createElement(
                               "span",
-                              { className: "text-rose-500" },
+                              { className: "text-rose-400" },
                               "Couldn't parse this line",
                             ),
                         ),
                         React.createElement(
                           "td",
-                          { className: "py-1.5 px-3 text-slate-700" },
+                          { className: "py-1.5 px-3 text-ink" },
                           e.studentId || "\u2014",
                         ),
                         React.createElement(
                           "td",
-                          { className: "py-1.5 px-3 text-slate-700" },
+                          { className: "py-1.5 px-3 text-ink" },
                           e.status === "matched"
                             ? e.student.name
                             : e.status === "ambiguous"
@@ -704,7 +542,7 @@ MANCILLA, JEORGE REY        2414456
                         ),
                         React.createElement(
                           "td",
-                          { className: "py-1.5 px-3 text-slate-500" },
+                          { className: "py-1.5 px-3 text-ink-2" },
                           (e.status === "matched" && e.student.number) ||
                             "\u2014",
                         ),
@@ -715,26 +553,26 @@ MANCILLA, JEORGE REY        2414456
                             React.createElement(
                               "span",
                               {
-                                className: `font-semibold ${e.fuzzy ? "text-amber-600" : "text-emerald-600"}`,
+                                className: `font-semibold ${e.fuzzy ? "text-amber-300" : "text-emerald-400"}`,
                               },
                               e.fuzzy ? "Matched (verify)" : "Matched",
                             ),
                           e.status === "ambiguous" &&
                             React.createElement(
                               "span",
-                              { className: "font-semibold text-amber-600" },
+                              { className: "font-semibold text-amber-300" },
                               "Ambiguous",
                             ),
                           e.status === "unmatched" &&
                             React.createElement(
                               "span",
-                              { className: "font-semibold text-rose-500" },
+                              { className: "font-semibold text-rose-400" },
                               "No match",
                             ),
                           e.status === "unparsed" &&
                             React.createElement(
                               "span",
-                              { className: "font-semibold text-rose-500" },
+                              { className: "font-semibold text-rose-400" },
                               "Unparsed row",
                             ),
                         ),
@@ -747,7 +585,7 @@ MANCILLA, JEORGE REY        2414456
               React.createElement(
                 "p",
                 {
-                  className: `mt-3 rounded-xl px-3 py-2 text-xs ${$.status === "error" ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-700"}`,
+                  className: `mt-3 rounded-xl px-3 py-2 text-xs ${$.status === "error" ? "bg-rose-500/10 text-rose-300" : "bg-emerald-500/10 text-emerald-300"}`,
                   role: "status",
                 },
                 $.text,
@@ -757,7 +595,7 @@ MANCILLA, JEORGE REY        2414456
               { className: "mt-3 flex items-center justify-between" },
               React.createElement(
                 "p",
-                { className: "text-[11px] text-slate-500" },
+                { className: "text-[11px] text-ink-2" },
                 w.length,
                 " of ",
                 S.length,
@@ -770,7 +608,7 @@ MANCILLA, JEORGE REY        2414456
                 {
                   type: "button",
                   className:
-                    "rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60",
+                    "rounded-xl bg-accent px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-canvas hover:shadow-halo disabled:opacity-60",
                   disabled: !w.length || _,
                   onClick: ce,
                 },
@@ -786,7 +624,7 @@ MANCILLA, JEORGE REY        2414456
           "div",
           {
             className:
-              "mb-5 rounded-2xl border border-amber-100 bg-amber-50/40 p-4",
+              "mb-5 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4",
           },
           React.createElement(
             "div",
@@ -798,13 +636,13 @@ MANCILLA, JEORGE REY        2414456
                 "p",
                 {
                   className:
-                    "text-[10px] font-bold uppercase tracking-wider text-amber-600",
+                    "text-[10px] font-bold uppercase tracking-wider text-amber-300",
                 },
                 "Transfer student",
               ),
               React.createElement(
                 "p",
-                { className: "mt-0.5 text-xs text-slate-500" },
+                { className: "mt-0.5 text-xs text-ink-2" },
                 E === "pick"
                   ? `Move ${h.name} to a different class. Scores and grades transfer automatically.`
                   : `Mark ${h.name}'s attendance for the new class's own session dates. Confirming will also permanently remove their attendance from the current class.`,
@@ -815,7 +653,7 @@ MANCILLA, JEORGE REY        2414456
               {
                 type: "button",
                 className:
-                  "text-xs font-semibold text-slate-500 hover:text-slate-800",
+                  "text-xs font-semibold text-ink-2 hover:text-ink",
                 onClick: ee,
                 disabled: T || P,
               },
@@ -834,7 +672,7 @@ MANCILLA, JEORGE REY        2414456
                     "select",
                     {
                       className:
-                        "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 sm:flex-1",
+                        "w-full rounded-xl border border-white/10 bg-surface-1 px-3 py-2 text-sm text-ink outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 sm:flex-1",
                       value: k,
                       onChange: (e) => z(e.target.value),
                       disabled: P,
@@ -860,7 +698,7 @@ MANCILLA, JEORGE REY        2414456
                     {
                       type: "button",
                       className:
-                        "shrink-0 rounded-xl bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-500 disabled:opacity-60",
+                        "shrink-0 rounded-xl bg-amber-400 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-canvas hover:bg-amber-300 disabled:opacity-60",
                       disabled: !k || P,
                       onClick: oe,
                     },
@@ -869,7 +707,7 @@ MANCILLA, JEORGE REY        2414456
                 )
               : React.createElement(
                   "p",
-                  { className: "text-xs text-slate-500" },
+                  { className: "text-xs text-ink-2" },
                   "No other classes are available to transfer this student to.",
                 )),
           E === "review" &&
@@ -881,7 +719,7 @@ MANCILLA, JEORGE REY        2414456
                   "p",
                   {
                     className:
-                      "mb-3 rounded-lg bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-600",
+                      "mb-3 rounded-lg bg-rose-500/10 px-3 py-2 text-[11px] font-semibold text-rose-300",
                   },
                   "This student has ",
                   L,
@@ -892,26 +730,26 @@ MANCILLA, JEORGE REY        2414456
               W.length === 0
                 ? React.createElement(
                     "p",
-                    { className: "text-xs text-slate-500" },
+                    { className: "text-xs text-ink-2" },
                     "The new class has no recorded sessions yet \u2014 nothing to mark. You can still confirm the transfer; attendance can be taken normally once sessions exist there.",
                   )
                 : React.createElement(
                     "div",
                     {
                       className:
-                        "max-h-72 overflow-y-auto rounded-xl border border-slate-200",
+                        "max-h-72 overflow-y-auto rounded-xl border border-white/10",
                     },
                     React.createElement(
                       "table",
                       { className: "w-full border-collapse text-xs" },
                       React.createElement(
                         "thead",
-                        { className: "sticky top-0 bg-slate-50" },
+                        { className: "sticky top-0 bg-surface-2" },
                         React.createElement(
                           "tr",
                           {
                             className:
-                              "border-b border-slate-200 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500",
+                              "border-b border-white/10 text-left text-[10px] font-bold uppercase tracking-wide text-ink-2",
                           },
                           React.createElement(
                             "th",
@@ -927,14 +765,14 @@ MANCILLA, JEORGE REY        2414456
                       ),
                       React.createElement(
                         "tbody",
-                        { className: "divide-y divide-slate-100" },
+                        { className: "divide-y divide-white/5" },
                         W.map((e) =>
                           React.createElement(
                             "tr",
                             { key: e.id },
                             React.createElement(
                               "td",
-                              { className: "py-1.5 px-3 text-slate-700" },
+                              { className: "py-1.5 px-3 text-ink" },
                               e.date,
                               e.time ? ` \xB7 ${e.time}` : "",
                             ),
@@ -945,7 +783,7 @@ MANCILLA, JEORGE REY        2414456
                                 "select",
                                 {
                                   className:
-                                    "rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs",
+                                    "rounded-lg border border-white/10 bg-surface-2 px-2 py-1 text-xs",
                                   value: Z[e.id] ?? "",
                                   disabled: T,
                                   onChange: (a) => de(e.id, a.target.value),
@@ -985,7 +823,7 @@ MANCILLA, JEORGE REY        2414456
                   {
                     type: "button",
                     className:
-                      "text-xs font-semibold text-slate-500 hover:text-slate-800",
+                      "text-xs font-semibold text-ink-2 hover:text-ink",
                     onClick: re,
                     disabled: T,
                   },
@@ -996,7 +834,7 @@ MANCILLA, JEORGE REY        2414456
                   {
                     type: "button",
                     className:
-                      "shrink-0 rounded-xl bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-500 disabled:opacity-60",
+                      "shrink-0 rounded-xl bg-amber-400 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-canvas hover:bg-amber-300 disabled:opacity-60",
                     disabled: T,
                     onClick: ie,
                   },
@@ -1008,7 +846,7 @@ MANCILLA, JEORGE REY        2414456
             React.createElement(
               "p",
               {
-                className: `mt-3 rounded-xl px-3 py-2 text-xs ${R.status === "error" ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-700"}`,
+                className: `mt-3 rounded-xl px-3 py-2 text-xs ${R.status === "error" ? "bg-rose-500/10 text-rose-300" : "bg-emerald-500/10 text-emerald-300"}`,
                 role: "status",
               },
               R.text,
@@ -1020,7 +858,7 @@ MANCILLA, JEORGE REY        2414456
           "form",
           {
             className:
-              "mb-5 rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4",
+              "mb-5 rounded-2xl border border-accent/20 bg-accent/5 p-4",
             onSubmit: pe,
           },
           React.createElement(
@@ -1033,13 +871,13 @@ MANCILLA, JEORGE REY        2414456
                 "p",
                 {
                   className:
-                    "text-[10px] font-bold uppercase tracking-wider text-indigo-600",
+                    "text-[10px] font-bold uppercase tracking-wider text-accent",
                 },
                 "Edit student profile",
               ),
               React.createElement(
                 "p",
-                { className: "mt-0.5 text-xs text-slate-500" },
+                { className: "mt-0.5 text-xs text-ink-2" },
                 "Update the complete record for ",
                 l.name,
                 ".",
@@ -1050,7 +888,7 @@ MANCILLA, JEORGE REY        2414456
               {
                 type: "button",
                 className:
-                  "text-xs font-semibold text-slate-500 hover:text-slate-800",
+                  "text-xs font-semibold text-ink-2 hover:text-ink",
                 onClick: () => {
                   (b(null), v(null));
                 },
@@ -1061,7 +899,7 @@ MANCILLA, JEORGE REY        2414456
           React.createElement(
             "div",
             { className: "mb-4" },
-            React.createElement("p", { className: "mb-2 text-xs font-semibold text-slate-600" }, "Profile photo"),
+            React.createElement("p", { className: "mb-2 text-xs font-semibold text-ink-2" }, "Profile photo"),
             React.createElement(StudentPhotoPicker, {
               value: g.photo_url,
               onChange: (photo) => B("photo_url", photo),
@@ -1081,7 +919,7 @@ MANCILLA, JEORGE REY        2414456
             ].map(([e, a]) =>
               React.createElement(
                 "label",
-                { className: "text-xs font-semibold text-slate-600", key: e },
+                { className: "text-xs font-semibold text-ink-2", key: e },
                 a,
                 React.createElement("input", {
                   name: e,
@@ -1091,13 +929,13 @@ MANCILLA, JEORGE REY        2414456
                   disabled: f,
                   required: e === "full_name",
                   className:
-                    "mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100",
+                    "mt-1 w-full rounded-xl border border-white/10 bg-surface-1 px-3 py-2 text-sm font-normal text-ink outline-none focus:border-accent focus:shadow-focus",
                 }),
               ),
             ),
             React.createElement(
               "label",
-              { className: "text-xs font-semibold text-slate-600" },
+              { className: "text-xs font-semibold text-ink-2" },
               "Gender",
               React.createElement(
                 "select",
@@ -1107,7 +945,7 @@ MANCILLA, JEORGE REY        2414456
                   onChange: (e) => B("gender", e.target.value),
                   disabled: f,
                   className:
-                    "mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100",
+                    "mt-1 w-full rounded-xl border border-white/10 bg-surface-1 px-3 py-2 text-sm font-normal text-ink outline-none focus:border-accent focus:shadow-focus",
                 },
                 React.createElement("option", { value: "" }, "Select"),
                 React.createElement("option", { value: "M" }, "Male"),
@@ -1119,7 +957,7 @@ MANCILLA, JEORGE REY        2414456
             React.createElement(
               "p",
               {
-                className: `mt-3 rounded-xl px-3 py-2 text-xs ${N.status === "error" ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-700"}`,
+                className: `mt-3 rounded-xl px-3 py-2 text-xs ${N.status === "error" ? "bg-rose-500/10 text-rose-300" : "bg-emerald-500/10 text-emerald-300"}`,
                 role: "status",
               },
               N.text,
@@ -1133,7 +971,7 @@ MANCILLA, JEORGE REY        2414456
                 type: "submit",
                 disabled: f,
                 className:
-                  "rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60",
+                  "rounded-xl bg-accent px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-canvas hover:shadow-halo disabled:opacity-60",
               },
               f ? "Saving..." : "Save student",
             ),
@@ -1152,7 +990,7 @@ MANCILLA, JEORGE REY        2414456
               "tr",
               {
                 className:
-                  "border-b border-slate-200 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500",
+                  "border-b border-white/10 text-left text-[10px] font-bold uppercase tracking-wide text-ink-2",
               },
               React.createElement("th", { className: "py-2 pr-3" }, "#"),
               React.createElement(
@@ -1177,29 +1015,29 @@ MANCILLA, JEORGE REY        2414456
           ),
           React.createElement(
             "tbody",
-            { className: "divide-y divide-slate-100" },
+            { className: "divide-y divide-white/5" },
             Q.map((e, a) =>
               React.createElement(
                 "tr",
                 { key: e.id },
                 React.createElement(
                   "td",
-                  { className: "py-2 pr-3 text-slate-500" },
+                  { className: "py-2 pr-3 text-ink-2" },
                   a + 1,
                 ),
                 React.createElement(
                   "td",
-                  { className: "py-2 pr-3 text-slate-700" },
+                  { className: "py-2 pr-3 text-ink" },
                   e.number,
                 ),
                 React.createElement(
                   "td",
-                  { className: "py-2 pr-3 font-medium text-slate-800" },
+                  { className: "py-2 pr-3 font-medium text-ink" },
                   e.name,
                 ),
                 React.createElement(
                   "td",
-                  { className: "py-2 pr-3 text-slate-600" },
+                  { className: "py-2 pr-3 text-ink-2" },
                   e.gender === "F"
                     ? "Female"
                     : e.gender === "M"
@@ -1208,13 +1046,13 @@ MANCILLA, JEORGE REY        2414456
                 ),
                 React.createElement(
                   "td",
-                  { className: "py-2 pr-3 text-slate-600" },
+                  { className: "py-2 pr-3 text-ink-2" },
                   e.attendance,
                   "%",
                 ),
                 React.createElement(
                   "td",
-                  { className: "py-2 pr-3 text-slate-600" },
+                  { className: "py-2 pr-3 text-ink-2" },
                   he(e.grade),
                 ),
                 React.createElement(
@@ -1228,7 +1066,7 @@ MANCILLA, JEORGE REY        2414456
                       {
                         type: "button",
                         className:
-                          "rounded-lg border border-indigo-200 px-2.5 py-1 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50",
+                          "rounded-lg border border-accent/40 px-2.5 py-1 text-[11px] font-semibold text-accent hover:bg-accent/10",
                         onClick: () => me(e),
                       },
                       "Edit",
@@ -1239,7 +1077,7 @@ MANCILLA, JEORGE REY        2414456
                         {
                           type: "button",
                           className:
-                            "rounded-lg border border-amber-200 px-2.5 py-1 text-[11px] font-semibold text-amber-600 hover:bg-amber-50",
+                            "rounded-lg border border-amber-400/30 px-2.5 py-1 text-[11px] font-semibold text-amber-300 hover:bg-amber-400/10",
                           onClick: () => le(e),
                         },
                         "Transfer",
@@ -1250,7 +1088,7 @@ MANCILLA, JEORGE REY        2414456
                         {
                           type: "button",
                           className:
-                            "rounded-lg border border-rose-200 px-2.5 py-1 text-[11px] font-semibold text-rose-600 hover:bg-rose-50",
+                            "rounded-lg border border-rose-400/30 px-2.5 py-1 text-[11px] font-semibold text-rose-300 hover:bg-rose-500/10",
                           onClick: () => confirmDeleteStudent(e),
                         },
                         "Remove",
@@ -1264,7 +1102,7 @@ MANCILLA, JEORGE REY        2414456
         !Q.length &&
           React.createElement(
             "div",
-            { className: "py-10 text-center text-sm text-slate-500" },
+            { className: "py-10 text-center text-sm text-ink-2" },
             "No students have been imported for this class.",
           ),
       ),
@@ -1274,7 +1112,7 @@ MANCILLA, JEORGE REY        2414456
         "div",
         {
           className:
-            "fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm print:hidden",
+            "fixed inset-0 z-[60] flex items-center justify-center bg-canvas/70 p-4 backdrop-blur-sm print:hidden",
           onMouseDown: (e) =>
             e.target === e.currentTarget && cancelDeleteStudent(),
         },
@@ -1282,7 +1120,7 @@ MANCILLA, JEORGE REY        2414456
           "section",
           {
             className:
-              "w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-2xl",
+              "w-full max-w-sm rounded-xl border border-accent/35 border-b-accent-2/20 bg-surface-3 p-6 text-center shadow-modal",
             role: "alertdialog",
             "aria-modal": "true",
             "aria-labelledby": "remove-student-title",
@@ -1291,7 +1129,7 @@ MANCILLA, JEORGE REY        2414456
             "div",
             {
               className:
-                "mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-50 text-rose-500",
+                "mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-500/10 text-rose-400",
             },
             React.createElement(be, { name: "trash", size: 22 }),
           ),
@@ -1299,7 +1137,7 @@ MANCILLA, JEORGE REY        2414456
             "p",
             {
               className:
-                "text-[10px] font-bold uppercase tracking-wider text-rose-500",
+                "text-[10px] font-bold uppercase tracking-wider text-rose-400",
             },
             "Permanent Action",
           ),
@@ -1307,13 +1145,13 @@ MANCILLA, JEORGE REY        2414456
             "h2",
             {
               id: "remove-student-title",
-              className: "mt-1 text-lg font-bold text-slate-900",
+              className: "mt-1 text-lg font-bold text-ink",
             },
             "Remove this student?",
           ),
           React.createElement(
             "p",
-            { className: "mt-2 text-sm text-slate-500" },
+            { className: "mt-2 text-sm text-ink-2" },
             "Remove ",
             React.createElement(
               "strong",
@@ -1324,13 +1162,13 @@ MANCILLA, JEORGE REY        2414456
           ),
           React.createElement(
             "p",
-            { className: "mt-1 text-xs font-medium text-slate-400" },
+            { className: "mt-1 text-xs font-medium text-ink-3" },
             "This cannot be undone.",
           ),
           deleteStudentError &&
             React.createElement(
               "p",
-              { className: "mt-3 text-xs font-medium text-rose-600" },
+              { className: "mt-3 text-xs font-medium text-rose-300" },
               deleteStudentError,
             ),
           React.createElement(
@@ -1341,7 +1179,7 @@ MANCILLA, JEORGE REY        2414456
               {
                 type: "button",
                 className:
-                  "rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50",
+                  "rounded-xl border border-white/10 bg-surface-2 px-4 py-2 text-xs font-semibold text-ink-2 transition hover:bg-surface-3",
                 onClick: cancelDeleteStudent,
                 disabled: isDeletingStudent,
               },
@@ -1352,7 +1190,7 @@ MANCILLA, JEORGE REY        2414456
               {
                 type: "button",
                 className:
-                  "rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-500 disabled:opacity-60",
+                  "rounded-xl bg-rose-500 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:bg-rose-400 disabled:opacity-60",
                 onClick: performDeleteStudent,
                 disabled: isDeletingStudent,
               },
@@ -1363,134 +1201,4 @@ MANCILLA, JEORGE REY        2414456
       ),
   );
 }
-function ke({ section: t, deleting: s, error: i, onClose: r, onConfirm: c }) {
-  return React.createElement(
-    "div",
-    {
-      className:
-        "fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm print:hidden",
-      onMouseDown: (n) => n.target === n.currentTarget && !s && r(),
-    },
-    React.createElement(
-      "section",
-      {
-        className:
-          "w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-2xl",
-        role: "alertdialog",
-        "aria-modal": "true",
-      },
-      React.createElement(
-        "div",
-        {
-          className:
-            "mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-50 text-rose-500",
-        },
-        React.createElement(be, { name: "trash", size: 22 }),
-      ),
-      React.createElement(
-        "p",
-        {
-          className:
-            "text-[10px] font-bold uppercase tracking-wider text-rose-500",
-        },
-        "Permanent Action",
-      ),
-      React.createElement(
-        "h2",
-        { className: "mt-1 text-lg font-bold text-slate-900" },
-        "Delete this class?",
-      ),
-      React.createElement(
-        "p",
-        { className: "mt-2 text-sm text-slate-500" },
-        "This will delete ",
-        React.createElement("strong", null, t?.subject_code || "this class"),
-        ", including its students, scores, grades, and attendance records.",
-      ),
-      i &&
-        React.createElement(
-          "p",
-          { className: "mt-3 text-xs font-medium text-rose-600" },
-          i,
-        ),
-      React.createElement(
-        "div",
-        { className: "mt-6 flex justify-center gap-3" },
-        React.createElement(
-          "button",
-          {
-            className:
-              "rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50",
-            onClick: r,
-            disabled: s,
-          },
-          "Cancel",
-        ),
-        React.createElement(
-          "button",
-          {
-            className:
-              "rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-500 disabled:opacity-60",
-            onClick: c,
-            disabled: s,
-          },
-          s ? "Deleting\u2026" : "Delete class",
-        ),
-      ),
-    ),
-  );
-}
-function Se() {
-  const [t, s] = d(() => new Date());
-  xe(() => {
-    const c = setInterval(() => s(new Date()), 1e3);
-    return () => clearInterval(c);
-  }, []);
-  const i = t.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    }),
-    r = t.toLocaleDateString([], {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    });
-  return React.createElement(
-    "div",
-    {
-      className:
-        "hidden sm:flex items-center gap-2.5 pl-3 pr-4 py-1.5 rounded-full bg-slate-900 text-white",
-    },
-    React.createElement(
-      "span",
-      { className: "relative flex h-2 w-2" },
-      React.createElement("span", {
-        className:
-          "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75",
-      }),
-      React.createElement("span", {
-        className: "relative inline-flex rounded-full h-2 w-2 bg-emerald-400",
-      }),
-    ),
-    React.createElement(
-      "span",
-      {
-        className: "text-xs font-mono font-semibold tracking-wide tabular-nums",
-      },
-      i,
-    ),
-    React.createElement("span", { className: "w-px h-3 bg-white/20" }),
-    React.createElement(
-      "span",
-      { className: "text-[11px] font-medium text-slate-300" },
-      r,
-    ),
-  );
-}
-export {
-  ge as ClassOptionsModal,
-  ke as DeleteClassModal,
-  Se as LiveClock,
-  we as StudentModal,
-};
+export { we as StudentModal };
