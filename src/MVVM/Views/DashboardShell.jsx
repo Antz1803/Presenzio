@@ -10,6 +10,7 @@ const Q = lazy(() => import("./ClassActionModal"));
 const X = lazy(() => import("./ClassesView"));
 const Y = lazy(() => import("./OverviewView"));
 const Z = lazy(() => import("./ReportsView"));
+const MaterialsView = lazy(() => import("./MaterialsView"));
 const PrintReportModal = lazy(() => import("./PrintReportModal"));
 import { Avatar as D, Icon as G } from "./DashboardShared";
 import {
@@ -133,7 +134,7 @@ export default function DashboardShell() {
         window.alert(s?.message || "Could not log out.");
       }
     },
-    routeActive = location.pathname.match(/^\/dashboard\/(overview|classes|reports)$/)?.[1] || "overview";
+    routeActive = location.pathname.match(/^\/dashboard\/(overview|classes|reports|materials)$/)?.[1] || "overview";
   useReactEffect(() => {
     if (e.active !== routeActive) e.setActive(routeActive);
   }, [e.active, e.setActive, routeActive]);
@@ -161,6 +162,8 @@ export default function DashboardShell() {
           })
         : routeActive === "reports"
           ? React.createElement(Z, null)
+          : routeActive === "materials"
+            ? React.createElement(MaterialsView, null)
           : React.createElement(Y, {
               setActive: e.setActive,
               instructor: k,

@@ -1,4 +1,4 @@
-import React, { useEffect as V, useRef as W } from "react";
+import React, { useEffect as V, useRef as W, useState } from "react";
 import { ModalShell as r } from "./classActions/ActionModalShell";
 import {
   AttendanceForm as y,
@@ -19,9 +19,17 @@ import {
   titles as s,
   gradePeriods as B,
   getGradeRemark as S,
+  buildPeriodCopyText,
 } from "./classActions/actionUtils";
 import { GroupActivities as H } from "./classActions/GroupActions";
 import { calculateGradesFromRecords } from "../ViewModels/gradeCalculation";
+
+const escapeHtml = (v) =>
+  String(v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
 export default function K({
   type: e,
   section: i,
@@ -71,6 +79,158 @@ export default function K({
     attendanceSessions: d,
     gradingPeriods: m,
   });
+
+  const [copiedPeriod, setCopiedPeriod] = useState("");
+
+  const copyPeriod = async (periodKey) => {
+    const text = buildPeriodCopyText(showGradeStudents, periodKey);
+    if (!text) return;
+
+    const html =
+  "<table>" +
+  text
+    .split("\n")
+    .map((line) => {
+      const [name, grade = ""] = line.split("\t");
+      return `<tr style="height:15pt;mso-height-source:userset"><td style="white-space:nowrap">${escapeHtml(name)}</td><td style="white-space:nowrap;mso-number-format:'0\\.0'">${escapeHtml(grade)}</td></tr>`;
+    })
+    .join("") +
+  "</table>";
+
+    try {
+      if (window.ClipboardItem && navigator.clipboard.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([text], { type: "text/plain" }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(text);
+      }
+      setCopiedPeriod(periodKey);
+    } catch {
+      setCopiedPeriod(`${periodKey}:failed`);
+    }
+    setTimeout(() => setCopiedPeriod(""), 1800);
+  };
+
+  const renderShowGrades = () =>
+    React.createElement(
+      r,
+      { title: s[e], section: i, onClose: t, size: "wide" },
+      React.createElement(
+        "div",
+        { className: "table-wrap grades-table" },
+        React.createElement(
+          "table",
+          null,
+          React.createElement(
+            "thead",
+            null,
+            React.createElement(
+              "tr",
+              null,
+              React.createElement("th", null, "STUDENT"),
+              visibleGradePeriods.map((period) =>
+                React.createElement(
+                  "th",
+                  { key: period.key },
+                  React.createElement(
+                    "div",
+                    {
+                      style: {
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 4,
+                      },
+                    },
+                    React.createElement("span", null, period.label.toUpperCase()),
+                    React.createElement(
+                      "button",
+                      {
+                        type: "button",
+                        className: "outline-button",
+                        style: {
+                          padding: "2px 8px",
+                          fontSize: 10,
+                          textTransform: "none",
+                          letterSpacing: 0,
+                        },
+                        title: `Copy names + ${period.label} grades`,
+                        onClick: () => copyPeriod(period.key),
+                      },
+                      copiedPeriod === period.key
+                        ? "Copied!"
+                        : copiedPeriod === `${period.key}:failed`
+                          ? "Copy failed"
+                          : "Copy",
+                    ),
+                  ),
+                ),
+              ),
+              showRemarks && React.createElement("th", null, "REMARKS"),
+            ),
+          ),
+          React.createElement(
+            "tbody",
+            null,
+            showGradeStudents.map((a) =>
+              React.createElement(
+                "tr",
+                { key: a.id },
+                React.createElement(
+                  "td",
+                  null,
+                  React.createElement(
+                    "div",
+                    { className: "table-student" },
+                    React.createElement(
+                      "span",
+                      { className: "record-avatar" },
+                      a.initials,
+                    ),
+                    React.createElement(
+                      "span",
+                      null,
+                      React.createElement("b", null, a.name),
+                      React.createElement("small", null, a.number),
+                    ),
+                  ),
+                ),
+                visibleGradePeriods.map((v) => {
+                  const f = a.grades?.[v.key];
+                  const hasGrade =
+                    f !== null &&
+                    f !== undefined &&
+                    f !== "" &&
+                    Number.isFinite(Number(f));
+                  return React.createElement(
+                    "td",
+                    { className: "grade-period-cell", key: v.key },
+                    hasGrade ? Number(f).toFixed(1) : "—",
+                  );
+                }),
+                showRemarks &&
+                  React.createElement(
+                    "td",
+                    { className: `grade-remark ${S(a).toLowerCase()}` },
+                    S(a),
+                  ),
+              ),
+            ),
+          ),
+        ),
+        !n.length &&
+          React.createElement(
+            "div",
+            { className: "empty-state" },
+            "No students are enrolled in this class.",
+          ),
+      ),
+    );
+
   return (
     V(() => {
       const a = b.current;
@@ -85,25 +245,21 @@ export default function K({
       ? React.createElement(
           r,
           { title: s[e], section: i, onClose: t },
-          React.createElement(
-            "div",
-            { className: "empty-state" },
-            "Loading class data…",
-          ),
+          React.createElement("div", { className: "empty-state" }, "Loading class data…"),
         )
       : e === "attendance"
-      ? React.createElement(
-          r,
-          { title: s[e], section: i, onClose: t },
-          React.createElement(y, {
-            section: i,
-            students: n,
-            attendanceSessions: d,
-            onSave: A,
-            onDelete: J,
-            onClose: t,
-          }),
-        )
+        ? React.createElement(
+            r,
+            { title: s[e], section: i, onClose: t },
+            React.createElement(y, {
+              section: i,
+              students: n,
+              attendanceSessions: d,
+              onSave: A,
+              onDelete: J,
+              onClose: t,
+            }),
+          )
         : e === "record-score"
           ? React.createElement(
               r,
@@ -183,21 +339,13 @@ export default function K({
                                 "strong",
                                 null,
                                 g.sessionsHeld,
-                                React.createElement(
-                                  "small",
-                                  null,
-                                  "Sessions held",
-                                ),
+                                React.createElement("small", null, "Sessions held"),
                               ),
                               React.createElement(
                                 "strong",
                                 null,
                                 g.monthAttendance,
-                                React.createElement(
-                                  "small",
-                                  null,
-                                  "Average attendance",
-                                ),
+                                React.createElement("small", null, "Average attendance"),
                               ),
                             ),
                             React.createElement(
@@ -230,114 +378,7 @@ export default function K({
                               ),
                           )
                         : e === "show-grades"
-                          ? React.createElement(
-                              r,
-                              {
-                                title: s[e],
-                                section: i,
-                                onClose: t,
-                                size: "wide",
-                              },
-                              React.createElement(
-                                "div",
-                                { className: "table-wrap grades-table" },
-                                React.createElement(
-                                  "table",
-                                  null,
-                                  React.createElement(
-                                    "thead",
-                                    null,
-                                    React.createElement(
-                                      "tr",
-                                      null,
-                                      React.createElement(
-                                        "th",
-                                        null,
-                                        "STUDENT",
-                                      ),
-                                      visibleGradePeriods.map((period) =>
-                                        React.createElement(
-                                          "th",
-                                          { key: period.key },
-                                          period.label.toUpperCase(),
-                                        ),
-                                      ),
-                                      showRemarks &&
-                                        React.createElement("th", null, "REMARKS"),
-                                    ),
-                                  ),
-                                  React.createElement(
-                                    "tbody",
-                                    null,
-                                    showGradeStudents.map((a) =>
-                                      React.createElement(
-                                        "tr",
-                                        { key: a.id },
-                                        React.createElement(
-                                          "td",
-                                          null,
-                                          React.createElement(
-                                            "div",
-                                            { className: "table-student" },
-                                            React.createElement(
-                                              "span",
-                                              { className: "record-avatar" },
-                                              a.initials,
-                                            ),
-                                            React.createElement(
-                                              "span",
-                                              null,
-                                              React.createElement(
-                                                "b",
-                                                null,
-                                                a.name,
-                                              ),
-                                              React.createElement(
-                                                "small",
-                                                null,
-                                                a.number,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        visibleGradePeriods.map((v) => {
-                                          const f = a.grades?.[v.key];
-                                          const hasGrade =
-                                            f !== null &&
-                                            f !== undefined &&
-                                            f !== "" &&
-                                            Number.isFinite(Number(f));
-                                          return React.createElement(
-                                            "td",
-                                            {
-                                              className: "grade-period-cell",
-                                              key: v.key,
-                                            },
-                                            hasGrade
-                                              ? Number(f).toFixed(1)
-                                              : "—",
-                                          );
-                                        }),
-                                        showRemarks &&
-                                          React.createElement(
-                                            "td",
-                                            {
-                                              className: `grade-remark ${S(a).toLowerCase()}`,
-                                            },
-                                            S(a),
-                                          ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                !n.length &&
-                                  React.createElement(
-                                    "div",
-                                    { className: "empty-state" },
-                                    "No students are enrolled in this class.",
-                                  ),
-                              ),
-                            )
+                          ? renderShowGrades()
                           : e === "grade-summary"
                             ? React.createElement(q, {
                                 students: n,
@@ -361,65 +402,25 @@ export default function K({
                                   React.createElement(
                                     "div",
                                     { className: "action-form-grid" },
-                                    React.createElement(
-                                      "label",
-                                      null,
-                                      "Quiz weight",
-                                      React.createElement("input", {
-                                        name: "quizWeight",
-                                        type: "number",
-                                        defaultValue: "20",
-                                        min: "0",
-                                        max: "100",
-                                      }),
-                                    ),
-                                    React.createElement(
-                                      "label",
-                                      null,
-                                      "Assignment weight",
-                                      React.createElement("input", {
-                                        name: "assignmentWeight",
-                                        type: "number",
-                                        defaultValue: "10",
-                                        min: "0",
-                                        max: "100",
-                                      }),
-                                    ),
-                                    React.createElement(
-                                      "label",
-                                      null,
-                                      "Activity weight",
-                                      React.createElement("input", {
-                                        name: "activityWeight",
-                                        type: "number",
-                                        defaultValue: "30",
-                                        min: "0",
-                                        max: "100",
-                                      }),
-                                    ),
-                                    React.createElement(
-                                      "label",
-                                      null,
-                                      "Attendance weight",
-                                      React.createElement("input", {
-                                        name: "attendanceWeight",
-                                        type: "number",
-                                        defaultValue: "5",
-                                        min: "0",
-                                        max: "100",
-                                      }),
-                                    ),
-                                    React.createElement(
-                                      "label",
-                                      null,
-                                      "Exam weight",
-                                      React.createElement("input", {
-                                        name: "examWeight",
-                                        type: "number",
-                                        defaultValue: "35",
-                                        min: "0",
-                                        max: "100",
-                                      }),
+                                    [
+                                      ["Quiz weight", "quizWeight", "20"],
+                                      ["Assignment weight", "assignmentWeight", "10"],
+                                      ["Activity weight", "activityWeight", "30"],
+                                      ["Attendance weight", "attendanceWeight", "5"],
+                                      ["Exam weight", "examWeight", "35"],
+                                    ].map(([label, name, def]) =>
+                                      React.createElement(
+                                        "label",
+                                        { key: name },
+                                        label,
+                                        React.createElement("input", {
+                                          name,
+                                          type: "number",
+                                          defaultValue: def,
+                                          min: "0",
+                                          max: "100",
+                                        }),
+                                      ),
                                     ),
                                   ),
                                   React.createElement(
@@ -432,18 +433,12 @@ export default function K({
                                     { className: "action-modal-footer" },
                                     React.createElement(
                                       "button",
-                                      {
-                                        className: "outline-button",
-                                        onClick: t,
-                                      },
+                                      { className: "outline-button", onClick: t },
                                       "Cancel",
                                     ),
                                     React.createElement(
                                       "button",
-                                      {
-                                        className: "primary-button",
-                                        onClick: t,
-                                      },
+                                      { className: "primary-button", onClick: t },
                                       "Save settings",
                                     ),
                                   ),

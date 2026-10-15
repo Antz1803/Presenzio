@@ -124,3 +124,14 @@ export const recordSummaryGroups = [
   { key: "activity", label: "GRADED ACTIVITY", prefix: "GA", count: 4 },
   { key: "exam", label: "EXAM", prefix: "E", count: 1 },
 ];
+
+export function buildPeriodCopyText(students, periodKey) {
+  return students
+    .map((s) => {
+      const g = s.grades?.[periodKey];
+      const ok =
+        g !== null && g !== undefined && g !== "" && Number.isFinite(Number(g));
+      return `${s.name || ""}\t${ok ? Number(g).toFixed(1) : ""}`;
+    })
+    .join("\n");
+}

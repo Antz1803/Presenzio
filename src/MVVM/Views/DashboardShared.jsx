@@ -33,6 +33,12 @@ export function Icon({ name, size = 18 }) {
         <path d="M14 2v6h6M8 13h8M8 17h6" />
       </>
     ),
+    folder: (
+      <>
+        <path d="M3 6.5A2.5 2.5 0 0 1 5.5 4H10l2 2h6.5A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z" />
+        <path d="M3 9h18" />
+      </>
+    ),
     search: (
       <>
         <circle cx="11" cy="11" r="7" />
