@@ -17,33 +17,36 @@ export function WeeklyScheduleTable({ sections, onOpenClassOptions }) {
 
   if (!timeSlots.length)
     return (
-      <div className="p-8 text-center text-xs font-semibold text-slate-400">
+      <div className="p-6 text-center text-xs text-ink-3">
         No classes scheduled yet.
       </div>
     );
 
   return (
-    <div className="overflow-x-auto mt-4 rounded-2xl border border-slate-100/80">
-      <table className="w-full border-collapse text-left min-w-[600px]">
+    <div className="mt-3 overflow-x-auto rounded-lg border border-white/5">
+      <table className="w-full min-w-[560px] border-collapse text-left">
         <thead>
-          <tr className="border-b border-slate-100 bg-slate-50/50">
-            <th className="p-2.5 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <tr className="border-b border-white/5 bg-canvas">
+            <th className="p-2 text-center font-mono text-[10px] font-medium uppercase tracking-wider text-ink-3">
               Time
             </th>
             {weekdayLabels.map((label) => (
               <th
                 key={label}
-                className="p-2.5 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider"
+                className="p-2 text-center font-mono text-[10px] font-medium uppercase tracking-wider text-ink-3"
               >
                 {label}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100/60">
-          {timeSlots.map((timeSlot) => (
-            <tr key={timeSlot}>
-              <td className="p-2 text-[11px] font-bold text-slate-400 whitespace-nowrap border-r border-slate-100/60 text-center">
+        <tbody>
+          {timeSlots.map((timeSlot, rowIdx) => (
+            <tr
+              key={timeSlot}
+              className={rowIdx % 2 ? "bg-surface-1" : "bg-canvas"}
+            >
+              <td className="whitespace-nowrap border-r border-white/5 p-1.5 text-center font-mono text-[10px] text-ink-3">
                 {formatClassTime(timeSlot)}
               </td>
               {weekdayLabels.map((_, dayIndex) => {
@@ -53,37 +56,36 @@ export function WeeklyScheduleTable({ sections, onOpenClassOptions }) {
                 return (
                   <td
                     key={dayIndex}
-                    className="p-1 align-top border-r border-slate-100/60"
+                    className="border-r border-white/5 p-1 align-top"
                   >
                     {cellEntries.map((entry, idx) => (
-                      <div
+                      <button
+                        type="button"
                         key={`${entry.id || entry.subjectCode}-${dayIndex}-${timeSlot}-${idx}`}
                         onClick={() => onOpenClassOptions?.(entry.id)}
-                        className="p-2 mb-1 rounded-xl bg-indigo-50/70 hover:bg-indigo-100/80 border border-indigo-100/50 cursor-pointer text-[11px] transition-all space-y-0.5 hover:shadow-sm"
+                        className="mb-1 block w-full space-y-0.5 rounded border border-accent/20 bg-surface-2 p-1.5 text-left text-[10px] transition hover:border-accent/50 hover:shadow-glow"
                       >
                         <b
-                          className="font-extrabold text-slate-800 block truncate"
+                          className="block truncate font-mono font-bold text-ink"
                           title={entry.subjectCode}
                         >
                           {entry.subjectCode}
                         </b>
                         {entry.subjectName && (
                           <span
-                            className="text-[10px] text-indigo-600 font-medium block truncate"
+                            className="block truncate text-[9px] text-accent-4"
                             title={entry.subjectName}
                           >
                             {entry.subjectName}
                           </span>
                         )}
-                        <div className="flex justify-between items-center text-[10px] text-slate-400 pt-1 border-t border-indigo-100/60">
-                          <span className="font-semibold text-slate-600">
+                        <div className="flex items-center justify-between border-t border-white/5 pt-0.5 font-mono text-[9px]">
+                          <span className="text-ink-2">
                             Sec. {entry.sectionName}
                           </span>
-                          <span className="font-semibold text-indigo-500">
-                            {entry.room}
-                          </span>
+                          <span className="text-accent">{entry.room}</span>
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </td>
                 );
@@ -95,6 +97,12 @@ export function WeeklyScheduleTable({ sections, onOpenClassOptions }) {
     </div>
   );
 }
+
+const STATUS_STYLES = {
+  live: "border-accent bg-accent text-canvas font-bold shadow-glow",
+  upcoming: "border-amber-500/40 bg-amber-500/20 text-amber-300 font-bold",
+  completed: "border-white/10 bg-surface-3 text-ink-2 font-semibold",
+};
 
 export function CompactTodayScheduleSection({
   sections,
@@ -138,123 +146,132 @@ export function CompactTodayScheduleSection({
     [currentMinutes],
   );
 
-  const statusStyles = {
-    live: "bg-emerald-500 text-white shadow-sm shadow-emerald-200",
-    upcoming: "bg-amber-100/80 text-amber-700 border border-amber-200/50",
-    completed: "bg-slate-200/60 text-slate-500",
-  };
+  // Highlight the ongoing class, otherwise the next one coming up.
+  const highlightedId = useMemo(() => {
+    const live = todaySections.find((s) => getClassStatus(s).tone === "live");
+    const next = todaySections.find(
+      (s) => getClassStatus(s).tone === "upcoming",
+    );
+    const pick = live || next;
+    return pick ? (pick.id ?? todaySections.indexOf(pick)) : null;
+  }, [todaySections, getClassStatus]);
 
   return (
-    <section className="bg-white/70 backdrop-blur-xl p-6 rounded-3xl border border-white/60 shadow-xl shadow-slate-200/50 flex flex-col justify-between h-full">
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              SCHEDULE
-            </p>
-            <h2 className="text-lg font-black text-slate-800 tracking-tight">
-              {viewMode === "today" ? "Today's Agenda" : "Weekly Schedule"}
-            </h2>
-          </div>
-          <div className="flex p-1 bg-slate-100/80 rounded-2xl border border-slate-200/50 backdrop-blur-md">
-            {["today", "weekly"].map((mode) => (
-              <button
-                key={mode}
-                className={`px-3 py-1 text-xs font-bold capitalize rounded-xl transition-all ${
-                  viewMode === mode
-                    ? "bg-white text-indigo-600 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-                onClick={() => setViewMode(mode)}
-              >
-                {mode}
-              </button>
-            ))}
-          </div>
+    <section className="rounded-lg border border-accent/20 bg-surface-1/85 p-4 backdrop-blur-xl">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-accent">
+            Schedule
+          </p>
+          <h2 className="font-display text-base font-semibold tracking-tight text-ink">
+            {viewMode === "today" ? "Today's Agenda" : "Weekly Schedule"}
+          </h2>
         </div>
-
-        {viewMode === "weekly" ? (
-          <WeeklyScheduleTable
-            sections={sections}
-            onOpenClassOptions={onOpenClassOptions}
-          />
-        ) : (
-          <div className="flex flex-col gap-3 mt-2">
-            {todaySections.length === 0 ? (
-              <div className="p-8 text-center text-xs font-semibold text-slate-400 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                No classes scheduled for today!
-              </div>
-            ) : (
-              todaySections.map((item, idx) => {
-                const status = getClassStatus(item);
-                const isLive = status.tone === "live";
-                const meta = getSectionMeta(item);
-
-                return (
-                  <div
-                    key={item.id || `${meta.code}-${idx}`}
-                    className={`flex items-center justify-between p-4 rounded-2xl text-xs transition-all ${
-                      isLive
-                        ? "bg-gradient-to-r from-emerald-50/80 to-teal-50/40 border border-emerald-200/80 shadow-md shadow-emerald-100/50"
-                        : "bg-slate-50/80 border border-slate-100/80 hover:border-slate-200"
-                    }`}
-                  >
-                    <div className="flex gap-3 items-center">
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <strong className="text-slate-900 font-extrabold text-sm">
-                            {meta.code}
-                          </strong>
-                          {meta.name && (
-                            <span className="text-[11px] font-medium text-slate-500 truncate max-w-[150px]">
-                              {meta.name}
-                            </span>
-                          )}
-                          <span
-                            className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusStyles[status.tone]}`}
-                          >
-                            {status.label}
-                          </span>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[11px] text-slate-500">
-                          <span className="bg-slate-200/60 font-medium text-slate-700 px-2 py-0.5 rounded-md">
-                            Sec. {meta.sec}
-                          </span>
-                          <span className="bg-indigo-50/80 font-medium text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-100/50">
-                            Room: {meta.room}
-                          </span>
-                          <span>
-                            {formatClassTime(item.time_start)} -{" "}
-                            {formatClassTime(item.time_end)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {isLive && (
-                        <button
-                          className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-90 text-white px-3 py-1.5 text-[11px] font-bold rounded-xl shadow-md shadow-emerald-200 transition-all"
-                          onClick={() => onOpenAction?.("attendance", item.id)}
-                        >
-                          Attendance
-                        </button>
-                      )}
-                      <button
-                        className="p-2 border border-slate-200/80 hover:bg-slate-100/80 rounded-xl text-slate-600 transition-all bg-white/50"
-                        onClick={() => onOpenClassOptions?.(item.id)}
-                      >
-                        <Icon name="grid" size={13} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        )}
+        <div className="flex rounded-md border border-slate-700/50 bg-surface-2 p-0.5">
+          {["today", "weekly"].map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              className={`rounded px-2.5 py-0.5 text-[11px] capitalize transition ${
+                viewMode === mode
+                  ? "bg-linear-to-r from-accent to-accent-4 font-bold text-canvas shadow-md shadow-accent/30"
+                  : "font-medium text-ink-2 hover:text-ink"
+              }`}
+              onClick={() => setViewMode(mode)}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {viewMode === "weekly" ? (
+        <WeeklyScheduleTable
+          sections={sections}
+          onOpenClassOptions={onOpenClassOptions}
+        />
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          {todaySections.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-white/10 p-6 text-center text-xs text-ink-3">
+              No classes scheduled for today.
+            </div>
+          ) : (
+            todaySections.map((item, idx) => {
+              const status = getClassStatus(item);
+              const meta = getSectionMeta(item);
+              const rowKey = item.id ?? idx;
+              const isHighlighted = rowKey === highlightedId;
+              const isLive = status.tone === "live";
+
+              return (
+                <div
+                  key={item.id || `${meta.code}-${idx}`}
+                  className={`group flex flex-wrap items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 transition ${
+                    isHighlighted
+                      ? "border-accent/60 bg-surface-2 shadow-glow"
+                      : "border-white/5 bg-surface-2/60 hover:border-accent/30"
+                  }`}
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span
+                      className={`rounded border px-1.5 py-px font-mono text-[9px] uppercase tracking-wide ${STATUS_STYLES[status.tone]}`}
+                    >
+                      {status.label}
+                    </span>
+                    <h3 className="flex min-w-0 items-center gap-1.5 truncate text-[11px] font-bold text-ink">
+                      {meta.code}
+                      {isHighlighted && (
+                        <span className="size-1.5 shrink-0 rounded-full bg-accent shadow-[0_0_6px_#00F0FF]" />
+                      )}
+                    </h3>
+                    {meta.name && (
+                      <span className="hidden max-w-[120px] truncate text-[10px] text-ink-3 xl:inline">
+                        {meta.name}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 font-mono text-[10px]">
+                    <span
+                      className={`rounded border px-1.5 py-px ${
+                        isHighlighted
+                          ? "border-accent bg-accent font-bold text-canvas"
+                          : "border-white/10 bg-surface-3 text-ink"
+                      }`}
+                    >
+                      Sec. {meta.sec}
+                    </span>
+                    <span className="text-ink-2">Room: {meta.room}</span>
+                    <span className={isHighlighted ? "text-accent" : "text-ink-3"}>
+                      {formatClassTime(item.time_start)} -{" "}
+                      {formatClassTime(item.time_end)}
+                    </span>
+                    {isLive && (
+                      <button
+                        type="button"
+                        className="rounded bg-accent px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-canvas transition hover:shadow-halo active:scale-[0.98]"
+                        onClick={() => onOpenAction?.("attendance", item.id)}
+                      >
+                        Attendance
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      title="Manage class"
+                      aria-label="Manage class"
+                      className="rounded p-0.5 text-ink-3 transition-colors group-hover:text-accent"
+                      onClick={() => onOpenClassOptions?.(item.id)}
+                    >
+                      <Icon name="more" size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
     </section>
   );
 }

@@ -63,6 +63,28 @@ export function Icon({ name, size = 18 }) {
         <circle cx="12" cy="10" r="2.5" />
       </>
     ),
+    book: (
+      <path d="M12 6.25v13m0-13C10.83 5.48 9.25 5 7.5 5S4.17 5.48 3 6.25v13C4.17 18.48 5.75 18 7.5 18s3.33.48 4.5 1.25m0-13C13.17 5.48 14.75 5 16.5 5c1.75 0 3.33.48 4.5 1.25v13C19.83 18.48 18.25 18 16.5 18c-1.75 0-3.33.48-4.5 1.25" />
+    ),
+    bars: (
+      <path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2" />
+    ),
+    archive: (
+      <path d="M19 11H5m14 0a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2m14 0V9a2 2 0 0 0-2-2M5 11V9a2 2 0 0 1 2-2m0 0V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2M7 7h10" />
+    ),
+    logout: (
+      <path d="M17 16l4-4m0 0-4-4m4 4H7m6 4v1a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v1" />
+    ),
+    more: (
+      <>
+        <circle cx="12" cy="5" r="1" />
+        <circle cx="12" cy="12" r="1" />
+        <circle cx="12" cy="19" r="1" />
+      </>
+    ),
+    check: <path d="M20 6 9 17l-5-5" />,
+    trend: <path d="m3 17 6-6 4 4 8-8M15 7h6v6" />,
+    chevron: <path d="m9 6 6 6-6 6" />,
     plus: <path d="M12 5v14M5 12h14" />,
     arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
     alert: (
@@ -101,9 +123,22 @@ export function Icon({ name, size = 18 }) {
   );
 }
 
+const AVATAR_TONES = {
+  plum: "border-violet-400/30 bg-violet-400/15 text-violet-300",
+  blue: "border-accent/30 bg-accent/10 text-accent",
+  peach: "border-orange-400/30 bg-orange-400/15 text-orange-300",
+  green: "border-emerald-400/30 bg-emerald-400/15 text-emerald-300",
+  yellow: "border-amber-400/30 bg-amber-400/15 text-amber-300",
+  lavender: "border-accent-2/30 bg-accent-2/15 text-accent-4",
+};
+
 export function Avatar({ initials, color = "plum", small = false }) {
+  const tone = AVATAR_TONES[color] || AVATAR_TONES.blue;
+  const size = small ? "size-8 rounded text-[10px]" : "size-10 rounded-lg text-xs";
   return (
-    <span className={`avatar avatar-${color}${small ? " avatar-small" : ""}`}>
+    <span
+      className={`inline-grid shrink-0 place-items-center border font-mono font-bold ${size} ${tone}`}
+    >
       {initials || "?"}
     </span>
   );

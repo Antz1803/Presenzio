@@ -1,3 +1,78 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
-:root{font-family:'DM Sans',sans-serif;color:#28272e;background:#f7f8fa;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}*{box-sizing:border-box}body{margin:0;min-width:320px}button,input{font:inherit}button{cursor:pointer}
-@import "tailwindcss";
+﻿@import "tailwindcss";
+
+@theme {
+  /* Surfaces */
+  --color-canvas: #0a0f1d;
+  --color-surface-1: #0f172a;
+  --color-surface-2: #162032;
+  --color-surface-3: #1e293b;
+
+  /* Accents */
+  --color-accent: #00f0ff;
+  --color-accent-2: #3b82f6;
+  --color-accent-3: #06b6d4;
+  --color-accent-4: #38bdf8;
+
+  /* Text */
+  --color-ink: #f8fafc;
+  --color-ink-2: #94a3b8;
+  --color-ink-3: #64748b;
+
+  /* Fonts */
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Radii (design doc: 4px / 8px / 12px) */
+  --radius-DEFAULT: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+
+  /* Glow */
+  --shadow-glow: 0 0 20px rgb(0 240 255 / 0.12);
+  --shadow-halo: 0 0 16px rgb(0 240 255 / 0.5);
+  --shadow-focus: 0 0 8px rgb(0 240 255 / 0.25);
+  --shadow-modal: 0 24px 48px -12px rgb(0 0 0 / 0.75), 0 0 32px rgb(0 240 255 / 0.08);
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    font-family: var(--font-sans);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    background-color: var(--color-canvas);
+    color: var(--color-ink-2);
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: rgb(0 240 255 / 0.25);
+    color: var(--color-ink);
+  }
+
+  /* Dark scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #1e293b transparent;
+  }
+}

@@ -1,516 +1,542 @@
-import React, { useEffect as D, useMemo as M, useState as m } from "react";
-import { Icon as F } from "../DashboardShared";
-import { formatClassTime as C, getLiveClassInfo as L } from "./overviewUtils";
-function x({ label: a, children: b }) {
-  return React.createElement(
-    "div",
-    {
-      className:
-        "bg-slate-50/80 backdrop-blur-sm p-3 rounded-2xl border border-slate-100/80 shadow-inner",
-    },
-    React.createElement(
-      "span",
-      {
-        className:
-          "text-slate-400 font-medium block text-[10px] uppercase tracking-wider mb-1",
-      },
-      a,
-    ),
-    b,
-  );
-}
-function I(a) {
-  return String(a || "Teacher")
+import { useEffect, useMemo, useState } from "react";
+import {
+  formatClassTime,
+  getLiveClassInfo,
+  getSectionMeta,
+  parseDayCodes,
+  parseTimeToMinutes,
+} from "./overviewUtils";
+
+/* ---------- shared class strings (design doc tokens) ---------- */
+const INPUT =
+  "w-full rounded border border-ink-3/30 bg-surface-1 px-3 py-2.5 text-sm text-ink placeholder:text-ink-3 transition focus:border-accent focus:shadow-focus focus:outline-none disabled:opacity-50";
+const LABEL = "mb-1 block font-mono text-[11px] uppercase tracking-wider text-ink-3";
+const BTN_PRIMARY =
+  "rounded bg-accent px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-canvas transition hover:shadow-halo active:scale-[0.98] disabled:opacity-60";
+const BTN_SECONDARY =
+  "rounded border border-accent/40 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:opacity-50";
+
+const BADGE_TONES = [
+  "border-accent/40 bg-accent/10 text-accent",
+  "border-accent-2/40 bg-accent-2/10 text-accent-2",
+];
+
+/* ---------- small inline icons ---------- */
+const svgProps = {
+  width: 14,
+  height: 14,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+};
+const MailIcon = () => (
+  <svg {...svgProps}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="m3 7 9 6 9-6" />
+  </svg>
+);
+const ClockIcon = () => (
+  <svg {...svgProps} width={16} height={16}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3 2" />
+  </svg>
+);
+const FacebookIcon = () => (
+  <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M13.5 21v-7.5H16l.5-3h-3V8.7c0-.9.3-1.5 1.6-1.5H16.6V4.5c-.3 0-1.2-.1-2.3-.1-2.3 0-3.8 1.4-3.8 3.9v2.2H8v3h2.5V21h3Z" />
+  </svg>
+);
+const SettingsIcon = () => (
+  <svg {...svgProps}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
+  </svg>
+);
+
+/* ---------- helpers ---------- */
+function getInitials(name) {
+  return String(name || "Teacher")
     .split(/\s+/)
-    .map((b) => b[0])
+    .map((part) => part[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
 }
-export default function T({
-  instructor: a,
-  onUpdateInstructor: b,
-  sections: S,
+
+// Next upcoming class from "now", using the same helpers as the Today's Agenda.
+function getNextClass(sections, now = new Date()) {
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  let best = null;
+
+  (sections || []).forEach((s) => {
+    const start = parseTimeToMinutes(s?.time_start);
+    if (start === null || start === undefined || Number.isNaN(start)) return;
+    const days = parseDayCodes(s?.days) || [];
+    if (!days.length) return;
+
+    for (let offset = 0; offset <= 7; offset++) {
+      const dayIdx = (now.getDay() + offset) % 7;
+      if (!days.includes(dayIdx)) continue;
+      if (offset === 0 && start <= nowMin) continue;
+      const key = offset * 1440 + start;
+      if (!best || key < best.key) best = { key, section: s };
+      break;
+    }
+  });
+
+  if (!best) return null;
+  const meta = getSectionMeta(best.section);
+  return {
+    code: meta.code,
+    sec: meta.sec,
+    room: meta.room,
+    timeStart: best.section.time_start,
+  };
+}
+
+function InfoChip({ href, icon, children, external }) {
+  return (
+    <a
+      href={href}
+      {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
+      className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-surface-2 px-3 py-2 text-[11px] font-medium text-accent-4 transition hover:border-accent/40 hover:text-accent"
+    >
+      <span className="shrink-0 text-accent">{icon}</span>
+      <span className="truncate">{children}</span>
+    </a>
+  );
+}
+
+export default function InstructorProfileCard({
+  instructor,
+  onUpdateInstructor,
+  sections,
 }) {
-  const [h, f] = m(!1),
-    [l, v] = m(!1),
-    [w, u] = m(""),
-    [, P] = m(0);
-  D(() => {
-    const e = setInterval(() => P((i) => i + 1), 6e4);
-    return () => clearInterval(e);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [, setTick] = useState(0);
+
+  // Re-render every minute so the live/next class status stays current.
+  useEffect(() => {
+    const timer = setInterval(() => setTick((n) => n + 1), 60000);
+    return () => clearInterval(timer);
   }, []);
-  const n = L(S),
-    d = M(
-      () => ({
-        name: a?.name || "Teacher",
-        position: a?.position || "Instructor",
-        gmail: a?.gmail || "",
-        facebook: a?.facebook || "",
-        courses: Array.isArray(a?.courses) ? a.courses : [],
-        initials: a?.initials || I(a?.name),
-        color: a?.color || "bg-gradient-to-br from-indigo-500 to-violet-600",
-        avatarUrl: a?.avatarUrl || "",
-        printLogoLeftUrl: a?.printLogoLeftUrl || "",
-        printLogoRightUrl: a?.printLogoRightUrl || "",
-      }),
-      [a],
-    ),
-    [o, p] = m(d),
-    [N, y] = m(""),
-    t = h ? o : d,
-    j = (e) => {
-      (e.preventDefault(),
-        e.stopPropagation(),
-        p(d),
-        u(""),
-        y(Array.isArray(d.courses) ? d.courses.join(", ") : d.courses || ""),
-        f(!0));
-    },
-    g = (e) => p((i) => ({ ...i, [e.target.name]: e.target.value })),
-    E = (e) => {
-      y(e.target.value);
-    },
-    U = (e) => {
-      const i = e.target.files?.[0];
-      if (i) {
-        const r = new FileReader();
-        ((r.onload = () => {
-          const s = new Image();
-          ((s.onload = () => {
-            const k = Math.min(1, 512 / Math.max(s.width, s.height)),
-              c = document.createElement("canvas");
-            ((c.width = Math.max(1, Math.round(s.width * k))),
-              (c.height = Math.max(1, Math.round(s.height * k))),
-              c.getContext("2d").drawImage(s, 0, 0, c.width, c.height),
-              p((A) => ({ ...A, avatarUrl: c.toDataURL("image/jpeg", 0.82) })));
-          }),
-            (s.src = r.result));
-        }),
-          r.readAsDataURL(i));
-      }
-    },
-    B = async (e) => {
-      (e.preventDefault(), e.stopPropagation(), u(""));
-      const i = N.split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
-        r = {
-          ...o,
-          name: o.name.trim(),
-          position: o.position.trim(),
-          gmail: o.gmail.trim(),
-          facebook: o.facebook.trim(),
-          courses: i,
-          initials: I(o.name),
-        };
-      if (!r.name) {
-        u("Full name is required.");
-        return;
-      }
-      v(!0);
-      try {
-        (await b?.(r), p(r), f(!1));
-      } catch (s) {
-        u(s?.message || "Could not save the profile details.");
-      } finally {
-        v(!1);
-      }
+
+  const liveClass = getLiveClassInfo(sections);
+  const nextClass = liveClass || getNextClass(sections);
+
+  const saved = useMemo(
+    () => ({
+      name: instructor?.name || "Teacher",
+      position: instructor?.position || "Instructor",
+      gmail: instructor?.gmail || "",
+      facebook: instructor?.facebook || "",
+      courses: Array.isArray(instructor?.courses) ? instructor.courses : [],
+      initials: instructor?.initials || getInitials(instructor?.name),
+      color: instructor?.color || "bg-linear-to-br from-accent-2 to-accent-3",
+      avatarUrl: instructor?.avatarUrl || "",
+      printLogoLeftUrl: instructor?.printLogoLeftUrl || "",
+      printLogoRightUrl: instructor?.printLogoRightUrl || "",
+    }),
+    [instructor],
+  );
+
+  const [draft, setDraft] = useState(saved);
+  const [coursesText, setCoursesText] = useState("");
+
+  const view = isEditing ? draft : saved;
+
+  // Course rows: group real sections by course code. If there are no sections,
+  // fall back to the typed course list ("CODE - Name").
+  const courseRows = useMemo(() => {
+    const map = new Map();
+    (sections || []).forEach((s) => {
+      const meta = getSectionMeta(s);
+      if (!meta?.code) return;
+      const row = map.get(meta.code) || {
+        code: meta.code,
+        name: meta.name || "",
+        count: 0,
+      };
+      row.count += 1;
+      map.set(meta.code, row);
+    });
+    if (map.size) return [...map.values()];
+
+    return (view.courses || []).map((c) => {
+      const [code, ...rest] = String(c).split(/\s+-\s+/);
+      return { code: code.trim(), name: rest.join(" - ").trim(), count: null };
+    });
+  }, [sections, view.courses]);
+
+  const facebookHandle = view.facebook
+    ? view.facebook
+        .replace(/^https?:\/\/(www\.)?facebook\.com\//i, "@")
+        .replace(/\/$/, "")
+    : "";
+
+  const openEditor = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraft(saved);
+    setError("");
+    setCoursesText(
+      Array.isArray(saved.courses) ? saved.courses.join(", ") : saved.courses || "",
+    );
+    setIsEditing(true);
+  };
+
+  const handleChange = (e) =>
+    setDraft((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const handlePhoto = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, 512 / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        setDraft((prev) => ({
+          ...prev,
+          avatarUrl: canvas.toDataURL("image/jpeg", 0.82),
+        }));
+      };
+      img.src = reader.result;
     };
-  return React.createElement(
-    React.Fragment,
-    null,
-    React.createElement(
-      "div",
-      {
-        className:
-          "bg-white/70 backdrop-blur-xl p-6 rounded-3xl border border-white/60 shadow-xl shadow-slate-200/50 relative",
-      },
-      React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: j,
-          className:
-            "absolute top-5 right-5 p-2.5 bg-slate-100/80 hover:bg-slate-200/80 rounded-2xl text-slate-600 transition-all border border-slate-200/50 backdrop-blur-md shadow-sm z-10",
-          title: "Edit Profile Settings",
-        },
-        React.createElement(F, { name: "settings", size: 16 }),
-      ),
-      React.createElement(
-        "div",
-        { className: "grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch" },
-        React.createElement(
-          "div",
-          {
-            className: "md:col-span-7 flex flex-col justify-between space-y-3",
-          },
-          React.createElement(
-            "div",
-            { className: "space-y-2.5 text-xs" },
-            React.createElement(
-              x,
-              { label: "Live Schedule" },
-              n
-                ? React.createElement(
-                    "div",
-                    { className: "space-y-1.5" },
-                    React.createElement(
-                      "div",
-                      { className: "flex items-center gap-2 flex-wrap" },
-                      React.createElement(
-                        "span",
-                        {
-                          className:
-                            "font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-lg border border-emerald-200/50",
-                        },
-                        n.code,
-                      ),
-                      n.name &&
-                        React.createElement(
-                          "span",
-                          {
-                            className:
-                              "text-slate-600 font-medium text-xs truncate",
-                          },
-                          n.name,
-                        ),
-                      React.createElement(
-                        "span",
-                        {
-                          className:
-                            "text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow-sm shadow-emerald-200",
-                        },
-                        "Ongoing",
-                      ),
-                    ),
-                    React.createElement(
-                      "div",
-                      {
-                        className:
-                          "flex flex-wrap gap-1.5 text-[11px] text-slate-500",
-                      },
-                      React.createElement(
-                        "span",
-                        {
-                          className:
-                            "bg-slate-200/60 font-medium text-slate-700 px-2 py-0.5 rounded-md",
-                        },
-                        "Sec. ",
-                        n.sec,
-                      ),
-                      React.createElement(
-                        "span",
-                        {
-                          className:
-                            "bg-indigo-50 font-medium text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-100/50",
-                        },
-                        "Room: ",
-                        n.room,
-                      ),
-                      React.createElement(
-                        "span",
-                        { className: "self-center" },
-                        C(n.timeStart),
-                        " - ",
-                        C(n.timeEnd),
-                      ),
-                    ),
-                  )
-                : React.createElement(
-                    "span",
-                    { className: "font-semibold text-slate-400" },
-                    "No class in session",
-                  ),
-            ),
-            React.createElement(
-              x,
-              { label: "Gmail Account" },
-              React.createElement(
-                "a",
-                {
-                  href: `mailto:${t.gmail}`,
-                  className:
-                    "font-semibold text-indigo-600 hover:underline truncate block",
-                },
-                t.gmail || "Not set",
-              ),
-            ),
-            React.createElement(
-              x,
-              { label: "Facebook Profile" },
-              t.facebook
-                ? React.createElement(
-                    "a",
-                    {
-                      href: t.facebook.startsWith("http")
-                        ? t.facebook
-                        : `https://${t.facebook}`,
-                      target: "_blank",
-                      rel: "noreferrer",
-                      className:
-                        "font-semibold text-indigo-600 hover:underline truncate block",
-                    },
-                    t.facebook,
-                  )
-                : React.createElement(
-                    "span",
-                    { className: "font-semibold text-slate-400" },
-                    "Not set",
-                  ),
-            ),
-            React.createElement(
-              x,
-              { label: "Courses Handled" },
-              React.createElement(
-                "div",
-                { className: "flex flex-wrap gap-1.5" },
-                (t.courses || []).map((e, i) =>
-                  React.createElement(
-                    "span",
-                    {
-                      key: `${e}-${i}`,
-                      className:
-                        "bg-indigo-50/80 text-indigo-700 font-semibold px-2.5 py-0.5 rounded-lg text-[11px] border border-indigo-100/50",
-                    },
-                    e,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        React.createElement(
-          "div",
-          {
-            className:
-              "md:col-span-5 flex flex-col items-center justify-between",
-          },
-          React.createElement(
-            "div",
-            {
-              className:
-                "w-full h-full min-h-[180px] max-h-[260px] bg-slate-100/80 rounded-2xl overflow-hidden border border-slate-200/60 shadow-inner flex items-center justify-center relative group",
-            },
-            t.avatarUrl
-              ? React.createElement("img", {
-                  src: t.avatarUrl,
-                  alt: t.name,
-                  className:
-                    "w-full h-full object-cover transition-transform duration-500 group-hover:scale-105",
-                })
-              : React.createElement(
-                  "div",
-                  {
-                    className: `w-full h-full ${t.color} flex items-center justify-center text-white text-5xl font-black bg-gradient-to-br from-indigo-500 to-violet-600`,
-                  },
-                  t.initials,
-                ),
-          ),
-          React.createElement(
-            "div",
-            { className: "text-center pt-3 w-full" },
-            React.createElement(
-              "h2",
-              { className: "text-lg font-black text-slate-900 leading-tight" },
-              t.name,
-            ),
-            React.createElement(
-              "p",
-              { className: "text-xs font-bold text-indigo-600 mt-0.5" },
-              t.position,
-            ),
-          ),
-        ),
-      ),
-    ),
-    h &&
-      React.createElement(
-        "div",
-        {
-          className:
-            "fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center p-4",
-        },
-        React.createElement(
-          "div",
-          {
-            className:
-              "bg-white/90 backdrop-blur-2xl rounded-3xl max-w-md w-full p-6 shadow-2xl border border-white/60 space-y-4 max-h-[90vh] overflow-y-auto",
-          },
-          React.createElement(
-            "div",
-            {
-              className:
-                "flex justify-between items-center border-b border-slate-100 pb-3",
-            },
-            React.createElement(
-              "h3",
-              { className: "text-base font-bold text-slate-800" },
-              "Edit Profile Details",
-            ),
-           React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: () => f(!1),
-              className:
-                "text-slate-400 hover:text-slate-600 text-sm font-bold",
-            },
-            "x",
-          ),
-          ),
-          React.createElement(
-            "form",
-            { onSubmit: B, className: "space-y-3 text-xs" },
-            React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "label",
-                { className: "block text-slate-500 font-semibold mb-1" },
-                "Upload Profile Photo",
-              ),
-              React.createElement("input", {
-                name: "profilePhoto",
-                type: "file",
-                accept: "image/*",
-                onChange: U,
-                disabled: l,
-                className:
-                  "w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer disabled:opacity-50",
-              }),
-            ),
-            React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "label",
-                { className: "block text-slate-500 font-semibold mb-1" },
-                "Full Name",
-              ),
-              React.createElement("input", {
-                type: "text",
-                name: "name",
-                value: o.name,
-                onChange: g,
-                required: !0,
-                disabled: l,
-                className:
-                  "w-full p-2.5 rounded-xl border border-slate-200/80 bg-white/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-50",
-              }),
-            ),
-            React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "label",
-                { className: "block text-slate-500 font-semibold mb-1" },
-                "Position / Title",
-              ),
-              React.createElement("input", {
-                type: "text",
-                name: "position",
-                value: o.position,
-                onChange: g,
-                disabled: l,
-                className:
-                  "w-full p-2.5 rounded-xl border border-slate-200/80 bg-white/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-50",
-              }),
-            ),
-            React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "label",
-                { className: "block text-slate-500 font-semibold mb-1" },
-                "Courses Handled (comma-separated)",
-              ),
-              React.createElement("input", {
-                type: "text",
-                name: "courses",
-                value: N,
-                onChange: E,
-                placeholder: "e.g. BSIT 3A - Web Dev, BSCS 2B - OOP",
-                disabled: l,
-                className:
-                  "w-full p-2.5 rounded-xl border border-slate-200/80 bg-white/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-50",
-              }),
-            ),
-            React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "label",
-                { className: "block text-slate-500 font-semibold mb-1" },
-                "Gmail Address",
-              ),
-              React.createElement("input", {
-                type: "email",
-                name: "gmail",
-                value: o.gmail,
-                onChange: g,
-                disabled: l,
-                className:
-                  "w-full p-2.5 rounded-xl border border-slate-200/80 bg-white/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-50",
-              }),
-            ),
-            React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "label",
-                { className: "block text-slate-500 font-semibold mb-1" },
-                "Facebook URL",
-              ),
-              React.createElement("input", {
-                type: "text",
-                name: "facebook",
-                value: o.facebook,
-                onChange: g,
-                disabled: l,
-                className:
-                  "w-full p-2.5 rounded-xl border border-slate-200/80 bg-white/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-50",
-              }),
-            ),
-            w &&
-              React.createElement(
-                "p",
-                {
-                  className:
-                    "rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600",
-                },
-                w,
-              ),
-            React.createElement(
-              "div",
-              {
-                className:
-                  "flex justify-end gap-2 pt-3 border-t border-slate-100",
-              },
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: () => !l && f(!1),
-                  disabled: l,
-                  className:
-                    "px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 disabled:opacity-50",
-                },
-                "Cancel",
-              ),
-              React.createElement(
-                "button",
-                {
-                  type: "submit",
-                  disabled: l,
-                  className:
-                    "px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold hover:opacity-90 shadow-md shadow-indigo-200 disabled:opacity-60",
-                },
-                l ? "Saving..." : "Save Changes",
-              ),
-            ),
-          ),
-        ),
-      ),
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setError("");
+
+    const courses = coursesText
+      .split(",")
+      .map((c) => c.trim())
+      .filter(Boolean);
+
+    const next = {
+      ...draft,
+      name: draft.name.trim(),
+      position: draft.position.trim(),
+      gmail: draft.gmail.trim(),
+      facebook: draft.facebook.trim(),
+      courses,
+      initials: getInitials(draft.name),
+    };
+
+    if (!next.name) {
+      setError("Full name is required.");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await onUpdateInstructor?.(next);
+      setDraft(next);
+      setIsEditing(false);
+    } catch (err) {
+      setError(err?.message || "Could not save the profile details.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="flex w-full flex-col rounded-lg border border-accent/20 bg-surface-1/85 p-4 backdrop-blur-xl">
+        {/* header: label + status pill */}
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <span className="font-mono text-[10px] font-semibold uppercase tracking-widest text-accent">
+            Faculty profile &amp; status
+          </span>
+          <span
+            className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-1 font-mono text-[10px] tracking-wide ${
+              liveClass
+                ? "border-accent/50 bg-surface-2 text-accent"
+                : "border-white/10 bg-surface-2 text-ink-3"
+            }`}
+          >
+            <span className="relative flex size-2">
+              {liveClass && (
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-70" />
+              )}
+              <span
+                className={`relative inline-flex size-2 rounded-full ${
+                  liveClass ? "bg-accent" : "bg-ink-3"
+                }`}
+              />
+            </span>
+            {liveClass ? "Session live" : "No Class in Session"}
+          </span>
+        </div>
+
+        {/* avatar: frame hugs the photo, same size as before, no side space */}
+        <div className="relative mx-auto w-fit max-w-full overflow-hidden rounded-2xl border border-accent/30 bg-surface-2 shadow-glow">
+          {view.avatarUrl ? (
+            <img
+              src={view.avatarUrl}
+              alt={view.name}
+              className="block max-h-[300px] w-auto max-w-full"
+            />
+          ) : (
+            <div
+              className={`flex h-[300px] w-[240px] max-w-full items-center justify-center font-display text-5xl font-bold text-canvas ${view.color}`}
+            >
+              {view.initials}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={openEditor}
+            title="Edit profile settings"
+            aria-label="Edit profile settings"
+            className="absolute right-3 top-3 z-10 rounded-full border border-white/10 bg-surface-2/80 p-2 text-ink-2 backdrop-blur-md transition hover:border-accent hover:text-accent hover:shadow-glow"
+          >
+            <SettingsIcon />
+          </button>
+        </div>
+
+        {/* name + position */}
+        <div className="mt-3 text-center">
+          <h2 className="font-display text-lg font-bold leading-tight tracking-tight text-ink">
+            {view.name}
+          </h2>
+          <p className="mt-1 font-display text-sm font-semibold text-accent-2">
+            {view.position}
+          </p>
+        </div>
+
+        {/* contact chips */}
+        <div className="mt-3 flex flex-wrap justify-center gap-2">
+          {view.gmail && (
+            <InfoChip href={`mailto:${view.gmail}`} icon={<MailIcon />}>
+              {view.gmail}
+            </InfoChip>
+          )}
+          {view.facebook && (
+            <InfoChip
+              external
+              href={
+                view.facebook.startsWith("http")
+                  ? view.facebook
+                  : `https://${view.facebook}`
+              }
+              icon={<FacebookIcon />}
+            >
+              {facebookHandle}
+            </InfoChip>
+          )}
+        </div>
+
+        {/* next scheduled class */}
+        <div className="mt-3 rounded-xl border border-white/5 bg-surface-2/60 p-3">
+          {nextClass ? (
+            <div className="flex items-center gap-3">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-accent/30 bg-accent/10 text-accent">
+                <ClockIcon />
+              </span>
+              <div className="min-w-0 flex-1">
+                <span className="block font-mono text-[9px] uppercase tracking-widest text-accent">
+                  {liveClass ? "Happening now" : "Next scheduled class"}
+                </span>
+                <span className="block truncate text-sm font-bold text-ink">
+                  {nextClass.code}
+                  {nextClass.sec ? ` • Sec. ${nextClass.sec}` : ""}
+                </span>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <span className="rounded border border-accent/40 bg-accent/10 px-2 py-1 font-mono text-[11px] font-bold uppercase text-accent">
+                  {formatClassTime(nextClass.timeStart)}
+                </span>
+                {nextClass.room && (
+                  <span className="font-mono text-[10px] text-ink-3">
+                    Room: {nextClass.room}
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-surface-2 text-ink-3">
+                <ClockIcon />
+              </span>
+              <span className="text-sm font-medium text-ink-3">
+                No upcoming classes
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* assigned courses */}
+        <div className="mt-auto pt-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-ink-3">
+              Assigned courses handled
+            </span>
+            <span className="font-mono text-[10px] text-ink-3">
+              {courseRows.length} Active
+            </span>
+          </div>
+
+          <div className="space-y-1.5">
+            {courseRows.length === 0 && (
+              <p className="rounded-lg border border-white/5 bg-surface-2/60 px-3 py-3 text-xs text-ink-3">
+                No courses assigned yet.
+              </p>
+            )}
+            {courseRows.map((c, i) => (
+              <div
+                key={`${c.code}-${i}`}
+                className="flex items-center gap-3 rounded-lg border border-white/5 bg-surface-2/60 px-3 py-2"
+              >
+                <span
+                  className={`shrink-0 rounded border px-2 py-0.5 font-mono text-[10px] font-bold uppercase ${
+                    BADGE_TONES[i % BADGE_TONES.length]
+                  }`}
+                >
+                  {c.code}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-xs font-semibold text-ink">
+                  {c.name}
+                </span>
+                {c.count !== null && (
+                  <span className="shrink-0 rounded-md border border-white/10 bg-surface-1 px-2 py-0.5 font-mono text-[10px] text-ink-2">
+                    {c.count} {c.count === 1 ? "Section" : "Sections"}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* edit modal */}
+      {isEditing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/70 p-4 backdrop-blur-xl">
+          <div className="max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-xl border border-accent/35 border-b-accent-2/20 bg-surface-3 p-6 shadow-modal">
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <h3 className="font-display text-base font-semibold text-ink">
+                Edit profile details
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                aria-label="Close"
+                className="rounded px-2 text-lg leading-none text-ink-3 transition hover:text-accent"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div>
+                <label className={LABEL}>Upload profile photo</label>
+                <input
+                  name="profilePhoto"
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhoto}
+                  disabled={isSaving}
+                  className="w-full cursor-pointer text-xs text-ink-2 file:mr-3 file:cursor-pointer file:rounded file:border file:border-accent/40 file:bg-transparent file:px-4 file:py-2 file:font-mono file:text-xs file:font-bold file:uppercase file:text-accent hover:file:bg-accent/10 disabled:opacity-50"
+                />
+              </div>
+
+              <div>
+                <label className={LABEL}>Full name</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={draft.name}
+                  onChange={handleChange}
+                  required
+                  disabled={isSaving}
+                  className={INPUT}
+                />
+              </div>
+
+              <div>
+                <label className={LABEL}>Position / title</label>
+                <input
+                  type="text"
+                  name="position"
+                  value={draft.position}
+                  onChange={handleChange}
+                  disabled={isSaving}
+                  className={INPUT}
+                />
+              </div>
+
+              <div>
+                <label className={LABEL}>Courses handled (comma-separated)</label>
+                <input
+                  type="text"
+                  name="courses"
+                  value={coursesText}
+                  onChange={(e) => setCoursesText(e.target.value)}
+                  placeholder="e.g. BSIT 3A - Web Dev, BSCS 2B - OOP"
+                  disabled={isSaving}
+                  className={INPUT}
+                />
+              </div>
+
+              <div>
+                <label className={LABEL}>Gmail address</label>
+                <input
+                  type="email"
+                  name="gmail"
+                  value={draft.gmail}
+                  onChange={handleChange}
+                  disabled={isSaving}
+                  className={INPUT}
+                />
+              </div>
+
+              <div>
+                <label className={LABEL}>Facebook URL</label>
+                <input
+                  type="text"
+                  name="facebook"
+                  value={draft.facebook}
+                  onChange={handleChange}
+                  disabled={isSaving}
+                  className={INPUT}
+                />
+              </div>
+
+              {error && (
+                <p className="rounded border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-xs font-medium text-rose-300">
+                  {error}
+                </p>
+              )}
+
+              <div className="flex justify-end gap-2 border-t border-white/5 pt-4">
+                <button
+                  type="button"
+                  onClick={() => !isSaving && setIsEditing(false)}
+                  disabled={isSaving}
+                  className={BTN_SECONDARY}
+                >
+                  Cancel
+                </button>
+                <button type="submit" disabled={isSaving} className={BTN_PRIMARY}>
+                  {isSaving ? "Saving..." : "Save changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

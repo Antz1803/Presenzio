@@ -31,39 +31,39 @@ export default function RealtimeCalendar() {
   );
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl p-5 rounded-3xl border border-white/60 shadow-xl shadow-slate-200/50 flex flex-col justify-between relative overflow-hidden">
-      <div className="flex justify-between items-center mb-3">
+    <section className="rounded-lg border border-accent/20 bg-surface-1/85 p-3 backdrop-blur-xl">
+      <div className="mb-2 flex items-start justify-between">
         <div>
-          <h3 className="text-sm font-extrabold text-slate-800 tracking-tight">
+          <h3 className="font-display text-sm font-semibold tracking-tight text-ink">
             {monthName} {year}
           </h3>
-          <p className="text-[11px] text-indigo-600 font-semibold tracking-wide flex items-center gap-1.5 mt-0.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />{" "}
-            {timeString} · Live
+          <p className="mt-0.5 flex items-center gap-1.5 font-mono text-[10px] text-accent">
+            <span className="size-1.5 animate-pulse rounded-full bg-accent shadow-[0_0_6px_#00F0FF]" />
+            {timeString} - Live
           </p>
         </div>
-        <span className="p-2.5 rounded-2xl bg-indigo-50/80 text-indigo-600 backdrop-blur-md border border-indigo-100/50">
-          <Icon name="calendar" size={18} />
+        <span className="text-ink-2">
+          <Icon name="calendar" size={16} />
         </span>
       </div>
 
-      <div className="grid grid-cols-7 text-center gap-1 text-[11px] font-bold text-slate-400 mb-1">
+      <div className="mb-0.5 grid grid-cols-7 gap-0.5 text-center font-mono text-[10px] text-ink-3">
         {weekdayLabels.map((day) => (
           <div key={day}>{day}</div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-xs">
+      <div className="grid grid-cols-7 gap-0.5 text-center">
         {daysArray.map((day, idx) =>
           !day ? (
             <div key={`empty-${idx}`} />
           ) : (
             <div
               key={`day-${day}`}
-              className={`py-1.5 rounded-xl text-xs font-semibold transition-all ${
+              className={`mx-auto grid size-6 place-items-center rounded-full font-mono text-[11px] transition ${
                 day === today
-                  ? "bg-gradient-to-tr from-indigo-600 to-violet-500 text-white shadow-md shadow-indigo-200 scale-105"
-                  : "text-slate-700 hover:bg-slate-100/60"
+                  ? "bg-accent font-bold text-canvas shadow-halo"
+                  : "text-ink-2 hover:bg-surface-3 hover:text-ink"
               }`}
             >
               {day}
@@ -71,6 +71,6 @@ export default function RealtimeCalendar() {
           ),
         )}
       </div>
-    </div>
+    </section>
   );
 }
