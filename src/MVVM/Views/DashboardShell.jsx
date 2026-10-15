@@ -16,7 +16,6 @@ import { Icon as G } from "./DashboardShared";
 import ClassOptionsModalView from "./shell/ClassOptionsModal";
 import DeleteClassModalView from "./shell/DeleteClassModal";
 import { StudentModal as StudentModalView } from "./DashboardOverlays";
-import "../../App.css"; // legacy: still used by Classes/Materials/modals until migrated
 import LiveClock from "./shell/LiveClock";
 import { useAuth as ie } from "../../auth/useAuth";
 import { useBranding as useBrandingSettings } from "../../lib/branding";

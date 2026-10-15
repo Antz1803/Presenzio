@@ -241,20 +241,20 @@ export function ScoreBoxView({
     }
   };
   return (
-    <form className="assessment-builder score-box-form" onSubmit={save}>
-      <div className="score-box-toolbar">
+    <form className="flex flex-col gap-4 [&_textarea]:box-border [&_textarea]:w-full [&_textarea]:[resize:vertical] [&_textarea]:border [&_textarea]:border-white/10 [&_textarea]:rounded-[9px] [&_textarea]:bg-surface-1 [&_textarea]:text-ink-2 [&_textarea]:p-2.5 [&_textarea]:font-medium [&_textarea]:text-[11px] [&_textarea]:font-display [&_textarea]:outline-none [&_textarea:focus]:border-accent/30 [&_textarea:focus]:[box-shadow:0_0_0_3px_#162032] assessment-builder gap-3.5" onSubmit={save}>
+      <div className="sticky [top:10px] z-5 flex items-center justify-between gap-3 py-2.5 px-3 border border-white/10 rounded-[14px] bg-surface-1 [box-shadow:0_10px_24px_rgba(0,240,255,0.05)] [backdrop-filter:blur(12px)] max-[680px]:items-stretch max-[680px]:flex-col max-[680px]:[&>button]:w-full score-box-toolbar">
         <button
           type="button"
-          className="outline-button"
+          className="inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50"
           onClick={onBack}
           disabled={saving}
         >
           ← Back to groupings
         </button>
-        <div className="score-box-toolbar-actions">
+        <div className="flex items-center justify-end gap-2 flex-wrap max-[680px]:[justify-content:stretch] max-[680px]:[&_button]:flex-1">
           <button
             type="button"
-            className="outline-button"
+            className="inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50"
             onClick={() => void copyGroups()}
             disabled={saving || copying}
           >
@@ -262,33 +262,33 @@ export function ScoreBoxView({
           </button>
           <button
             type="button"
-            className="outline-button"
+            className="inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50"
             onClick={() => void saveAssignments()}
             disabled={saving || copying}
           >
             {saving ? "Saving..." : "Save assignments & settings"}
           </button>
-          <button type="submit" className="primary-button" disabled={saving || copying}>
-            {saving && <span className="button-spinner" aria-hidden="true" />}
+          <button type="submit" className="inline-flex items-center justify-center gap-2 rounded bg-accent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-canvas transition hover:shadow-halo active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50" disabled={saving || copying}>
+            {saving && <span className="inline-block w-[11px] h-[11px] border-2 border-white/10 border-t-white/10 rounded-[50%] [animation:button-spin_.7s_linear_infinite]" aria-hidden="true" />}
             {saving ? "Saving..." : "Save group scores"}
           </button>
         </div>
       </div>
       <button
         type="button"
-        className="outline-button score-box-legacy-action"
+        className="inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50 hidden!"
         onClick={onBack}
         disabled={saving}
       >
         ← Back to groupings
       </button>
-      <p className="action-help">
+      <p className="mt-[15px] mx-0 mb-0 text-ink-3 text-[10px] leading-[1.5] [.period-settings-list>&]:mt-0 [.period-settings-list>&]:mx-0 [.period-settings-list>&]:mb-1 [.period-settings-list>&]:py-[11px] [.period-settings-list>&]:px-[13px] [.period-settings-list>&]:border [.period-settings-list>&]:border-white/10 [.period-settings-list>&]:rounded-[9px] [.period-settings-list>&]:bg-surface-1 [.action-modal_&]:text-ink-3 [.action-modal_&]:leading-[1.65]">
         Scoring <strong>{box.label}</strong> — groups are preloaded from this
         box.
       </p>
       <button
         type="button"
-        className="outline-button score-box-legacy-action"
+        className="inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50 hidden!"
         onClick={() => void copyGroups()}
         disabled={saving || copying}
       >
@@ -296,13 +296,13 @@ export function ScoreBoxView({
       </button>
       <button
         type="button"
-        className="primary-button score-box-legacy-action"
+        className="inline-flex items-center justify-center gap-2 rounded bg-accent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-canvas transition hover:shadow-halo active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 hidden!"
         onClick={() => void saveAssignments()}
         disabled={saving || copying}
       >
         {saving ? "Saving..." : "Save assignments & settings"}
       </button>
-      <div className="action-form-grid assessment-details-grid">
+      <div className="grid grid-cols-[repeat(2,1fr)] gap-3 [&.single]:grid-cols-[1fr] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-semibold [&_input]:w-full [&_input]:box-border [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[7px] [&_input]:bg-surface-1 [&_input]:text-ink-2 [&_input]:p-[9px] [&_input]:text-[11px] [&_input]:outline-none [&_select]:w-full [&_select]:box-border [&_select]:border [&_select]:border-white/10 [&_select]:rounded-[7px] [&_select]:bg-surface-1 [&_select]:text-ink-2 [&_select]:p-[9px] [&_select]:text-[11px] [&_select]:outline-none [&_input:focus]:border-accent/30 [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_select:focus]:border-accent/30 [&_select:focus]:[box-shadow:0_0_0_3px_#162032] max-[760px]:grid-cols-[repeat(2,1fr)] [.action-modal_&_label]:text-ink-2 [.action-modal_&_label]:text-[10px] [.action-modal_&_label]:tracking-[.1px] [.action-modal_&_input]:border-white/10 [.action-modal_&_input]:rounded-[9px] [.action-modal_&_input]:bg-surface-1 [.action-modal_&_input]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_input]:transition [.action-modal_&_select]:border-white/10 [.action-modal_&_select]:rounded-[9px] [.action-modal_&_select]:bg-surface-1 [.action-modal_&_select]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_select]:transition [.action-modal_&_input:hover]:border-accent/30 [.action-modal_&_select:hover]:border-accent/30 [.action-modal_&_input:focus]:border-accent/30 [.action-modal_&_input:focus]:[box-shadow:0_0_0_3px_#162032] [.action-modal_&_select:focus]:border-accent/30 [.action-modal_&_select:focus]:[box-shadow:0_0_0_3px_#162032] grid-cols-[minmax(0,2fr)_minmax(130px,1fr)_minmax(130px,1fr)] max-[760px]:grid-cols-[1fr]">
         <label>
           Type
           <select
@@ -361,11 +361,11 @@ export function ScoreBoxView({
           />
         </label>
       </div>
-      <div className="score-box-add-group">
+      <div className="flex justify-end mt-0.5 mx-0 mb-1 score-box-add-group">
         {!showAdditionalGroup ? (
           <button
             type="button"
-            className="outline-button"
+            className="inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50"
             onClick={() => {
               setShowAdditionalGroup(true);
               setMessage({ status: "", text: "" });
@@ -375,7 +375,7 @@ export function ScoreBoxView({
             + Add group
           </button>
         ) : (
-          <div className="group-add-panel">
+          <div className="grid gap-2.5 mt-3 p-3.5 border border-white/10 rounded-[14px] bg-surface-1 [&_textarea]:min-h-[92px] [.score-box-add-group_&]:w-full">
             <label htmlFor="score-box-additional-group">
               Paste another group
             </label>
@@ -387,12 +387,12 @@ export function ScoreBoxView({
               placeholder={`Group ${numbers.length + 1}\nStudent name\nStudent name`}
               disabled={saving || copying}
             />
-            <div className="group-paste-footer">
+            <div className="flex items-center justify-between gap-3 [&_span]:text-ink-3 [&_span]:text-[9px] group-paste-footer">
               <span>Paste one student name per line. The new group is saved with the assignments.</span>
-              <div className="group-add-actions">
+              <div className="flex items-center gap-2 flex-wrap max-[680px]:w-full max-[680px]:[&_button]:flex-1 group-add-actions">
                 <button
                   type="button"
-                  className="outline-button"
+                  className="inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={() => {
                     setShowAdditionalGroup(false);
                     setAdditionalGroupPaste("");
@@ -403,7 +403,7 @@ export function ScoreBoxView({
                 </button>
                 <button
                   type="button"
-                  className="primary-button"
+                  className="inline-flex items-center justify-center gap-2 rounded bg-accent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-canvas transition hover:shadow-halo active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={addPastedGroup}
                   disabled={saving || copying || !additionalGroupPaste.trim()}
                 >
@@ -414,14 +414,14 @@ export function ScoreBoxView({
           </div>
         )}
       </div>
-      <div className="assessment-question-list">
+      <div className="[.assessment-manager-editor_&]:max-h-[475px] [.assessment-manager-editor_&]:overflow-auto [.assessment-manager-editor_&]:pt-0.5 [.assessment-manager-editor_&]:px-[3px] [.assessment-manager-editor_&]:pb-[3px] max-[760px]:[.assessment-manager-editor_&]:max-h-[none] flex flex-col gap-[13px]">
         {numbers.map((number) => {
           const members = sorted.filter(
             (student) => assignments[student.id] === number,
           );
           return (
-            <article className="assessment-question-card" key={number}>
-              <div className="assessment-question-header">
+            <article className="[.assessment-manager-editor_&]:[box-shadow:none] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-bold [&_label>span:not(.choice-letter)]:text-ink-3 [&_label>span:not(.choice-letter)]:font-medium p-[17px] border border-white/10 rounded-[14px] bg-surface-1 [box-shadow:0_5px_16px_rgba(0,240,255,0.02)]" key={number}>
+              <div className="flex items-start justify-between gap-2.5 mb-[13px] [&_div]:flex [&_div]:flex-col [&_div]:gap-1 [&_span]:text-accent [&_span]:text-[8px] [&_span]:font-extrabold [&_span]:tracking-[1.3px] [&_strong]:text-ink-2 [&_strong]:text-[12px]">
                 <strong>GROUP {number}</strong>
                 <span>
                   {members.length} student{members.length === 1 ? "" : "s"}
@@ -447,14 +447,14 @@ export function ScoreBoxView({
                   }
                 />
               </label>
-              <p className="assessment-field-hint">
+              <p className="[grid-column:1/-1] m-0 text-ink-3 text-[9px] font-medium">
                 {members.map((student) => student.name).join(", ")}
               </p>
             </article>
           );
         })}
       </div>
-      <div className="table-wrap">
+      <div className="overflow-x-auto [&_table]:[border-collapse:collapse] [&_table]:w-full [&_table]:min-w-[660px] [&_table]:text-left [&_th]:text-ink-3 [&_th]:bg-surface-2 [&_th]:text-[9px] [&_th]:font-semibold [&_th]:tracking-[.6px] [&_th]:py-[11px] [&_th]:px-5 [&_th]:border-b [&_th]:border-white/10 [&_th]:border-b-white/10 [&_td]:text-ink-2 [&_td]:text-[10px] [&_td]:py-3.5 [&_td]:px-5 [&_td]:border-b [&_td]:border-white/10 [&_td]:whitespace-nowrap [&_td]:border-b-white/10 [&_tbody_tr:last-child_td]:border-b-0 [&_tbody_tr:hover]:bg-surface-1 [.action-modal_&_th]:bg-surface-2 [.action-modal_&_th]:text-ink-3 [.action-modal_&_th]:border-b-white/10 [.action-modal_&_th]:text-[9px] [.action-modal_&_th]:tracking-[.8px] [.action-modal_&_td]:text-ink-2 [.action-modal_&_td]:border-b-white/10 [.action-modal_&_tbody_tr:nth-child(even)]:bg-surface-1 [.action-modal_&_tbody_tr:hover]:bg-surface-2">
         <table>
           <thead>
             <tr>
@@ -492,21 +492,21 @@ export function ScoreBoxView({
         </table>
       </div>
       {message.text && (
-        <p className={`record-save-message ${message.status}`} role="status">
+        <p className={`mt-0 mx-0 mb-3 py-[9px] px-[11px] rounded-[7px] text-[10px] [&.error]:border [&.error]:border-white/10 [&.error]:bg-surface-2 [&.error]:text-rose-300 [&.success]:border [&.success]:border-white/10 [&.success]:bg-surface-2 [&.success]:text-emerald-400 ${message.status}`} role="status">
           {message.text}
         </p>
       )}
-      <div className="action-modal-footer score-box-legacy-footer">
+      <div className="flex justify-end gap-2 mt-5.5 pt-[17px] border-t border-white/10 max-[760px]:flex-wrap max-[760px]:[&_button]:flex-1 [.assessment-builder_&]:mt-0.5 hidden!">
         <button
           type="button"
-          className="outline-button"
+          className="inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50"
           onClick={onBack}
           disabled={saving}
         >
           Back
         </button>
-        <button type="submit" className="primary-button" disabled={saving}>
-          {saving && <span className="button-spinner" aria-hidden="true" />}
+        <button type="submit" className="inline-flex items-center justify-center gap-2 rounded bg-accent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-canvas transition hover:shadow-halo active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50" disabled={saving}>
+          {saving && <span className="inline-block w-[11px] h-[11px] border-2 border-white/10 border-t-white/10 rounded-[50%] [animation:button-spin_.7s_linear_infinite]" aria-hidden="true" />}
           {saving ? "Saving..." : "Save group scores"}
         </button>
       </div>

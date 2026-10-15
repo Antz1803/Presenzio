@@ -332,16 +332,16 @@ function re({ section: g, assessments: u = [], onSave: w, onClose: p }) {
     { title: "Create Assessment", section: g, onClose: p, size: "wide" },
     React.createElement(
       "form",
-      { className: "assessment-builder", onSubmit: j },
+      { className: "flex flex-col gap-4 [&_textarea]:box-border [&_textarea]:w-full [&_textarea]:[resize:vertical] [&_textarea]:border [&_textarea]:border-white/10 [&_textarea]:rounded-[9px] [&_textarea]:bg-surface-1 [&_textarea]:text-ink-2 [&_textarea]:p-2.5 [&_textarea]:font-medium [&_textarea]:text-[11px] [&_textarea]:font-display [&_textarea]:outline-none [&_textarea:focus]:border-accent/30 [&_textarea:focus]:[box-shadow:0_0_0_3px_#162032] assessment-builder", onSubmit: j },
       React.createElement(
         "div",
-        { className: "assessment-builder-intro" },
+        { className: "flex items-center justify-between gap-3 py-[15px] px-4 border border-white/10 rounded-[14px] bg-surface-2 [&>div]:flex [&>div]:items-center [&>div]:gap-[11px] [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[13px] [&_p]:mt-1 [&_p]:mx-0 [&_p]:mb-0 [&_p]:text-ink-3 [&_p]:text-[10px] max-[760px]:items-start max-[760px]:flex-col" },
         React.createElement(
           "div",
           null,
           React.createElement(
             "span",
-            { className: "assessment-builder-icon" },
+            { className: "[.student-viewer-empty_&]:mb-2.5 grid place-items-center w-[34px] h-[34px] rounded-[11px] bg-surface-2 text-accent text-[18px]" },
             "\u{1F4DD}",
           ),
           React.createElement(
@@ -357,17 +357,17 @@ function re({ section: g, assessments: u = [], onSave: w, onClose: p }) {
         ),
         React.createElement(
           "div",
-          { className: "assessment-builder-summary" },
+          { className: "flex items-center gap-2 assessment-builder-summary" },
           React.createElement(
             "span",
-            { className: "assessment-builder-count" },
+            { className: "py-1.5 px-[9px] rounded-[7px] bg-surface-1 text-accent text-[9px] font-extrabold whitespace-nowrap max-[760px]:self-end [.assessment-builder-summary_&]:bg-surface-1" },
             d.length,
             " ",
             d.length === 1 ? "question" : "questions",
           ),
           React.createElement(
             "span",
-            { className: "assessment-builder-max" },
+            { className: "flex items-center gap-[7px] py-1.5 px-[9px] border border-white/10 rounded-[7px] bg-surface-2 [&_small]:text-emerald-300 [&_small]:text-[7px] [&_small]:font-extrabold [&_small]:tracking-[.8px] [&_strong]:text-emerald-400 [&_strong]:text-[10px]" },
             React.createElement("small", null, "MAXIMUM SCORE"),
             React.createElement("strong", null, P.toFixed(2)),
           ),
@@ -375,7 +375,7 @@ function re({ section: g, assessments: u = [], onSave: w, onClose: p }) {
       ),
       React.createElement(
         "div",
-        { className: "action-form-grid assessment-details-grid" },
+        { className: "grid grid-cols-[repeat(2,1fr)] gap-3 [&.single]:grid-cols-[1fr] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-semibold [&_input]:w-full [&_input]:box-border [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[7px] [&_input]:bg-surface-1 [&_input]:text-ink-2 [&_input]:p-[9px] [&_input]:text-[11px] [&_input]:outline-none [&_select]:w-full [&_select]:box-border [&_select]:border [&_select]:border-white/10 [&_select]:rounded-[7px] [&_select]:bg-surface-1 [&_select]:text-ink-2 [&_select]:p-[9px] [&_select]:text-[11px] [&_select]:outline-none [&_input:focus]:border-accent/30 [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_select:focus]:border-accent/30 [&_select:focus]:[box-shadow:0_0_0_3px_#162032] max-[760px]:grid-cols-[repeat(2,1fr)] [.action-modal_&_label]:text-ink-2 [.action-modal_&_label]:text-[10px] [.action-modal_&_label]:tracking-[.1px] [.action-modal_&_input]:border-white/10 [.action-modal_&_input]:rounded-[9px] [.action-modal_&_input]:bg-surface-1 [.action-modal_&_input]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_input]:transition [.action-modal_&_select]:border-white/10 [.action-modal_&_select]:rounded-[9px] [.action-modal_&_select]:bg-surface-1 [.action-modal_&_select]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_select]:transition [.action-modal_&_input:hover]:border-accent/30 [.action-modal_&_select:hover]:border-accent/30 [.action-modal_&_input:focus]:border-accent/30 [.action-modal_&_input:focus]:[box-shadow:0_0_0_3px_#162032] [.action-modal_&_select:focus]:border-accent/30 [.action-modal_&_select:focus]:[box-shadow:0_0_0_3px_#162032] grid-cols-[minmax(0,2fr)_minmax(130px,1fr)_minmax(130px,1fr)] max-[760px]:grid-cols-[1fr]" },
         React.createElement(
           "label",
           null,
@@ -499,7 +499,7 @@ function re({ section: g, assessments: u = [], onSave: w, onClose: p }) {
         React.createElement(
           "p",
           {
-            className: "assessment-field-hint assessment-slot-conflict",
+            className: "[grid-column:1/-1] m-0 text-ink-3 text-[9px] font-medium assessment-slot-conflict",
             role: "status",
           },
           G(n.category).find((t) => t.value === n.itemNo)?.label,
@@ -509,12 +509,12 @@ function re({ section: g, assessments: u = [], onSave: w, onClose: p }) {
         ),
       React.createElement(
         "p",
-        { className: "action-help" },
+        { className: "mt-[15px] mx-0 mb-0 text-ink-3 text-[10px] leading-[1.5] [.period-settings-list>&]:mt-0 [.period-settings-list>&]:mx-0 [.period-settings-list>&]:mb-1 [.period-settings-list>&]:py-[11px] [.period-settings-list>&]:px-[13px] [.period-settings-list>&]:border [.period-settings-list>&]:border-white/10 [.period-settings-list>&]:rounded-[9px] [.period-settings-list>&]:bg-surface-1 [.action-modal_&]:text-ink-3 [.action-modal_&]:leading-[1.65]" },
         "Students can submit once by default. Grant another attempt to an individual student from Manage Assessments.",
       ),
       React.createElement(
         "label",
-        { className: "assessment-instructions-field" },
+        { className: "flex flex-col gap-1.5 text-ink-2 text-[10px] font-bold [&_span]:text-ink-3 [&_span]:font-medium" },
         "Instructions ",
         React.createElement("span", null, "(optional)"),
         React.createElement(te, {
@@ -526,10 +526,10 @@ function re({ section: g, assessments: u = [], onSave: w, onClose: p }) {
       ),
       React.createElement(
         "section",
-        { className: "question-generator" },
+        { className: "my-4.5 mx-0 p-[15px] border border-white/10 rounded-[10px] bg-surface-2 [&>textarea]:box-border [&>textarea]:w-full [&>textarea]:border [&>textarea]:border-white/10 [&>textarea]:rounded-[7px] [&>textarea]:bg-surface-1 [&>textarea]:text-ink-2 [&>textarea]:p-2.5 [&>textarea]:text-[10px] [&>textarea]:leading-[1.5] [&>textarea]:[resize:vertical] [&>textarea]:outline-none [&>textarea:focus]:border-accent/30 [&>textarea:focus]:[box-shadow:0_0_0_3px_#162032]" },
         React.createElement(
           "div",
-          { className: "question-generator-heading" },
+          { className: "flex items-start justify-between gap-[15px] mb-2.5 [&_strong]:block [&_strong]:text-ink-2 [&_strong]:text-[11px] [&_p]:mt-1 [&_p]:mx-0 [&_p]:mb-0 [&_p]:text-ink-3 [&_p]:text-[9px] [&>span]:text-accent [&>span]:text-[8px] [&>span]:font-extrabold [&>span]:tracking-[1px] [&>span]:whitespace-nowrap max-[760px]:items-start max-[760px]:flex-col" },
           React.createElement(
             "div",
             null,
@@ -550,7 +550,7 @@ function re({ section: g, assessments: u = [], onSave: w, onClose: p }) {
         ),
         React.createElement(
           "div",
-          { className: "assessment-question-controls" },
+          { className: "flex gap-1.5 mb-3.5 [&_button]:border [&_button]:border-white/10 [&_button]:rounded-lg [&_button]:bg-surface-1 [&_button]:text-ink-3 [&_button]:py-[7px] [&_button]:px-2.5 [&_button]:text-[9px] [&_button]:font-bold [&_button]:cursor-pointer [&_button.active]:border-accent/30 [&_button.active]:bg-surface-2 [&_button.active]:text-accent" },
           React.createElement(
             "button",
             {
@@ -620,7 +620,7 @@ Answer: B`,
         }),
         React.createElement(
           "div",
-          { className: "question-generator-footer" },
+          { className: "flex items-center justify-between gap-3 mt-[9px] [&_small]:text-ink-3 [&_small]:text-[9px] max-[760px]:items-start max-[760px]:flex-col question-generator-footer" },
           React.createElement(
             "small",
             null,
@@ -628,7 +628,7 @@ Answer: B`,
           ),
           React.createElement(
             "button",
-            { type: "button", className: "outline-button", onClick: Y },
+            { type: "button", className: "inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50", onClick: Y },
             "Generate questions",
           ),
         ),
@@ -636,7 +636,7 @@ Answer: B`,
           React.createElement(
             "p",
             {
-              className: `question-generator-message ${F.status}`,
+              className: `mt-2 mx-0 mb-0 text-[9px] [&.success]:text-emerald-400 [&.error]:text-rose-300 ${F.status}`,
               role: "status",
             },
             F.text,
@@ -644,14 +644,14 @@ Answer: B`,
       ),
       React.createElement(
         "div",
-        { className: "assessment-question-list" },
+        { className: "[.assessment-manager-editor_&]:max-h-[475px] [.assessment-manager-editor_&]:overflow-auto [.assessment-manager-editor_&]:pt-0.5 [.assessment-manager-editor_&]:px-[3px] [.assessment-manager-editor_&]:pb-[3px] max-[760px]:[.assessment-manager-editor_&]:max-h-[none] flex flex-col gap-[13px]" },
         d.map((t, o) =>
           React.createElement(
             "article",
-            { className: "assessment-question-card", key: o },
+            { className: "[.assessment-manager-editor_&]:[box-shadow:none] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-bold [&_label>span:not(.choice-letter)]:text-ink-3 [&_label>span:not(.choice-letter)]:font-medium p-[17px] border border-white/10 rounded-[14px] bg-surface-1 [box-shadow:0_5px_16px_rgba(0,240,255,0.02)]", key: o },
             React.createElement(
               "div",
-              { className: "assessment-question-header" },
+              { className: "flex items-start justify-between gap-2.5 mb-[13px] [&_div]:flex [&_div]:flex-col [&_div]:gap-1 [&_span]:text-accent [&_span]:text-[8px] [&_span]:font-extrabold [&_span]:tracking-[1.3px] [&_strong]:text-ink-2 [&_strong]:text-[12px]" },
               React.createElement(
                 "div",
                 null,
@@ -669,7 +669,7 @@ Answer: B`,
                   "button",
                   {
                     type: "button",
-                    className: "assessment-remove-button",
+                    className: "border-0 bg-transparent text-rose-300 text-[10px] font-bold cursor-pointer",
                     onClick: () => m((l) => l.filter((e, s) => s !== o)),
                   },
                   "Remove",
@@ -677,7 +677,7 @@ Answer: B`,
             ),
             React.createElement(
               "div",
-              { className: "assessment-question-controls" },
+              { className: "flex gap-1.5 mb-3.5 [&_button]:border [&_button]:border-white/10 [&_button]:rounded-lg [&_button]:bg-surface-1 [&_button]:text-ink-3 [&_button]:py-[7px] [&_button]:px-2.5 [&_button]:text-[9px] [&_button]:font-bold [&_button]:cursor-pointer [&_button.active]:border-accent/30 [&_button.active]:bg-surface-2 [&_button.active]:text-accent" },
               React.createElement(
                 "button",
                 {
@@ -699,10 +699,10 @@ Answer: B`,
             ),
             React.createElement(
               "div",
-              { className: "action-form-grid assessment-question-grid" },
+              { className: "grid grid-cols-[repeat(2,1fr)] gap-3 [&.single]:grid-cols-[1fr] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-semibold [&_input]:w-full [&_input]:box-border [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[7px] [&_input]:bg-surface-1 [&_input]:text-ink-2 [&_input]:p-[9px] [&_input]:text-[11px] [&_input]:outline-none [&_select]:w-full [&_select]:box-border [&_select]:border [&_select]:border-white/10 [&_select]:rounded-[7px] [&_select]:bg-surface-1 [&_select]:text-ink-2 [&_select]:p-[9px] [&_select]:text-[11px] [&_select]:outline-none [&_input:focus]:border-accent/30 [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_select:focus]:border-accent/30 [&_select:focus]:[box-shadow:0_0_0_3px_#162032] max-[760px]:grid-cols-[repeat(2,1fr)] [.action-modal_&_label]:text-ink-2 [.action-modal_&_label]:text-[10px] [.action-modal_&_label]:tracking-[.1px] [.action-modal_&_input]:border-white/10 [.action-modal_&_input]:rounded-[9px] [.action-modal_&_input]:bg-surface-1 [.action-modal_&_input]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_input]:transition [.action-modal_&_select]:border-white/10 [.action-modal_&_select]:rounded-[9px] [.action-modal_&_select]:bg-surface-1 [.action-modal_&_select]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_select]:transition [.action-modal_&_input:hover]:border-accent/30 [.action-modal_&_select:hover]:border-accent/30 [.action-modal_&_input:focus]:border-accent/30 [.action-modal_&_input:focus]:[box-shadow:0_0_0_3px_#162032] [.action-modal_&_select:focus]:border-accent/30 [.action-modal_&_select:focus]:[box-shadow:0_0_0_3px_#162032] grid-cols-[minmax(0,1fr)_105px] max-[760px]:grid-cols-[1fr]" },
               React.createElement(
                 "label",
-                { className: "assessment-prompt-field" },
+                { className: "[grid-column:1]" },
                 "Question prompt",
                 React.createElement("textarea", {
                   name: `question-${o}-prompt`,
@@ -730,14 +730,14 @@ Answer: B`,
             t.type === "multiple_choice"
               ? React.createElement(
                   "div",
-                  { className: "assessment-choices-grid" },
+                  { className: "[.assessment-manager-editor_&]:mt-[3px] grid grid-cols-[1fr_1fr] [gap:10px_12px] mt-[3px] [&_label]:grid [&_label]:grid-cols-[23px_minmax(0,1fr)_20px] [&_label]:items-center [&_label]:gap-[7px] [&_input:not(.choice-radio)]:min-w-0 max-[760px]:grid-cols-[1fr]" },
                   t.choices.map((l, e) =>
                     React.createElement(
                       "label",
                       { key: L[e] },
                       React.createElement(
                         "span",
-                        { className: "choice-letter" },
+                        { className: "[.student-portal-options_&]:w-[24px] [.student-portal-options_&]:h-[24px] [.student-choice-list_&]:w-[24px] [.student-choice-list_&]:h-[24px] grid place-items-center w-[23px] h-[23px] rounded-[7px] bg-surface-2 text-accent text-[9px] font-extrabold choice-letter" },
                         L[e],
                       ),
                       React.createElement("input", {
@@ -748,7 +748,7 @@ Answer: B`,
                         onChange: (s) => q(o, e, s.target.value),
                       }),
                       React.createElement("input", {
-                        className: "choice-radio",
+                        className: "[.assessment-builder_&]:w-[15px] [.assessment-builder_&]:h-[15px] [.assessment-builder_&]:[accent-color:#00F0FF] choice-radio",
                         type: "radio",
                         name: `correct-answer-${o}`,
                         checked: t.correctAnswer === L[e],
@@ -759,13 +759,13 @@ Answer: B`,
                   ),
                   React.createElement(
                     "p",
-                    { className: "assessment-field-hint" },
+                    { className: "[grid-column:1/-1] m-0 text-ink-3 text-[9px] font-medium" },
                     "Select the radio button beside the correct answer.",
                   ),
                 )
               : React.createElement(
                   "div",
-                  { className: "coding-question-fields" },
+                  { className: "grid grid-cols-[170px_1fr_1fr] gap-3 [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-bold [&_textarea]:text-[10px] max-[760px]:grid-cols-[1fr]" },
                   React.createElement(
                     "label",
                     null,
@@ -856,7 +856,7 @@ Answer: B`,
                   ),
                   React.createElement(
                     "p",
-                    { className: "assessment-field-hint" },
+                    { className: "[grid-column:1/-1] m-0 text-ink-3 text-[9px] font-medium" },
                     "An answer close to the expected output (but not exact) earns the near-match score; anything else earns the incorrect score. Both are a percentage of this question's points.",
                   ),
                 ),
@@ -867,7 +867,7 @@ Answer: B`,
         "button",
         {
           type: "button",
-          className: "assessment-add-question",
+          className: "self-start border border-dashed border-accent/30 rounded-[9px] bg-surface-1 text-accent py-[9px] px-3 text-[10px] font-extrabold cursor-pointer hover:bg-surface-2 hover:border-accent/30",
           onClick: () => m((t) => [...t, Q()]),
         },
         "+ Add another question",
@@ -875,17 +875,17 @@ Answer: B`,
       $.text &&
         React.createElement(
           "p",
-          { className: `record-save-message ${$.status}`, role: "status" },
+          { className: `mt-0 mx-0 mb-3 py-[9px] px-[11px] rounded-[7px] text-[10px] [&.error]:border [&.error]:border-white/10 [&.error]:bg-surface-2 [&.error]:text-rose-300 [&.success]:border [&.success]:border-white/10 [&.success]:bg-surface-2 [&.success]:text-emerald-400 ${$.status}`, role: "status" },
           $.text,
         ),
       React.createElement(
         "div",
-        { className: "action-modal-footer" },
+        { className: "flex justify-end gap-2 mt-5.5 pt-[17px] border-t border-white/10 max-[760px]:flex-wrap max-[760px]:[&_button]:flex-1 [.assessment-builder_&]:mt-0.5" },
         React.createElement(
           "button",
           {
             type: "button",
-            className: "outline-button",
+            className: "inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50",
             onClick: p,
             disabled: C,
           },
@@ -893,7 +893,7 @@ Answer: B`,
         ),
         React.createElement(
           "button",
-          { type: "submit", className: "primary-button", disabled: C },
+          { type: "submit", className: "inline-flex items-center justify-center gap-2 rounded bg-accent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-canvas transition hover:shadow-halo active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50", disabled: C },
           C ? "Saving\u2026" : "Save assessment",
         ),
       ),
@@ -902,7 +902,7 @@ Answer: B`,
       React.createElement(
         "div",
         {
-          className: "assessment-confirm-overlay",
+          className: "fixed [inset:0] z-50 grid place-items-center p-5 bg-canvas/40 [backdrop-filter:blur(7px)]",
           onMouseDown: (t) => {
             t.target === t.currentTarget && r(null);
           },
@@ -910,14 +910,14 @@ Answer: B`,
         React.createElement(
           "section",
           {
-            className: "assessment-confirm-dialog",
+            className: "w-[min(390px,100%)] pt-7 px-6.5 pb-6 border border-white/10 rounded-[18px] bg-surface-2 [box-shadow:0_25px_70px_rgba(0,0,0,0.38)] text-center [&_p]:mt-0 [&_p]:mx-0 [&_p]:mb-[7px] [&_p]:text-rose-300 [&_p]:text-[8px] [&_p]:font-extrabold [&_p]:tracking-[1.6px] [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[17px] [&>span]:block [&>span]:[margin:10px_auto_0] [&>span]:max-w-[300px] [&>span]:text-ink-3 [&>span]:text-[10px] [&>span]:leading-[1.6] [&>div:last-child]:flex [&>div:last-child]:justify-center [&>div:last-child]:gap-2 [&>div:last-child]:mt-5 assessment-confirm-dialog",
             role: "alertdialog",
             "aria-modal": "true",
             "aria-labelledby": "assessment-replace-title",
           },
           React.createElement(
             "div",
-            { className: "assessment-confirm-icon" },
+            { className: "grid place-items-center w-[46px] h-[46px] [margin:0_auto_13px] rounded-[14px] bg-surface-2 text-rose-300 text-[22px] font-extrabold" },
             "!",
           ),
           React.createElement("p", null, "REPLACE ASSESSMENT"),
@@ -943,7 +943,7 @@ Answer: B`,
               "button",
               {
                 type: "button",
-                className: "outline-button",
+                className: "inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50",
                 onClick: () => r(null),
                 disabled: C,
               },
@@ -953,7 +953,7 @@ Answer: B`,
               "button",
               {
                 type: "button",
-                className: "danger-button",
+                className: "inline-flex items-center justify-center gap-2 border-0 rounded-[10px] py-2.5 px-[15px] [background:linear-gradient(135deg,#162032,#0F172A)] text-ink text-[11px] font-bold [box-shadow:0_7px_15px_rgba(0,0,0,0.32)] cursor-pointer transition hover:[background:linear-gradient(135deg,#162032,#0F172A)] hover:[box-shadow:0_10px_20px_rgba(0,0,0,0.45)] hover:[transform:translateY(-1px)] disabled:cursor-not-allowed disabled:opacity-60 disabled:[transform:none] [.assessment-confirm-dialog_&]:min-w-[110px]",
                 onClick: H,
                 disabled: C,
               },
@@ -966,7 +966,7 @@ Answer: B`,
       React.createElement(
         "div",
         {
-          className: "assessment-confirm-overlay",
+          className: "fixed [inset:0] z-50 grid place-items-center p-5 bg-canvas/40 [backdrop-filter:blur(7px)]",
           onMouseDown: (t) => {
             t.target === t.currentTarget && k(!1);
           },
@@ -974,14 +974,14 @@ Answer: B`,
         React.createElement(
           "section",
           {
-            className: "assessment-confirm-dialog",
+            className: "w-[min(390px,100%)] pt-7 px-6.5 pb-6 border border-white/10 rounded-[18px] bg-surface-2 [box-shadow:0_25px_70px_rgba(0,0,0,0.38)] text-center [&_p]:mt-0 [&_p]:mx-0 [&_p]:mb-[7px] [&_p]:text-rose-300 [&_p]:text-[8px] [&_p]:font-extrabold [&_p]:tracking-[1.6px] [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[17px] [&>span]:block [&>span]:[margin:10px_auto_0] [&>span]:max-w-[300px] [&>span]:text-ink-3 [&>span]:text-[10px] [&>span]:leading-[1.6] [&>div:last-child]:flex [&>div:last-child]:justify-center [&>div:last-child]:gap-2 [&>div:last-child]:mt-5 assessment-confirm-dialog",
             role: "alertdialog",
             "aria-modal": "true",
             "aria-labelledby": "assessment-score-overwrite-title",
           },
           React.createElement(
             "div",
-            { className: "assessment-confirm-icon" },
+            { className: "grid place-items-center w-[46px] h-[46px] [margin:0_auto_13px] rounded-[14px] bg-surface-2 text-rose-300 text-[22px] font-extrabold" },
             "!",
           ),
           React.createElement("p", null, "EXISTING SCORES FOUND"),
@@ -1003,7 +1003,7 @@ Answer: B`,
               "button",
               {
                 type: "button",
-                className: "outline-button",
+                className: "inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50",
                 onClick: () => k(!1),
                 disabled: C,
               },
@@ -1013,7 +1013,7 @@ Answer: B`,
               "button",
               {
                 type: "button",
-                className: "danger-button",
+                className: "inline-flex items-center justify-center gap-2 border-0 rounded-[10px] py-2.5 px-[15px] [background:linear-gradient(135deg,#162032,#0F172A)] text-ink text-[11px] font-bold [box-shadow:0_7px_15px_rgba(0,0,0,0.32)] cursor-pointer transition hover:[background:linear-gradient(135deg,#162032,#0F172A)] hover:[box-shadow:0_10px_20px_rgba(0,0,0,0.45)] hover:[transform:translateY(-1px)] disabled:cursor-not-allowed disabled:opacity-60 disabled:[transform:none] [.assessment-confirm-dialog_&]:min-w-[110px]",
                 onClick: X,
                 disabled: C,
               },
@@ -1247,13 +1247,13 @@ function le({
         { title: "Manage Assessments", section: g, onClose: d, size: "wide" },
         React.createElement(
           "div",
-          { className: "assessment-manager" },
+          { className: "grid grid-cols-[245px_minmax(0,1fr)] gap-4.5 min-h-[440px] max-[760px]:grid-cols-[1fr]" },
           React.createElement(
             "aside",
-            { className: "assessment-manager-list" },
+            { className: "flex flex-col gap-[7px] p-3 border border-white/10 rounded-[13px] bg-surface-1 [&_button]:flex [&_button]:flex-col [&_button]:items-start [&_button]:gap-1 [&_button]:p-[11px] [&_button]:border [&_button]:border-transparent [&_button]:rounded-[9px] [&_button]:bg-transparent [&_button]:text-left [&_button]:cursor-pointer [&_button:hover]:border-accent/30 [&_button:hover]:bg-surface-1 [&_button:hover]:[box-shadow:0_3px_9px_rgba(0,240,255,0.03)] [&_button.selected]:border-accent/30 [&_button.selected]:bg-surface-1 [&_button.selected]:[box-shadow:0_3px_9px_rgba(0,240,255,0.03)] [&_button_strong]:overflow-hidden [&_button_strong]:w-full [&_button_strong]:text-ink-2 [&_button_strong]:text-[10px] [&_button_strong]:text-ellipsis [&_button_strong]:whitespace-nowrap [&_button_span]:text-ink-3 [&_button_span]:text-[9px] [&_button_small]:text-accent [&_button_small]:font-bold [&_button_small]:text-[8px] max-[760px]:max-h-[210px] max-[760px]:overflow-auto assessment-manager-list" },
             React.createElement(
               "div",
-              { className: "assessment-manager-list-heading" },
+              { className: "flex items-center justify-between pt-[3px] px-1 pb-[9px] text-accent text-[8px] font-extrabold tracking-[1px] [&_strong]:grid [&_strong]:place-items-center [&_strong]:min-w-[20px] [&_strong]:h-[20px] [&_strong]:rounded-[6px] [&_strong]:bg-surface-2 [&_strong]:text-accent [&_strong]:text-[9px]" },
               React.createElement("span", null, "YOUR ASSESSMENTS"),
               React.createElement("strong", null, u.length),
             ),
@@ -1261,7 +1261,7 @@ function le({
               React.createElement(
                 "div",
                 {
-                  className: `assessment-manager-item ${e.id === m ? "selected" : ""}`,
+                  className: `flex items-stretch gap-[3px] [&>button:first-child]:flex-1 [&>button:first-child]:min-w-0 ${e.id === m ? "selected" : ""}`,
                   key: e.id,
                 },
                 React.createElement(
@@ -1283,7 +1283,7 @@ function le({
                   "button",
                   {
                     type: "button",
-                    className: "assessment-delete-button",
+                    className: "[.assessment-manager-list_&]:grid [.assessment-manager-list_&]:place-items-center [.assessment-manager-list_&]:self-center [.assessment-manager-list_&]:w-[25px] [.assessment-manager-list_&]:h-[25px] [.assessment-manager-list_&]:p-0 [.assessment-manager-list_&]:border-0 [.assessment-manager-list_&]:rounded-[7px] [.assessment-manager-list_&]:bg-transparent [.assessment-manager-list_&]:text-rose-300 [.assessment-manager-list_&]:text-[17px] [.assessment-manager-list_&]:leading-[1] [.assessment-manager-list_&:hover]:bg-surface-2 [.assessment-manager-list_&:hover]:border-transparent [.assessment-manager-list_&:hover]:text-rose-300 [.assessment-manager-list_&:hover]:[box-shadow:none] [.assessment-manager-list_&:disabled]:cursor-not-allowed [.assessment-manager-list_&:disabled]:opacity-50",
                     "aria-label": `Delete ${e.title}`,
                     disabled: R === e.id,
                     onClick: (s) => o(s, e),
@@ -1296,10 +1296,10 @@ function le({
           i &&
             React.createElement(
               "form",
-              { className: "assessment-manager-editor", onSubmit: H },
+              { className: "min-w-0 assessment-manager-editor", onSubmit: H },
               React.createElement(
                 "div",
-                { className: "assessment-manager-editor-heading" },
+                { className: "flex items-start justify-between gap-3 mb-[15px] [&_span]:text-accent [&_span]:text-[8px] [&_span]:font-extrabold [&_span]:tracking-[1.2px] [&_h3]:mt-[5px] [&_h3]:mx-0 [&_h3]:mb-0 [&_h3]:text-ink-2 [&_h3]:text-[15px] [&_code]:py-[7px] [&_code]:px-[9px] [&_code]:rounded-[7px] [&_code]:bg-surface-2 [&_code]:text-accent [&_code]:font-bold [&_code]:text-[9px] [&_code]:whitespace-nowrap max-[760px]:items-start max-[760px]:flex-col max-[760px]:[&_code]:self-end" },
                 React.createElement(
                   "div",
                   null,
@@ -1349,7 +1349,7 @@ function le({
               ),
               React.createElement(
                 "div",
-                { className: "action-form-grid assessment-details-grid" },
+                { className: "grid grid-cols-[repeat(2,1fr)] gap-3 [&.single]:grid-cols-[1fr] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-semibold [&_input]:w-full [&_input]:box-border [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[7px] [&_input]:bg-surface-1 [&_input]:text-ink-2 [&_input]:p-[9px] [&_input]:text-[11px] [&_input]:outline-none [&_select]:w-full [&_select]:box-border [&_select]:border [&_select]:border-white/10 [&_select]:rounded-[7px] [&_select]:bg-surface-1 [&_select]:text-ink-2 [&_select]:p-[9px] [&_select]:text-[11px] [&_select]:outline-none [&_input:focus]:border-accent/30 [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_select:focus]:border-accent/30 [&_select:focus]:[box-shadow:0_0_0_3px_#162032] max-[760px]:grid-cols-[repeat(2,1fr)] [.action-modal_&_label]:text-ink-2 [.action-modal_&_label]:text-[10px] [.action-modal_&_label]:tracking-[.1px] [.action-modal_&_input]:border-white/10 [.action-modal_&_input]:rounded-[9px] [.action-modal_&_input]:bg-surface-1 [.action-modal_&_input]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_input]:transition [.action-modal_&_select]:border-white/10 [.action-modal_&_select]:rounded-[9px] [.action-modal_&_select]:bg-surface-1 [.action-modal_&_select]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_select]:transition [.action-modal_&_input:hover]:border-accent/30 [.action-modal_&_select:hover]:border-accent/30 [.action-modal_&_input:focus]:border-accent/30 [.action-modal_&_input:focus]:[box-shadow:0_0_0_3px_#162032] [.action-modal_&_select:focus]:border-accent/30 [.action-modal_&_select:focus]:[box-shadow:0_0_0_3px_#162032] grid-cols-[minmax(0,2fr)_minmax(130px,1fr)_minmax(130px,1fr)] max-[760px]:grid-cols-[1fr]" },
                 React.createElement(
                   "label",
                   null,
@@ -1473,7 +1473,7 @@ function le({
                 React.createElement(
                   "p",
                   {
-                    className: "assessment-field-hint assessment-slot-conflict",
+                    className: "[grid-column:1/-1] m-0 text-ink-3 text-[9px] font-medium assessment-slot-conflict",
                     role: "status",
                   },
                   G(i.category).find((e) => e.value === i.itemNo)?.label,
@@ -1483,7 +1483,7 @@ function le({
                 ),
               React.createElement(
                 "label",
-                { className: "assessment-instructions-field" },
+                { className: "flex flex-col gap-1.5 text-ink-2 text-[10px] font-bold [&_span]:text-ink-3 [&_span]:font-medium" },
                 "Instructions ",
                 React.createElement("span", null, "(optional)"),
                 React.createElement(te, {
@@ -1494,7 +1494,7 @@ function le({
               ),
               React.createElement(
                 "section",
-                { className: "assessment-retry-panel" },
+                { className: "flex flex-col gap-3 p-[15px] border border-white/10 rounded-[13px] bg-surface-1 [&>div:first-child]:flex [&>div:first-child]:flex-col [&>div:first-child]:gap-[5px] [&_span]:text-accent [&_span]:text-[8px] [&_span]:font-extrabold [&_span]:tracking-[1.2px] [&_h4]:m-0 [&_h4]:text-ink-2 [&_h4]:text-[12px] [&_p]:m-0 [&_p]:text-ink-3 [&_p]:text-[10px] [&_p]:leading-[1.5]" },
                 React.createElement(
                   "div",
                   null,
@@ -1512,7 +1512,7 @@ function le({
                 ),
                 React.createElement(
                   "div",
-                  { className: "assessment-retry-list" },
+                  { className: "flex flex-col gap-[7px]" },
                   w.length
                     ? w.map((e) => {
                           const attempts = (b?.attempts ?? [])
@@ -1543,7 +1543,7 @@ function le({
                           { key: e.studentId },
                           React.createElement(
                             "div",
-                            { className: "assessment-retry-row" },
+                            { className: "flex items-center justify-between gap-3 py-2.5 px-[11px] border border-white/10 rounded-[9px] bg-surface-1 [&>div]:flex [&>div]:min-w-0 [&>div]:flex-col [&>div]:gap-[3px] [&_strong]:overflow-hidden [&_strong]:text-ink-2 [&_strong]:text-[10px] [&_strong]:text-ellipsis [&_strong]:whitespace-nowrap [&_small]:text-ink-3 [&_small]:text-[9px] assessment-retry-row" },
                             React.createElement(
                               "div",
                               null,
@@ -1566,7 +1566,7 @@ function le({
                                 "button",
                                 {
                                   type: "button",
-                                  className: "outline-button",
+                                  className: "inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50",
                                   disabled: !latest,
                                   onClick: () => Ve(e.studentId),
                                 },
@@ -1576,7 +1576,7 @@ function le({
                                 "button",
                                 {
                                   type: "button",
-                                  className: "outline-button",
+                                  className: "inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50",
                                   disabled: r === e.studentId,
                                   onClick: () => t(e),
                                 },
@@ -1709,14 +1709,14 @@ function le({
                       })
                     : React.createElement(
                         "p",
-                        { className: "assessment-field-hint" },
+                        { className: "[grid-column:1/-1] m-0 text-ink-3 text-[9px] font-medium" },
                         "No students are enrolled in this class.",
                       ),
                 ),
               ),
               React.createElement(
                 "section",
-                { className: "assessment-violation-panel" },
+                { className: "flex flex-col gap-3 p-[15px] border border-white/10 rounded-[13px] bg-surface-1 [&>div:first-child]:flex [&>div:first-child]:flex-col [&>div:first-child]:gap-[5px] [&_span]:text-accent [&_span]:text-[8px] [&_span]:font-extrabold [&_span]:tracking-[1.2px] [&_h4]:m-0 [&_h4]:text-ink-2 [&_h4]:text-[12px] [&_p]:m-0 [&_p]:text-ink-3 [&_p]:text-[10px] [&_p]:leading-[1.5]" },
                 React.createElement(
                   "div",
                   null,
@@ -1730,13 +1730,13 @@ function le({
                 ),
                 React.createElement(
                   "div",
-                  { className: "assessment-violation-list" },
+                  { className: "flex flex-col gap-[7px]" },
                   (() => {
                     const e = b?.violations ?? [];
                     if (!e.length)
                       return React.createElement(
                         "p",
-                        { className: "assessment-field-hint" },
+                        { className: "[grid-column:1/-1] m-0 text-ink-3 text-[9px] font-medium" },
                         "No violations recorded for this assessment.",
                       );
                     const s = e.reduce((a, c) => {
@@ -1772,7 +1772,7 @@ function le({
                             React.createElement(
                               "div",
                               {
-                                className: "assessment-violation-row",
+                                className: "flex items-center justify-between gap-3 py-2.5 px-[11px] border border-white/10 rounded-[9px] bg-surface-1 [&>div]:flex [&>div]:min-w-0 [&>div]:flex-col [&>div]:gap-[3px] [&_strong]:overflow-hidden [&_strong]:text-ink-2 [&_strong]:text-[10px] [&_strong]:text-ellipsis [&_strong]:whitespace-nowrap [&_small]:text-ink-3 [&_small]:text-[9px] [&>div:last-child]:items-end [&>div:last-child]:text-right [&_b]:text-rose-300 [&_b]:text-[9px] [&_b]:capitalize [&>div:last-child_small]:max-w-[300px]",
                                 key: x.id,
                               },
                               React.createElement(
@@ -1802,14 +1802,14 @@ function le({
               ),
               React.createElement(
                 "div",
-                { className: "assessment-question-list" },
+                { className: "[.assessment-manager-editor_&]:max-h-[475px] [.assessment-manager-editor_&]:overflow-auto [.assessment-manager-editor_&]:pt-0.5 [.assessment-manager-editor_&]:px-[3px] [.assessment-manager-editor_&]:pb-[3px] max-[760px]:[.assessment-manager-editor_&]:max-h-[none] flex flex-col gap-[13px]" },
                 i.questions.map((e, s) =>
                   React.createElement(
                     "article",
-                    { className: "assessment-question-card", key: s },
+                    { className: "[.assessment-manager-editor_&]:[box-shadow:none] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-bold [&_label>span:not(.choice-letter)]:text-ink-3 [&_label>span:not(.choice-letter)]:font-medium p-[17px] border border-white/10 rounded-[14px] bg-surface-1 [box-shadow:0_5px_16px_rgba(0,240,255,0.02)]", key: s },
                     React.createElement(
                       "div",
-                      { className: "assessment-question-header" },
+                      { className: "flex items-start justify-between gap-2.5 mb-[13px] [&_div]:flex [&_div]:flex-col [&_div]:gap-1 [&_span]:text-accent [&_span]:text-[8px] [&_span]:font-extrabold [&_span]:tracking-[1.3px] [&_strong]:text-ink-2 [&_strong]:text-[12px]" },
                       React.createElement(
                         "div",
                         null,
@@ -1827,7 +1827,7 @@ function le({
                           "button",
                           {
                             type: "button",
-                            className: "assessment-remove-button",
+                            className: "border-0 bg-transparent text-rose-300 text-[10px] font-bold cursor-pointer",
                             onClick: () =>
                               q(
                                 "questions",
@@ -1839,7 +1839,7 @@ function le({
                     ),
                     React.createElement(
                       "div",
-                      { className: "assessment-question-controls" },
+                      { className: "flex gap-1.5 mb-3.5 [&_button]:border [&_button]:border-white/10 [&_button]:rounded-lg [&_button]:bg-surface-1 [&_button]:text-ink-3 [&_button]:py-[7px] [&_button]:px-2.5 [&_button]:text-[9px] [&_button]:font-bold [&_button]:cursor-pointer [&_button.active]:border-accent/30 [&_button.active]:bg-surface-2 [&_button.active]:text-accent" },
                       React.createElement(
                         "button",
                         {
@@ -1863,11 +1863,11 @@ function le({
                     React.createElement(
                       "div",
                       {
-                        className: "action-form-grid assessment-question-grid",
+                        className: "grid grid-cols-[repeat(2,1fr)] gap-3 [&.single]:grid-cols-[1fr] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-semibold [&_input]:w-full [&_input]:box-border [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[7px] [&_input]:bg-surface-1 [&_input]:text-ink-2 [&_input]:p-[9px] [&_input]:text-[11px] [&_input]:outline-none [&_select]:w-full [&_select]:box-border [&_select]:border [&_select]:border-white/10 [&_select]:rounded-[7px] [&_select]:bg-surface-1 [&_select]:text-ink-2 [&_select]:p-[9px] [&_select]:text-[11px] [&_select]:outline-none [&_input:focus]:border-accent/30 [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_select:focus]:border-accent/30 [&_select:focus]:[box-shadow:0_0_0_3px_#162032] max-[760px]:grid-cols-[repeat(2,1fr)] [.action-modal_&_label]:text-ink-2 [.action-modal_&_label]:text-[10px] [.action-modal_&_label]:tracking-[.1px] [.action-modal_&_input]:border-white/10 [.action-modal_&_input]:rounded-[9px] [.action-modal_&_input]:bg-surface-1 [.action-modal_&_input]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_input]:transition [.action-modal_&_select]:border-white/10 [.action-modal_&_select]:rounded-[9px] [.action-modal_&_select]:bg-surface-1 [.action-modal_&_select]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_select]:transition [.action-modal_&_input:hover]:border-accent/30 [.action-modal_&_select:hover]:border-accent/30 [.action-modal_&_input:focus]:border-accent/30 [.action-modal_&_input:focus]:[box-shadow:0_0_0_3px_#162032] [.action-modal_&_select:focus]:border-accent/30 [.action-modal_&_select:focus]:[box-shadow:0_0_0_3px_#162032] grid-cols-[minmax(0,1fr)_105px] max-[760px]:grid-cols-[1fr]",
                       },
                       React.createElement(
                         "label",
-                        { className: "assessment-prompt-field" },
+                        { className: "[grid-column:1]" },
                         "Question prompt",
                         React.createElement("textarea", {
                           name: `edit-question-${s}-prompt`,
@@ -1894,14 +1894,14 @@ function le({
                     e.type === "multiple_choice"
                       ? React.createElement(
                           "div",
-                          { className: "assessment-choices-grid" },
+                          { className: "[.assessment-manager-editor_&]:mt-[3px] grid grid-cols-[1fr_1fr] [gap:10px_12px] mt-[3px] [&_label]:grid [&_label]:grid-cols-[23px_minmax(0,1fr)_20px] [&_label]:items-center [&_label]:gap-[7px] [&_input:not(.choice-radio)]:min-w-0 max-[760px]:grid-cols-[1fr]" },
                           e.choices.map((a, c) =>
                             React.createElement(
                               "label",
                               { key: L[c] },
                               React.createElement(
                                 "span",
-                                { className: "choice-letter" },
+                                { className: "[.student-portal-options_&]:w-[24px] [.student-portal-options_&]:h-[24px] [.student-choice-list_&]:w-[24px] [.student-choice-list_&]:h-[24px] grid place-items-center w-[23px] h-[23px] rounded-[7px] bg-surface-2 text-accent text-[9px] font-extrabold choice-letter" },
                                 L[c],
                               ),
                               React.createElement("input", {
@@ -1911,7 +1911,7 @@ function le({
                                 onChange: (f) => Y(s, c, f.target.value),
                               }),
                               React.createElement("input", {
-                                className: "choice-radio",
+                                className: "[.assessment-builder_&]:w-[15px] [.assessment-builder_&]:h-[15px] [.assessment-builder_&]:[accent-color:#00F0FF] choice-radio",
                                 type: "radio",
                                 name: `edit-correct-${s}`,
                                 checked: e.correctAnswer === L[c],
@@ -1923,7 +1923,7 @@ function le({
                         )
                       : React.createElement(
                           "div",
-                          { className: "coding-question-fields" },
+                          { className: "grid grid-cols-[170px_1fr_1fr] gap-3 [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-bold [&_textarea]:text-[10px] max-[760px]:grid-cols-[1fr]" },
                           React.createElement(
                             "label",
                             null,
@@ -2011,7 +2011,7 @@ function le({
                 "button",
                 {
                   type: "button",
-                  className: "assessment-add-question",
+                  className: "self-start border border-dashed border-accent/30 rounded-[9px] bg-surface-1 text-accent py-[9px] px-3 text-[10px] font-extrabold cursor-pointer hover:bg-surface-2 hover:border-accent/30",
                   onClick: () => q("questions", [...i.questions, Q()]),
                 },
                 "+ Add another question",
@@ -2020,19 +2020,19 @@ function le({
                 React.createElement(
                   "p",
                   {
-                    className: `record-save-message ${U.status}`,
+                    className: `mt-0 mx-0 mb-3 py-[9px] px-[11px] rounded-[7px] text-[10px] [&.error]:border [&.error]:border-white/10 [&.error]:bg-surface-2 [&.error]:text-rose-300 [&.success]:border [&.success]:border-white/10 [&.success]:bg-surface-2 [&.success]:text-emerald-400 ${U.status}`,
                     role: "status",
                   },
                   U.text,
                 ),
               React.createElement(
                 "div",
-                { className: "action-modal-footer" },
+                { className: "flex justify-end gap-2 mt-5.5 pt-[17px] border-t border-white/10 max-[760px]:flex-wrap max-[760px]:[&_button]:flex-1 [.assessment-builder_&]:mt-0.5" },
                 React.createElement(
                   "button",
                   {
                     type: "button",
-                    className: "outline-button",
+                    className: "inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50",
                     onClick: d,
                     disabled: y,
                   },
@@ -2040,7 +2040,7 @@ function le({
                 ),
                 React.createElement(
                   "button",
-                  { type: "submit", className: "primary-button", disabled: y },
+                  { type: "submit", className: "inline-flex items-center justify-center gap-2 rounded bg-accent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-canvas transition hover:shadow-halo active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50", disabled: y },
                   y ? "Saving\u2026" : "Save changes",
                 ),
               ),
@@ -2049,7 +2049,7 @@ function le({
         O &&
           React.createElement(
             "div",
-            { className: "assessment-toast", role: "status" },
+            { className: "absolute [right:20px] [bottom:20px] z-60 flex items-center gap-2.5 min-w-[245px] py-3 px-[13px] border border-white/10 rounded-xl bg-surface-1 [box-shadow:0_12px_28px_rgba(0,0,0,0.24)] [&>span]:grid [&>span]:place-items-center [&>span]:w-[25px] [&>span]:h-[25px] [&>span]:rounded-lg [&>span]:bg-surface-3 [&>span]:text-emerald-400 [&>span]:text-[14px] [&>span]:font-extrabold [&_div]:flex [&_div]:flex-1 [&_div]:flex-col [&_div]:gap-[3px] [&_strong]:text-emerald-400 [&_strong]:text-[10px] [&_small]:text-ink-3 [&_small]:text-[9px] [&>button]:border-0 [&>button]:bg-transparent [&>button]:text-ink-3 [&>button]:text-[16px] [&>button]:cursor-pointer [&>button:hover]:text-emerald-400", role: "status" },
             React.createElement("span", null, "\u2713"),
             React.createElement(
               "div",
@@ -2071,7 +2071,7 @@ function le({
           React.createElement(
             "div",
             {
-              className: "assessment-confirm-overlay",
+              className: "fixed [inset:0] z-50 grid place-items-center p-5 bg-canvas/40 [backdrop-filter:blur(7px)]",
               onMouseDown: (e) => {
                 e.target === e.currentTarget && $(null);
               },
@@ -2079,14 +2079,14 @@ function le({
             React.createElement(
               "section",
               {
-                className: "assessment-confirm-dialog",
+                className: "w-[min(390px,100%)] pt-7 px-6.5 pb-6 border border-white/10 rounded-[18px] bg-surface-2 [box-shadow:0_25px_70px_rgba(0,0,0,0.38)] text-center [&_p]:mt-0 [&_p]:mx-0 [&_p]:mb-[7px] [&_p]:text-rose-300 [&_p]:text-[8px] [&_p]:font-extrabold [&_p]:tracking-[1.6px] [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[17px] [&>span]:block [&>span]:[margin:10px_auto_0] [&>span]:max-w-[300px] [&>span]:text-ink-3 [&>span]:text-[10px] [&>span]:leading-[1.6] [&>div:last-child]:flex [&>div:last-child]:justify-center [&>div:last-child]:gap-2 [&>div:last-child]:mt-5 assessment-confirm-dialog",
                 role: "alertdialog",
                 "aria-modal": "true",
                 "aria-labelledby": "assessment-delete-title",
               },
               React.createElement(
                 "div",
-                { className: "assessment-confirm-icon" },
+                { className: "grid place-items-center w-[46px] h-[46px] [margin:0_auto_13px] rounded-[14px] bg-surface-2 text-rose-300 text-[22px] font-extrabold" },
                 "!",
               ),
               React.createElement("p", null, "DELETE ASSESSMENT"),
@@ -2109,14 +2109,14 @@ function le({
                   "button",
                   {
                     type: "button",
-                    className: "outline-button",
+                    className: "inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50",
                     onClick: () => $(null),
                   },
                   "Cancel",
                 ),
                 React.createElement(
                   "button",
-                  { type: "button", className: "danger-button", onClick: l },
+                  { type: "button", className: "inline-flex items-center justify-center gap-2 border-0 rounded-[10px] py-2.5 px-[15px] [background:linear-gradient(135deg,#162032,#0F172A)] text-ink text-[11px] font-bold [box-shadow:0_7px_15px_rgba(0,0,0,0.32)] cursor-pointer transition hover:[background:linear-gradient(135deg,#162032,#0F172A)] hover:[box-shadow:0_10px_20px_rgba(0,0,0,0.45)] hover:[transform:translateY(-1px)] disabled:cursor-not-allowed disabled:opacity-60 disabled:[transform:none] [.assessment-confirm-dialog_&]:min-w-[110px]", onClick: l },
                   "Delete assessment",
                 ),
               ),
@@ -2126,7 +2126,7 @@ function le({
           React.createElement(
             "div",
             {
-              className: "assessment-confirm-overlay",
+              className: "fixed [inset:0] z-50 grid place-items-center p-5 bg-canvas/40 [backdrop-filter:blur(7px)]",
               onMouseDown: (e) => {
                 e.target === e.currentTarget && P(null);
               },
@@ -2134,14 +2134,14 @@ function le({
             React.createElement(
               "section",
               {
-                className: "assessment-confirm-dialog",
+                className: "w-[min(390px,100%)] pt-7 px-6.5 pb-6 border border-white/10 rounded-[18px] bg-surface-2 [box-shadow:0_25px_70px_rgba(0,0,0,0.38)] text-center [&_p]:mt-0 [&_p]:mx-0 [&_p]:mb-[7px] [&_p]:text-rose-300 [&_p]:text-[8px] [&_p]:font-extrabold [&_p]:tracking-[1.6px] [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[17px] [&>span]:block [&>span]:[margin:10px_auto_0] [&>span]:max-w-[300px] [&>span]:text-ink-3 [&>span]:text-[10px] [&>span]:leading-[1.6] [&>div:last-child]:flex [&>div:last-child]:justify-center [&>div:last-child]:gap-2 [&>div:last-child]:mt-5 assessment-confirm-dialog",
                 role: "alertdialog",
                 "aria-modal": "true",
                 "aria-labelledby": "assessment-manager-replace-title",
               },
               React.createElement(
                 "div",
-                { className: "assessment-confirm-icon" },
+                { className: "grid place-items-center w-[46px] h-[46px] [margin:0_auto_13px] rounded-[14px] bg-surface-2 text-rose-300 text-[22px] font-extrabold" },
                 "!",
               ),
               React.createElement("p", null, "REPLACE ASSESSMENT"),
@@ -2167,7 +2167,7 @@ function le({
                   "button",
                   {
                     type: "button",
-                    className: "outline-button",
+                    className: "inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50",
                     onClick: () => P(null),
                     disabled: y,
                   },
@@ -2177,7 +2177,7 @@ function le({
                   "button",
                   {
                     type: "button",
-                    className: "danger-button",
+                    className: "inline-flex items-center justify-center gap-2 border-0 rounded-[10px] py-2.5 px-[15px] [background:linear-gradient(135deg,#162032,#0F172A)] text-ink text-[11px] font-bold [box-shadow:0_7px_15px_rgba(0,0,0,0.32)] cursor-pointer transition hover:[background:linear-gradient(135deg,#162032,#0F172A)] hover:[box-shadow:0_10px_20px_rgba(0,0,0,0.45)] hover:[transform:translateY(-1px)] disabled:cursor-not-allowed disabled:opacity-60 disabled:[transform:none] [.assessment-confirm-dialog_&]:min-w-[110px]",
                     onClick: X,
                     disabled: y,
                   },
@@ -2192,10 +2192,10 @@ function le({
         { title: "Manage Assessments", section: g, onClose: d },
         React.createElement(
           "div",
-          { className: "student-viewer-empty" },
+          { className: "grid [justify-items:center] py-12.5 px-5 border border-dashed border-accent/30 rounded-[13px] bg-surface-2 text-center [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[14px] [&_p]:mt-[7px] [&_p]:mx-0 [&_p]:mb-0 [&_p]:text-ink-3 [&_p]:text-[10px] student-viewer-empty" },
           React.createElement(
             "span",
-            { className: "assessment-builder-icon" },
+            { className: "[.student-viewer-empty_&]:mb-2.5 grid place-items-center w-[34px] h-[34px] rounded-[11px] bg-surface-2 text-accent text-[18px]" },
             "\u2726",
           ),
           React.createElement("h3", null, "No assessments created yet"),
@@ -2257,10 +2257,10 @@ function ce({
     w.length
       ? React.createElement(
           "form",
-          { className: "student-viewer", onSubmit: N },
+          { className: "flex flex-col gap-4", onSubmit: N },
           React.createElement(
             "div",
-            { className: "student-viewer-toolbar" },
+            { className: "grid grid-cols-[1fr_1.5fr] gap-3 p-3.5 border border-white/10 rounded-[13px] bg-surface-1 [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-bold [&_select]:box-border [&_select]:w-full [&_select]:border [&_select]:border-white/10 [&_select]:rounded-[9px] [&_select]:bg-surface-1 [&_select]:text-ink-2 [&_select]:p-2.5 [&_select]:text-[10px] max-[760px]:grid-cols-[1fr]" },
             React.createElement(
               "label",
               null,
@@ -2309,7 +2309,7 @@ function ce({
           M &&
             React.createElement(
               "div",
-              { className: "student-assessment-heading" },
+              { className: "flex items-start justify-between gap-3 py-[17px] px-4.5 border-l-3 border-accent rounded-xl bg-surface-2 [&_span]:text-accent [&_span]:text-[9px] [&_span]:font-extrabold [&_span]:tracking-[.8px] [&_h3]:mt-[5px] [&_h3]:mx-0 [&_h3]:mb-0 [&_h3]:text-ink-2 [&_h3]:text-[16px] [&_p]:mt-1.5 [&_p]:mx-0 [&_p]:mb-0 [&_p]:text-ink-3 [&_p]:text-[10px] [&_p]:leading-[1.5] [&_strong]:py-[7px] [&_strong]:px-[9px] [&_strong]:rounded-[7px] [&_strong]:bg-surface-1 [&_strong]:text-accent [&_strong]:text-[9px] [&_strong]:whitespace-nowrap max-[760px]:flex-col max-[760px]:[&_strong]:self-end" },
               React.createElement(
                 "div",
                 null,
@@ -2337,14 +2337,14 @@ function ce({
             ),
           React.createElement(
             "div",
-            { className: "student-question-list" },
+            { className: "flex flex-col gap-[13px]" },
             $.map((r, A) =>
               React.createElement(
                 "article",
-                { className: "student-question-card", key: r.id },
+                { className: "py-[17px] px-4.5 border border-white/10 rounded-[13px] bg-surface-1 [box-shadow:0_4px_14px_rgba(0,240,255,0.02)] [&_h4]:mt-0 [&_h4]:mx-0 [&_h4]:mb-3.5 [&_h4]:text-ink-2 [&_h4]:text-[12px] [&_h4]:leading-[1.55] [&_h4]:[white-space:pre-wrap]", key: r.id },
                 React.createElement(
                   "div",
-                  { className: "student-question-meta" },
+                  { className: "flex items-center justify-between mb-[9px] [&_span]:text-accent [&_span]:text-[8px] [&_span]:font-extrabold [&_span]:tracking-[1.3px] [&_small]:text-ink-3 [&_small]:text-[9px]" },
                   React.createElement("span", null, "QUESTION ", A + 1),
                   React.createElement(
                     "small",
@@ -2358,7 +2358,7 @@ function ce({
                 r.question_type === "multiple_choice"
                   ? React.createElement(
                       "div",
-                      { className: "student-choice-list" },
+                      { className: "grid grid-cols-[1fr_1fr] gap-[9px] [&_label]:grid [&_label]:grid-cols-[15px_24px_minmax(0,1fr)] [&_label]:items-center [&_label]:gap-2 [&_label]:p-2.5 [&_label]:border [&_label]:border-white/10 [&_label]:rounded-[9px] [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:cursor-pointer [&_label]:transition [&_label:hover]:border-accent/30 [&_label:hover]:bg-surface-1 [&_label:hover]:text-accent [&_label.selected]:border-accent/30 [&_label.selected]:bg-surface-1 [&_label.selected]:text-accent [&_input]:[accent-color:#00F0FF] max-[760px]:grid-cols-[1fr] student-choice-list" },
                       (Array.isArray(r.choices) ? r.choices : []).map(
                         (k, P) => {
                           const b = L[P];
@@ -2378,7 +2378,7 @@ function ce({
                             }),
                             React.createElement(
                               "span",
-                              { className: "choice-letter" },
+                              { className: "[.student-portal-options_&]:w-[24px] [.student-portal-options_&]:h-[24px] [.student-choice-list_&]:w-[24px] [.student-choice-list_&]:h-[24px] grid place-items-center w-[23px] h-[23px] rounded-[7px] bg-surface-2 text-accent text-[9px] font-extrabold choice-letter" },
                               b,
                             ),
                             React.createElement("span", null, k),
@@ -2388,10 +2388,10 @@ function ce({
                     )
                   : React.createElement(
                       "div",
-                      { className: "student-code-answer" },
+                      { className: "overflow-hidden border border-white/10 rounded-[10px] bg-surface-1 [&_textarea]:block [&_textarea]:w-full [&_textarea]:box-border [&_textarea]:min-h-[150px] [&_textarea]:border-0 [&_textarea]:rounded-none [&_textarea]:bg-surface-1 [&_textarea]:text-ink-2 [&_textarea]:p-3 [&_textarea]:font-medium [&_textarea]:text-[11px] [&_textarea]:[resize:vertical] [&_textarea]:outline-none [&_textarea:focus]:[box-shadow:inset_0_0_0_2px_#162032]" },
                       React.createElement(
                         "div",
-                        { className: "student-code-label" },
+                        { className: "flex items-center justify-between py-[9px] px-[11px] border-b border-white/10 bg-surface-2 [&_span]:text-accent [&_span]:font-bold [&_span]:text-[10px] [&_small]:text-ink-3 [&_small]:text-[9px]" },
                         React.createElement(
                           "span",
                           null,
@@ -2420,17 +2420,17 @@ function ce({
           R.text &&
             React.createElement(
               "p",
-              { className: `record-save-message ${R.status}`, role: "status" },
+              { className: `mt-0 mx-0 mb-3 py-[9px] px-[11px] rounded-[7px] text-[10px] [&.error]:border [&.error]:border-white/10 [&.error]:bg-surface-2 [&.error]:text-rose-300 [&.success]:border [&.success]:border-white/10 [&.success]:bg-surface-2 [&.success]:text-emerald-400 ${R.status}`, role: "status" },
               R.text,
             ),
           React.createElement(
             "div",
-            { className: "action-modal-footer" },
+            { className: "flex justify-end gap-2 mt-5.5 pt-[17px] border-t border-white/10 max-[760px]:flex-wrap max-[760px]:[&_button]:flex-1 [.assessment-builder_&]:mt-0.5" },
             React.createElement(
               "button",
               {
                 type: "button",
-                className: "outline-button",
+                className: "inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50",
                 onClick: n,
                 disabled: y,
               },
@@ -2440,7 +2440,7 @@ function ce({
               "button",
               {
                 type: "submit",
-                className: "primary-button",
+                className: "inline-flex items-center justify-center gap-2 rounded bg-accent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-canvas transition hover:shadow-halo active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50",
                 disabled: y || !$.length,
               },
               y ? "Submitting\u2026" : "Submit answers",
@@ -2449,10 +2449,10 @@ function ce({
         )
       : React.createElement(
           "div",
-          { className: "student-viewer-empty" },
+          { className: "grid [justify-items:center] py-12.5 px-5 border border-dashed border-accent/30 rounded-[13px] bg-surface-2 text-center [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[14px] [&_p]:mt-[7px] [&_p]:mx-0 [&_p]:mb-0 [&_p]:text-ink-3 [&_p]:text-[10px] student-viewer-empty" },
           React.createElement(
             "span",
-            { className: "assessment-builder-icon" },
+            { className: "[.student-viewer-empty_&]:mb-2.5 grid place-items-center w-[34px] h-[34px] rounded-[11px] bg-surface-2 text-accent text-[18px]" },
             "\u2726",
           ),
           React.createElement("h3", null, "No assessments available"),

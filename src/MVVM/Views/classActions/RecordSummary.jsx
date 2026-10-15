@@ -46,8 +46,8 @@ export function RecordSummary({
       onClose={onClose}
       size="wide"
     >
-      <div className="record-summary-toolbar">
-        <div className="period-pills" role="tablist">
+      <div className="flex items-center justify-between gap-3 mb-4 py-[7px] px-[9px] border border-white/10 rounded-xl bg-surface-2 max-[760px]:items-stretch max-[760px]:flex-col max-[760px]:[&_.saved-indicator]:self-end record-summary-toolbar">
+        <div className="flex gap-1 bg-surface-2 rounded-[7px] p-[3px] [&_button]:border-0 [&_button]:py-[7px] [&_button]:px-3 [&_button]:[background:none] [&_button]:rounded-[5px] [&_button]:text-ink-3 [&_button]:text-[10px] [&_button.active]:bg-surface-1 [&_button.active]:text-accent [&_button.active]:[box-shadow:0_2px_5px_rgba(0,0,0,0.13)] [&_button.active]:font-semibold [.record-summary-toolbar_&]:overflow-x-auto [.record-summary-toolbar_&]:bg-transparent [.record-summary-toolbar_&_button]:rounded-lg [.record-summary-toolbar_&_button]:transition [.record-summary-toolbar_&_button:hover]:text-accent [.record-summary-toolbar_&_button:hover]:bg-surface-2 [.record-summary-toolbar_&_button.active]:bg-surface-1 [.record-summary-toolbar_&_button.active]:[box-shadow:0_3px_9px_rgba(0,240,255,0.05)] [.record-summary-toolbar_&_button.active]:text-accent" role="tablist">
           {gradePeriods.map((item) => (
             <button
               key={item.key}
@@ -60,14 +60,14 @@ export function RecordSummary({
             </button>
           ))}
         </div>
-        <span className="record-period-range">
+        <span className="text-accent text-[9px] font-semibold whitespace-nowrap py-[7px] px-2.5 border border-white/10 rounded-lg bg-surface-1 max-[760px]:self-end">
           {dates.start && dates.end
             ? `${formatDisplayDate(dates.start)} – ${formatDisplayDate(dates.end)}`
             : "No date range set"}
         </span>
       </div>
       {dates.start && dates.end ? (
-        <div className="table-wrap record-summary-table">
+        <div className="overflow-x-auto [&_table]:[border-collapse:collapse] [&_table]:w-full [&_table]:min-w-[660px] [&_table]:text-left [&_th]:text-ink-3 [&_th]:bg-surface-2 [&_th]:text-[9px] [&_th]:font-semibold [&_th]:tracking-[.6px] [&_th]:py-[11px] [&_th]:px-5 [&_th]:border-b [&_th]:border-white/10 [&_th]:border-b-white/10 [&_td]:text-ink-2 [&_td]:text-[10px] [&_td]:py-3.5 [&_td]:px-5 [&_td]:border-b [&_td]:border-white/10 [&_td]:whitespace-nowrap [&_td]:border-b-white/10 [&_tbody_tr:last-child_td]:border-b-0 [&_tbody_tr:hover]:bg-surface-1 [.action-modal_&_th]:bg-surface-2 [.action-modal_&_th]:text-ink-3 [.action-modal_&_th]:border-b-white/10 [.action-modal_&_th]:text-[9px] [.action-modal_&_th]:tracking-[.8px] [.action-modal_&_td]:text-ink-2 [.action-modal_&_td]:border-b-white/10 [.action-modal_&_tbody_tr:nth-child(even)]:bg-surface-1 [.action-modal_&_tbody_tr:hover]:bg-surface-2 border border-white/10 rounded-[9px] [&_table]:min-w-[1160px] [&_th:not(:first-child)]:text-center [&_td:not(:first-child)]:text-center [&_td:not(:first-child)]:text-accent [&_td:not(:first-child)]:font-bold [&_td]:font-semibold [&_td]:text-ink-2 [&_td:first-child]:min-w-[220px] [&_td:first-child]:text-left [.action-modal_&]:border-white/10 [.action-modal_&]:rounded-xl [.action-modal_&]:[box-shadow:0_5px_15px_rgba(0,240,255,0.02)] [.action-modal_&_td:not(:first-child)]:text-accent! [&_thead_tr:first-child_th]:bg-surface-2 [&_thead_tr:first-child_th]:text-ink-2 [&_thead_tr:first-child_th]:text-[8px] [&_thead_tr:first-child_th]:tracking-[1px] [&_thead_tr:nth-child(2)_th]:text-ink-3 [&_thead_tr:nth-child(2)_th]:text-[8px] [&_th[rowspan='2']]:[vertical-align:middle] record-summary-table">
           <table>
             <thead>
               <tr>
@@ -94,8 +94,8 @@ export function RecordSummary({
               {students.map((student) => (
                 <tr key={student.id}>
                   <td>
-                    <div className="table-student">
-                      <span className="record-avatar">{student.initials}</span>
+                    <div className="flex items-center gap-[9px] text-ink-2 font-semibold [.record-score-table_&>span:nth-child(2)]:min-w-0 [.record-score-table_&>span:nth-child(2)]:overflow-hidden [.record-score-table_&>span:nth-child(2)]:text-ellipsis [.grades-table_&]:gap-[9px] [.grades-table_&>span:last-child]:flex [.grades-table_&>span:last-child]:flex-col [.grades-table_&>span:last-child]:gap-[3px] [.grades-table_&_b]:text-ink-2 [.grades-table_&_b]:text-[10px] [.grades-table_&_small]:text-ink-3 [.grades-table_&_small]:text-[9px] [.record-summary-table_&]:gap-[9px] [.record-summary-table_&>span:last-child]:flex [.record-summary-table_&>span:last-child]:flex-col [.record-summary-table_&>span:last-child]:gap-[3px] [.record-summary-table_&_b]:text-ink-2 [.record-summary-table_&_b]:text-[10px] [.record-summary-table_&_small]:text-ink-3 [.record-summary-table_&_small]:text-[9px]">
+                      <span className="grid place-items-center w-[28px] h-[28px] rounded-[9px] bg-surface-2 text-accent text-[9px] font-bold [.action-modal_&]:[box-shadow:0_0_0_3px_#162032]">{student.initials}</span>
                       <span>
                         <b>{student.name}</b>
                         <small>{student.number}</small>
@@ -128,13 +128,13 @@ export function RecordSummary({
             </tbody>
           </table>
           {!students.length && (
-            <div className="empty-state">
+            <div className="py-8 text-center text-xs text-ink-3">
               No students are enrolled in this class.
             </div>
           )}
         </div>
       ) : (
-        <div className="empty-state record-summary-date-empty">
+        <div className="py-8 text-center text-xs text-ink-3 py-10.5 px-5 border border-dashed border-accent/30 rounded-[13px] bg-surface-2 text-accent text-[11px]">
           Please set a start date and end date for{" "}
           {gradePeriods.find((item) => item.key === period)?.label} in Grade
           Sheet Settings.

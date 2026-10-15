@@ -1,4 +1,3 @@
-import "../../App.css";
 import { useStudentAssessmentSession } from "./studentPortal/useStudentAssessmentSession";
 import StudentPortalAccess from "./studentPortal/StudentPortalAccess";
 import StudentPortalResult from "./studentPortal/StudentPortalResult";
