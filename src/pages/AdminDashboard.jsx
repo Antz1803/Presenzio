@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { onValue, ref, update } from "firebase/database";
-import logo from "../assets/Logo.png";
+import logo from "../assets/LogoLight.png";
 import { auth, db } from "../lib/Firebase";
 import { useAuth } from "../auth/useAuth";
 

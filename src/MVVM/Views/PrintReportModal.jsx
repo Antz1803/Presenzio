@@ -10,7 +10,7 @@ import {
   getGradeRemark as E,
 } from "./classActions/actionUtils";
 import { getStoredDean } from "../Models/deanStorage";
-import M from "../../assets/Logo.png";
+import M from "../../assets/LogoDark.png";
 if (typeof document < "u" && !document.getElementById("print-page-style")) {
   const e = document.createElement("style");
   ((e.id = "print-page-style"),

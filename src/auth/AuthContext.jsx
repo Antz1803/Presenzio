@@ -10,10 +10,10 @@ import {
   updateProfile as updateAuthProfile,
   verifyBeforeUpdateEmail,
 } from "firebase/auth";
-import { get, ref, set, update } from "firebase/database";
+import { get, onValue, ref, set, update } from "firebase/database";
 import { auth, db, isFirebaseConfigured } from "../lib/Firebase";
-import { ensureAccountSchema } from "../lib/accountDb";
-import { AuthContext } from "./context";
+import { ensureAccountSchema, syncInstructorSummary } from "../lib/accountDb";
+import { ACCESS_NOTICE_KEY, AuthContext } from "./context";
 
 function configurationError() {
   return new Error(
@@ -108,7 +108,20 @@ async function loadApprovalAccess(uid) {
   };
 }
 
-function approvalError(status) {
+function accessLostMessage(request) {
+  if (request?.status === "approved" && request?.active === false) {
+    return "Your teacher account was deactivated by the administrator.";
+  }
+  if (request?.status === "rejected") {
+    return "Your teacher registration was rejected. Contact the administrator.";
+  }
+  return "Your access was removed by the administrator.";
+}
+
+function approvalError(status, active) {
+  if (status === "approved" && active === false) {
+    return new Error("Your teacher account was deactivated by the administrator.");
+  }
   if (status === "pending") {
     return new Error("Your teacher account is waiting for administrator approval.");
   }
@@ -152,6 +165,18 @@ export function AuthProvider({ children }) {
             // Schema setup should never prevent an otherwise valid sign-in.
             console.warn("Could not initialize the account database schema:", schemaError?.code || schemaError);
           }
+          if (!access.isAdmin) {
+            // Let the administrator see this teacher's latest activity.
+            void syncInstructorSummary(firebaseUser.uid).catch((summaryError) =>
+              console.error(
+                "Could not publish the activity summary" +
+                  (summaryError?.code === "PERMISSION_DENIED"
+                    ? " (PERMISSION_DENIED: publish database.rules.json with `firebase deploy --only database`):"
+                    : ":"),
+                summaryError?.code || summaryError,
+              ),
+            );
+          }
         }
         if (mounted) {
           setUser(allowed ? toAppUser(firebaseUser, profile, access) : null);
@@ -170,6 +195,58 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  // Keep a signed-in teacher connected to the administrator's decision: if the
+  // admin deactivates, rejects or removes the account, end the session now.
+  const sessionUid = user?.uid;
+  const sessionIsAdmin = user?.isAdmin === true;
+  useEffect(() => {
+    if (!db || !auth || !sessionUid || sessionIsAdmin) return undefined;
+    return onValue(
+      ref(db, `registrationRequests/${sessionUid}`),
+      (snapshot) => {
+        const request = snapshot.val();
+        if (request?.status === "approved" && request?.active !== false) return;
+        try {
+          sessionStorage.setItem(ACCESS_NOTICE_KEY, accessLostMessage(request));
+        } catch {
+          // Storage can be unavailable; the user is still signed out.
+        }
+        void signOut(auth);
+      },
+      (listenerError) => {
+        console.warn("Could not watch the approval status:", listenerError?.code || listenerError);
+      },
+    );
+  }, [sessionUid, sessionIsAdmin]);
+
+  // Keep the administrator's activity snapshot fresh while a teacher is signed
+  // in. The sign-in sync can fail (for example before database rules are
+  // published) and counts change as classes are added, so retry shortly after
+  // sign-in, then refresh on a timer and whenever the tab becomes visible.
+  useEffect(() => {
+    if (!db || !sessionUid || sessionIsAdmin) return undefined;
+    let lastRun = 0;
+    const run = () => {
+      const now = Date.now();
+      if (now - lastRun < 60000) return;
+      lastRun = now;
+      syncInstructorSummary(sessionUid).catch((summaryError) =>
+        console.error("Could not refresh the activity summary:", summaryError?.code || summaryError),
+      );
+    };
+    const firstRun = setTimeout(run, 15000);
+    const timer = setInterval(run, 5 * 60000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") run();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearTimeout(firstRun);
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [sessionUid, sessionIsAdmin]);
+
   const value = useMemo(
     () => ({
       user,
@@ -186,7 +263,7 @@ export function AuthProvider({ children }) {
             (access.request?.status !== "approved" || access.request?.active === false)
           ) {
             await signOut(auth);
-            throw approvalError(access.request?.status);
+            throw approvalError(access.request?.status, access.request?.active);
           }
           return toAppUser(
             credential.user,
@@ -289,6 +366,11 @@ export function AuthProvider({ children }) {
           await updateAuthProfile(firebaseUser, { displayName: normalizedProfile.name });
         } catch (error) {
           throw friendlyError(error);
+        }
+        if (!user?.isAdmin) {
+          void syncInstructorSummary(firebaseUser.uid).catch((summaryError) =>
+            console.error("Could not publish the activity summary:", summaryError?.code || summaryError),
+          );
         }
 
         setUser(

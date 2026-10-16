@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { get, push, ref, runTransaction, update } from "firebase/database";
+import { get, push, ref, runTransaction, set, update } from "firebase/database";
 import { db } from "./Firebase";
 
 const DEFAULT_WEIGHTS = { quiz: 20, assignment: 10, activity: 30, attendance: 5, exam: 35 };
@@ -29,6 +29,36 @@ export async function ensureAccountSchema(uid) {
   }
   if (!Object.prototype.hasOwnProperty.call(existing, "schemaVersion")) updates.schemaVersion = 1;
   if (Object.keys(updates).length) await update(ref(db, base(uid)), updates);
+}
+
+// Publishes a small, privacy-safe snapshot (counts and profile only, never
+// student names or grades) so the administrator can see each teacher's activity.
+export async function syncInstructorSummary(uid) {
+  if (!db || !uid) return;
+  const [sections, enrollments, profileSnapshot] = await Promise.all([
+    get(ref(db, `${base(uid)}/sections`)),
+    get(ref(db, `${base(uid)}/enrollments`)),
+    get(ref(db, `instructors/${uid}/profile`)),
+  ]);
+  const studentIds = new Set(
+    Object.values(enrollments.val() ?? {}).flatMap((section) =>
+      Object.values(section ?? {}).map((enrollment) => enrollment?.student_id),
+    ).filter(Boolean),
+  );
+  const profile = profileSnapshot.val() ?? {};
+  const now = nowIso();
+  await set(ref(db, `instructorSummary/${uid}`), {
+    uid,
+    sections: Object.keys(sections.val() ?? {}).length,
+    students: studentIds.size,
+    position: String(profile.position || "").slice(0, 80),
+    courses: (Array.isArray(profile.courses) ? profile.courses : [])
+      .map((course) => String(course).slice(0, 60))
+      .slice(0, 20),
+    last_active_at: now,
+    updated_at: now,
+  });
+  console.info("[Presenzio] Activity summary published for", uid, { sections: Object.keys(sections.val() ?? {}).length, students: studentIds.size });
 }
 
 export const newId = () => push(ref(db)).key;

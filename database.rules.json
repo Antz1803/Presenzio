@@ -2,14 +2,22 @@
   "rules": {
     "instructors": {
       "$uid": {
-        ".read": "auth != null && auth.uid === $uid && (root.child('admins').child(auth.uid).val() === true || root.child('registrationRequests').child($uid).child('status').val() === 'approved')",
-        ".write": "auth != null && auth.uid === $uid && (root.child('admins').child(auth.uid).val() === true || root.child('registrationRequests').child($uid).child('status').val() === 'approved')"
+        ".read": "auth != null && auth.uid === $uid && (root.child('admins').child(auth.uid).val() === true || (root.child('registrationRequests').child($uid).child('status').val() === 'approved' && root.child('registrationRequests').child($uid).child('active').val() !== false))",
+        ".write": "auth != null && auth.uid === $uid && (root.child('admins').child(auth.uid).val() === true || (root.child('registrationRequests').child($uid).child('status').val() === 'approved' && root.child('registrationRequests').child($uid).child('active').val() !== false))"
       }
     },
     "accounts": {
       "$uid": {
-        ".read": "auth != null && auth.uid === $uid && (root.child('admins').child(auth.uid).val() === true || root.child('registrationRequests').child($uid).child('status').val() === 'approved')",
-        ".write": "auth != null && auth.uid === $uid && (root.child('admins').child(auth.uid).val() === true || root.child('registrationRequests').child($uid).child('status').val() === 'approved')"
+        ".read": "auth != null && auth.uid === $uid && (root.child('admins').child(auth.uid).val() === true || (root.child('registrationRequests').child($uid).child('status').val() === 'approved' && root.child('registrationRequests').child($uid).child('active').val() !== false))",
+        ".write": "auth != null && auth.uid === $uid && (root.child('admins').child(auth.uid).val() === true || (root.child('registrationRequests').child($uid).child('status').val() === 'approved' && root.child('registrationRequests').child($uid).child('active').val() !== false))"
+      }
+    },
+    "instructorSummary": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        ".write": "auth != null && auth.uid === $uid && (root.child('registrationRequests').child($uid).child('status').val() === 'approved' && root.child('registrationRequests').child($uid).child('active').val() !== false)",
+        ".validate": "newData.hasChildren(['uid', 'sections', 'students', 'updated_at']) && newData.child('uid').val() === $uid && newData.child('sections').isNumber() && newData.child('students').isNumber()"
       }
     },
     "admins": {
@@ -36,7 +44,7 @@
     "accessKeys": {
       "$key": {
         ".read": false,
-        ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (root.child('registrationRequests').child(auth.uid).child('status').val() === 'approved' && (newData.child('uid').val() === auth.uid || data.child('uid').val() === auth.uid)))"
+        ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || ((root.child('registrationRequests').child(auth.uid).child('status').val() === 'approved' && root.child('registrationRequests').child(auth.uid).child('active').val() !== false) && (newData.child('uid').val() === auth.uid || data.child('uid').val() === auth.uid)))"
       }
     },
     "publicAssessments": {
