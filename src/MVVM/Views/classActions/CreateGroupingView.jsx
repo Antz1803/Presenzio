@@ -97,7 +97,7 @@ export function CreateGroupingView({ students, onBack, onSaveGroup }) {
       >
         ← Back to groupings
       </button>
-      <div className="grid grid-cols-[repeat(2,1fr)] gap-3 [&.single]:grid-cols-[1fr] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-semibold [&_input]:w-full [&_input]:box-border [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[7px] [&_input]:bg-surface-1 [&_input]:text-ink-2 [&_input]:p-[9px] [&_input]:text-[11px] [&_input]:outline-none [&_select]:w-full [&_select]:box-border [&_select]:border [&_select]:border-white/10 [&_select]:rounded-[7px] [&_select]:bg-surface-1 [&_select]:text-ink-2 [&_select]:p-[9px] [&_select]:text-[11px] [&_select]:outline-none [&_input:focus]:border-accent/30 [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_select:focus]:border-accent/30 [&_select:focus]:[box-shadow:0_0_0_3px_#162032] max-[760px]:grid-cols-[repeat(2,1fr)] [.action-modal_&_label]:text-ink-2 [.action-modal_&_label]:text-[10px] [.action-modal_&_label]:tracking-[.1px] [.action-modal_&_input]:border-white/10 [.action-modal_&_input]:rounded-[9px] [.action-modal_&_input]:bg-surface-1 [.action-modal_&_input]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_input]:transition [.action-modal_&_select]:border-white/10 [.action-modal_&_select]:rounded-[9px] [.action-modal_&_select]:bg-surface-1 [.action-modal_&_select]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_select]:transition [.action-modal_&_input:hover]:border-accent/30 [.action-modal_&_select:hover]:border-accent/30 [.action-modal_&_input:focus]:border-accent/30 [.action-modal_&_input:focus]:[box-shadow:0_0_0_3px_#162032] [.action-modal_&_select:focus]:border-accent/30 [.action-modal_&_select:focus]:[box-shadow:0_0_0_3px_#162032]" style={{ marginTop: "0.75rem" }}>
+      <div className="grid grid-cols-[repeat(2,1fr)] gap-3 [&.h-single]:grid-cols-[1fr] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-semibold [&_input]:w-full [&_input]:box-border [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[7px] [&_input]:bg-surface-1 [&_input]:text-ink-2 [&_input]:p-[9px] [&_input]:text-[11px] [&_input]:outline-none [&_select]:w-full [&_select]:box-border [&_select]:border [&_select]:border-white/10 [&_select]:rounded-[7px] [&_select]:bg-surface-1 [&_select]:text-ink-2 [&_select]:p-[9px] [&_select]:text-[11px] [&_select]:outline-none [&_input:focus]:border-accent/30 [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_select:focus]:border-accent/30 [&_select:focus]:[box-shadow:0_0_0_3px_#162032] max-[760px]:grid-cols-[repeat(2,1fr)] [.h-action-modal_&_label]:text-ink-2 [.h-action-modal_&_label]:text-[10px] [.h-action-modal_&_label]:tracking-[.1px] [.h-action-modal_&_input]:border-white/10 [.h-action-modal_&_input]:rounded-[9px] [.h-action-modal_&_input]:bg-surface-1 [.h-action-modal_&_input]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.h-action-modal_&_input]:transition [.h-action-modal_&_select]:border-white/10 [.h-action-modal_&_select]:rounded-[9px] [.h-action-modal_&_select]:bg-surface-1 [.h-action-modal_&_select]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.h-action-modal_&_select]:transition [.h-action-modal_&_input:hover]:border-accent/30 [.h-action-modal_&_select:hover]:border-accent/30 [.h-action-modal_&_input:focus]:border-accent/30 [.h-action-modal_&_input:focus]:[box-shadow:0_0_0_3px_#162032] [.h-action-modal_&_select:focus]:border-accent/30 [.h-action-modal_&_select:focus]:[box-shadow:0_0_0_3px_#162032]" style={{ marginTop: "0.75rem" }}>
         <label>
           Activity label
           <input
@@ -162,7 +162,7 @@ export function CreateGroupingView({ students, onBack, onSaveGroup }) {
           </select>
         </label>
       </div>
-      <p className="mt-[15px] mx-0 mb-0 text-ink-3 text-[10px] leading-[1.5] [.period-settings-list>&]:mt-0 [.period-settings-list>&]:mx-0 [.period-settings-list>&]:mb-1 [.period-settings-list>&]:py-[11px] [.period-settings-list>&]:px-[13px] [.period-settings-list>&]:border [.period-settings-list>&]:border-white/10 [.period-settings-list>&]:rounded-[9px] [.period-settings-list>&]:bg-surface-1 [.action-modal_&]:text-ink-3 [.action-modal_&]:leading-[1.65]">
+      <p className="mt-[15px] mx-0 mb-0 text-ink-3 text-[10px] leading-[1.5] [.h-period-settings-list>&]:mt-0 [.h-period-settings-list>&]:mx-0 [.h-period-settings-list>&]:mb-1 [.h-period-settings-list>&]:py-[11px] [.h-period-settings-list>&]:px-[13px] [.h-period-settings-list>&]:border [.h-period-settings-list>&]:border-white/10 [.h-period-settings-list>&]:rounded-[9px] [.h-period-settings-list>&]:bg-surface-1 [.h-action-modal_&]:text-ink-3 [.h-action-modal_&]:leading-[1.65]">
         Splits your {students.length} enrolled student
         {students.length === 1 ? "" : "s"} into evenly-sized groups.
       </p>
@@ -176,7 +176,7 @@ export function CreateGroupingView({ students, onBack, onSaveGroup }) {
           placeholder={"Group 1\nMember name\nMember name\n\nGroup 2\nMember name"}
           disabled={saving}
         />
-        <div className="flex items-center justify-between gap-3 [&_span]:text-ink-3 [&_span]:text-[9px] group-paste-footer">
+        <div className="flex items-center justify-between gap-3 [&_span]:text-ink-3 [&_span]:text-[9px] h-group-paste-footer">
           <span>Put one enrolled student name on each line under a Group heading.</span>
           <button
             type="button"
@@ -189,14 +189,14 @@ export function CreateGroupingView({ students, onBack, onSaveGroup }) {
         </div>
       </div>
       {error && (
-        <p className="mt-0 mx-0 mb-3 py-[9px] px-[11px] rounded-[7px] text-[10px] [&.error]:border [&.error]:border-white/10 [&.error]:bg-surface-2 [&.error]:text-rose-300 [&.success]:border [&.success]:border-white/10 [&.success]:bg-surface-2 [&.success]:text-emerald-400 error" role="status">
+        <p className="mt-0 mx-0 mb-3 py-[9px] px-[11px] rounded-[7px] text-[10px] [&.h-error]:border [&.h-error]:border-white/10 [&.h-error]:bg-surface-2 [&.h-error]:text-rose-300 [&.h-success]:border [&.h-success]:border-white/10 [&.h-success]:bg-surface-2 [&.h-success]:text-emerald-400 h-error" role="status">
           {error}
         </p>
       )}
       {groups.length > 0 && (
-        <div className="[.assessment-manager-editor_&]:max-h-[475px] [.assessment-manager-editor_&]:overflow-auto [.assessment-manager-editor_&]:pt-0.5 [.assessment-manager-editor_&]:px-[3px] [.assessment-manager-editor_&]:pb-[3px] max-[760px]:[.assessment-manager-editor_&]:max-h-[none] flex flex-col gap-[13px]">
+        <div className="[.h-assessment-manager-editor_&]:max-h-[475px] [.h-assessment-manager-editor_&]:overflow-auto [.h-assessment-manager-editor_&]:pt-0.5 [.h-assessment-manager-editor_&]:px-[3px] [.h-assessment-manager-editor_&]:pb-[3px] max-[760px]:[.h-assessment-manager-editor_&]:max-h-[none] flex flex-col gap-[13px]">
           {groups.map((group, index) => (
-            <article className="[.assessment-manager-editor_&]:[box-shadow:none] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-bold [&_label>span:not(.choice-letter)]:text-ink-3 [&_label>span:not(.choice-letter)]:font-medium p-[17px] border border-white/10 rounded-[14px] bg-surface-1 [box-shadow:0_5px_16px_rgba(0,240,255,0.02)]" key={index}>
+            <article className="[.h-assessment-manager-editor_&]:[box-shadow:none] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-bold [&_label>span:not(.h-choice-letter)]:text-ink-3 [&_label>span:not(.h-choice-letter)]:font-medium p-[17px] border border-white/10 rounded-[14px] bg-surface-1 [box-shadow:0_5px_16px_rgba(0,240,255,0.02)]" key={index}>
               <div className="flex items-start justify-between gap-2.5 mb-[13px] [&_div]:flex [&_div]:flex-col [&_div]:gap-1 [&_span]:text-accent [&_span]:text-[8px] [&_span]:font-extrabold [&_span]:tracking-[1.3px] [&_strong]:text-ink-2 [&_strong]:text-[12px]">
                 <strong>GROUP {index + 1}</strong>
                 <span>
@@ -210,7 +210,7 @@ export function CreateGroupingView({ students, onBack, onSaveGroup }) {
           ))}
         </div>
       )}
-      <div className="flex justify-end gap-2 mt-5.5 pt-[17px] border-t border-white/10 max-[760px]:flex-wrap max-[760px]:[&_button]:flex-1 [.assessment-builder_&]:mt-0.5">
+      <div className="flex justify-end gap-2 mt-5.5 pt-[17px] border-t border-white/10 max-[760px]:flex-wrap max-[760px]:[&_button]:flex-1 [.h-assessment-builder_&]:mt-0.5">
         <button
           type="button"
           className="inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50"

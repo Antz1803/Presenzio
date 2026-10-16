@@ -332,7 +332,7 @@ function re({ section: g, assessments: u = [], onSave: w, onClose: p }) {
     { title: "Create Assessment", section: g, onClose: p, size: "wide" },
     React.createElement(
       "form",
-      { className: "flex flex-col gap-4 [&_textarea]:box-border [&_textarea]:w-full [&_textarea]:[resize:vertical] [&_textarea]:border [&_textarea]:border-white/10 [&_textarea]:rounded-[9px] [&_textarea]:bg-surface-1 [&_textarea]:text-ink-2 [&_textarea]:p-2.5 [&_textarea]:font-medium [&_textarea]:text-[11px] [&_textarea]:font-display [&_textarea]:outline-none [&_textarea:focus]:border-accent/30 [&_textarea:focus]:[box-shadow:0_0_0_3px_#162032] assessment-builder", onSubmit: j },
+      { className: "flex flex-col gap-4 [&_textarea]:box-border [&_textarea]:w-full [&_textarea]:[resize:vertical] [&_textarea]:border [&_textarea]:border-white/10 [&_textarea]:rounded-[9px] [&_textarea]:bg-surface-1 [&_textarea]:text-ink-2 [&_textarea]:p-2.5 [&_textarea]:font-medium [&_textarea]:text-[11px] [&_textarea]:font-display [&_textarea]:outline-none [&_textarea:focus]:border-accent/30 [&_textarea:focus]:[box-shadow:0_0_0_3px_#162032] h-assessment-builder", onSubmit: j },
       React.createElement(
         "div",
         { className: "flex items-center justify-between gap-3 py-[15px] px-4 border border-white/10 rounded-[14px] bg-surface-2 [&>div]:flex [&>div]:items-center [&>div]:gap-[11px] [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[13px] [&_p]:mt-1 [&_p]:mx-0 [&_p]:mb-0 [&_p]:text-ink-3 [&_p]:text-[10px] max-[760px]:items-start max-[760px]:flex-col" },
@@ -341,7 +341,7 @@ function re({ section: g, assessments: u = [], onSave: w, onClose: p }) {
           null,
           React.createElement(
             "span",
-            { className: "[.student-viewer-empty_&]:mb-2.5 grid place-items-center w-[34px] h-[34px] rounded-[11px] bg-surface-2 text-accent text-[18px]" },
+            { className: "[.h-student-viewer-empty_&]:mb-2.5 grid place-items-center w-[34px] h-[34px] rounded-[11px] bg-surface-2 text-accent text-[18px]" },
             "\u{1F4DD}",
           ),
           React.createElement(
@@ -357,10 +357,10 @@ function re({ section: g, assessments: u = [], onSave: w, onClose: p }) {
         ),
         React.createElement(
           "div",
-          { className: "flex items-center gap-2 assessment-builder-summary" },
+          { className: "flex items-center gap-2 h-assessment-builder-summary" },
           React.createElement(
             "span",
-            { className: "py-1.5 px-[9px] rounded-[7px] bg-surface-1 text-accent text-[9px] font-extrabold whitespace-nowrap max-[760px]:self-end [.assessment-builder-summary_&]:bg-surface-1" },
+            { className: "py-1.5 px-[9px] rounded-[7px] bg-surface-1 text-accent text-[9px] font-extrabold whitespace-nowrap max-[760px]:self-end [.h-assessment-builder-summary_&]:bg-surface-1" },
             d.length,
             " ",
             d.length === 1 ? "question" : "questions",
@@ -375,7 +375,7 @@ function re({ section: g, assessments: u = [], onSave: w, onClose: p }) {
       ),
       React.createElement(
         "div",
-        { className: "grid grid-cols-[repeat(2,1fr)] gap-3 [&.single]:grid-cols-[1fr] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-semibold [&_input]:w-full [&_input]:box-border [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[7px] [&_input]:bg-surface-1 [&_input]:text-ink-2 [&_input]:p-[9px] [&_input]:text-[11px] [&_input]:outline-none [&_select]:w-full [&_select]:box-border [&_select]:border [&_select]:border-white/10 [&_select]:rounded-[7px] [&_select]:bg-surface-1 [&_select]:text-ink-2 [&_select]:p-[9px] [&_select]:text-[11px] [&_select]:outline-none [&_input:focus]:border-accent/30 [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_select:focus]:border-accent/30 [&_select:focus]:[box-shadow:0_0_0_3px_#162032] max-[760px]:grid-cols-[repeat(2,1fr)] [.action-modal_&_label]:text-ink-2 [.action-modal_&_label]:text-[10px] [.action-modal_&_label]:tracking-[.1px] [.action-modal_&_input]:border-white/10 [.action-modal_&_input]:rounded-[9px] [.action-modal_&_input]:bg-surface-1 [.action-modal_&_input]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_input]:transition [.action-modal_&_select]:border-white/10 [.action-modal_&_select]:rounded-[9px] [.action-modal_&_select]:bg-surface-1 [.action-modal_&_select]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_select]:transition [.action-modal_&_input:hover]:border-accent/30 [.action-modal_&_select:hover]:border-accent/30 [.action-modal_&_input:focus]:border-accent/30 [.action-modal_&_input:focus]:[box-shadow:0_0_0_3px_#162032] [.action-modal_&_select:focus]:border-accent/30 [.action-modal_&_select:focus]:[box-shadow:0_0_0_3px_#162032] grid-cols-[minmax(0,2fr)_minmax(130px,1fr)_minmax(130px,1fr)] max-[760px]:grid-cols-[1fr]" },
+        { className: "grid grid-cols-[repeat(2,1fr)] gap-3 [&.h-single]:grid-cols-[1fr] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-semibold [&_input]:w-full [&_input]:box-border [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[7px] [&_input]:bg-surface-1 [&_input]:text-ink-2 [&_input]:p-[9px] [&_input]:text-[11px] [&_input]:outline-none [&_select]:w-full [&_select]:box-border [&_select]:border [&_select]:border-white/10 [&_select]:rounded-[7px] [&_select]:bg-surface-1 [&_select]:text-ink-2 [&_select]:p-[9px] [&_select]:text-[11px] [&_select]:outline-none [&_input:focus]:border-accent/30 [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_select:focus]:border-accent/30 [&_select:focus]:[box-shadow:0_0_0_3px_#162032] max-[760px]:grid-cols-[repeat(2,1fr)] [.h-action-modal_&_label]:text-ink-2 [.h-action-modal_&_label]:text-[10px] [.h-action-modal_&_label]:tracking-[.1px] [.h-action-modal_&_input]:border-white/10 [.h-action-modal_&_input]:rounded-[9px] [.h-action-modal_&_input]:bg-surface-1 [.h-action-modal_&_input]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.h-action-modal_&_input]:transition [.h-action-modal_&_select]:border-white/10 [.h-action-modal_&_select]:rounded-[9px] [.h-action-modal_&_select]:bg-surface-1 [.h-action-modal_&_select]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.h-action-modal_&_select]:transition [.h-action-modal_&_input:hover]:border-accent/30 [.h-action-modal_&_select:hover]:border-accent/30 [.h-action-modal_&_input:focus]:border-accent/30 [.h-action-modal_&_input:focus]:[box-shadow:0_0_0_3px_#162032] [.h-action-modal_&_select:focus]:border-accent/30 [.h-action-modal_&_select:focus]:[box-shadow:0_0_0_3px_#162032] grid-cols-[minmax(0,2fr)_minmax(130px,1fr)_minmax(130px,1fr)] max-[760px]:grid-cols-[1fr]" },
         React.createElement(
           "label",
           null,
@@ -509,7 +509,7 @@ function re({ section: g, assessments: u = [], onSave: w, onClose: p }) {
         ),
       React.createElement(
         "p",
-        { className: "mt-[15px] mx-0 mb-0 text-ink-3 text-[10px] leading-[1.5] [.period-settings-list>&]:mt-0 [.period-settings-list>&]:mx-0 [.period-settings-list>&]:mb-1 [.period-settings-list>&]:py-[11px] [.period-settings-list>&]:px-[13px] [.period-settings-list>&]:border [.period-settings-list>&]:border-white/10 [.period-settings-list>&]:rounded-[9px] [.period-settings-list>&]:bg-surface-1 [.action-modal_&]:text-ink-3 [.action-modal_&]:leading-[1.65]" },
+        { className: "mt-[15px] mx-0 mb-0 text-ink-3 text-[10px] leading-[1.5] [.h-period-settings-list>&]:mt-0 [.h-period-settings-list>&]:mx-0 [.h-period-settings-list>&]:mb-1 [.h-period-settings-list>&]:py-[11px] [.h-period-settings-list>&]:px-[13px] [.h-period-settings-list>&]:border [.h-period-settings-list>&]:border-white/10 [.h-period-settings-list>&]:rounded-[9px] [.h-period-settings-list>&]:bg-surface-1 [.h-action-modal_&]:text-ink-3 [.h-action-modal_&]:leading-[1.65]" },
         "Students can submit once by default. Grant another attempt to an individual student from Manage Assessments.",
       ),
       React.createElement(
@@ -550,12 +550,12 @@ function re({ section: g, assessments: u = [], onSave: w, onClose: p }) {
         ),
         React.createElement(
           "div",
-          { className: "flex gap-1.5 mb-3.5 [&_button]:border [&_button]:border-white/10 [&_button]:rounded-lg [&_button]:bg-surface-1 [&_button]:text-ink-3 [&_button]:py-[7px] [&_button]:px-2.5 [&_button]:text-[9px] [&_button]:font-bold [&_button]:cursor-pointer [&_button.active]:border-accent/30 [&_button.active]:bg-surface-2 [&_button.active]:text-accent" },
+          { className: "flex gap-1.5 mb-3.5 [&_button]:border [&_button]:border-white/10 [&_button]:rounded-lg [&_button]:bg-surface-1 [&_button]:text-ink-3 [&_button]:py-[7px] [&_button]:px-2.5 [&_button]:text-[9px] [&_button]:font-bold [&_button]:cursor-pointer [&_button.h-active]:border-accent/30 [&_button.h-active]:bg-surface-2 [&_button.h-active]:text-accent" },
           React.createElement(
             "button",
             {
               type: "button",
-              className: h === "multiple_choice" ? "active" : "",
+              className: h === "multiple_choice" ? "h-active" : "",
               onClick: () => y("multiple_choice"),
             },
             "Multiple choice",
@@ -564,7 +564,7 @@ function re({ section: g, assessments: u = [], onSave: w, onClose: p }) {
             "button",
             {
               type: "button",
-              className: h === "coding" ? "active" : "",
+              className: h === "coding" ? "h-active" : "",
               onClick: () => y("coding"),
             },
             "Coding",
@@ -620,7 +620,7 @@ Answer: B`,
         }),
         React.createElement(
           "div",
-          { className: "flex items-center justify-between gap-3 mt-[9px] [&_small]:text-ink-3 [&_small]:text-[9px] max-[760px]:items-start max-[760px]:flex-col question-generator-footer" },
+          { className: "flex items-center justify-between gap-3 mt-[9px] [&_small]:text-ink-3 [&_small]:text-[9px] max-[760px]:items-start max-[760px]:flex-col h-question-generator-footer" },
           React.createElement(
             "small",
             null,
@@ -636,7 +636,7 @@ Answer: B`,
           React.createElement(
             "p",
             {
-              className: `mt-2 mx-0 mb-0 text-[9px] [&.success]:text-emerald-400 [&.error]:text-rose-300 ${F.status}`,
+              className: `mt-2 mx-0 mb-0 text-[9px] [&.h-success]:text-emerald-400 [&.h-error]:text-rose-300 ${F.status}`,
               role: "status",
             },
             F.text,
@@ -644,11 +644,11 @@ Answer: B`,
       ),
       React.createElement(
         "div",
-        { className: "[.assessment-manager-editor_&]:max-h-[475px] [.assessment-manager-editor_&]:overflow-auto [.assessment-manager-editor_&]:pt-0.5 [.assessment-manager-editor_&]:px-[3px] [.assessment-manager-editor_&]:pb-[3px] max-[760px]:[.assessment-manager-editor_&]:max-h-[none] flex flex-col gap-[13px]" },
+        { className: "[.h-assessment-manager-editor_&]:max-h-[475px] [.h-assessment-manager-editor_&]:overflow-auto [.h-assessment-manager-editor_&]:pt-0.5 [.h-assessment-manager-editor_&]:px-[3px] [.h-assessment-manager-editor_&]:pb-[3px] max-[760px]:[.h-assessment-manager-editor_&]:max-h-[none] flex flex-col gap-[13px]" },
         d.map((t, o) =>
           React.createElement(
             "article",
-            { className: "[.assessment-manager-editor_&]:[box-shadow:none] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-bold [&_label>span:not(.choice-letter)]:text-ink-3 [&_label>span:not(.choice-letter)]:font-medium p-[17px] border border-white/10 rounded-[14px] bg-surface-1 [box-shadow:0_5px_16px_rgba(0,240,255,0.02)]", key: o },
+            { className: "[.h-assessment-manager-editor_&]:[box-shadow:none] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-bold [&_label>span:not(.h-choice-letter)]:text-ink-3 [&_label>span:not(.h-choice-letter)]:font-medium p-[17px] border border-white/10 rounded-[14px] bg-surface-1 [box-shadow:0_5px_16px_rgba(0,240,255,0.02)]", key: o },
             React.createElement(
               "div",
               { className: "flex items-start justify-between gap-2.5 mb-[13px] [&_div]:flex [&_div]:flex-col [&_div]:gap-1 [&_span]:text-accent [&_span]:text-[8px] [&_span]:font-extrabold [&_span]:tracking-[1.3px] [&_strong]:text-ink-2 [&_strong]:text-[12px]" },
@@ -677,12 +677,12 @@ Answer: B`,
             ),
             React.createElement(
               "div",
-              { className: "flex gap-1.5 mb-3.5 [&_button]:border [&_button]:border-white/10 [&_button]:rounded-lg [&_button]:bg-surface-1 [&_button]:text-ink-3 [&_button]:py-[7px] [&_button]:px-2.5 [&_button]:text-[9px] [&_button]:font-bold [&_button]:cursor-pointer [&_button.active]:border-accent/30 [&_button.active]:bg-surface-2 [&_button.active]:text-accent" },
+              { className: "flex gap-1.5 mb-3.5 [&_button]:border [&_button]:border-white/10 [&_button]:rounded-lg [&_button]:bg-surface-1 [&_button]:text-ink-3 [&_button]:py-[7px] [&_button]:px-2.5 [&_button]:text-[9px] [&_button]:font-bold [&_button]:cursor-pointer [&_button.h-active]:border-accent/30 [&_button.h-active]:bg-surface-2 [&_button.h-active]:text-accent" },
               React.createElement(
                 "button",
                 {
                   type: "button",
-                  className: t.type === "multiple_choice" ? "active" : "",
+                  className: t.type === "multiple_choice" ? "h-active" : "",
                   onClick: () => I(o, "multiple_choice"),
                 },
                 "Multiple choice",
@@ -691,7 +691,7 @@ Answer: B`,
                 "button",
                 {
                   type: "button",
-                  className: t.type === "coding" ? "active" : "",
+                  className: t.type === "coding" ? "h-active" : "",
                   onClick: () => I(o, "coding"),
                 },
                 "Coding",
@@ -699,7 +699,7 @@ Answer: B`,
             ),
             React.createElement(
               "div",
-              { className: "grid grid-cols-[repeat(2,1fr)] gap-3 [&.single]:grid-cols-[1fr] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-semibold [&_input]:w-full [&_input]:box-border [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[7px] [&_input]:bg-surface-1 [&_input]:text-ink-2 [&_input]:p-[9px] [&_input]:text-[11px] [&_input]:outline-none [&_select]:w-full [&_select]:box-border [&_select]:border [&_select]:border-white/10 [&_select]:rounded-[7px] [&_select]:bg-surface-1 [&_select]:text-ink-2 [&_select]:p-[9px] [&_select]:text-[11px] [&_select]:outline-none [&_input:focus]:border-accent/30 [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_select:focus]:border-accent/30 [&_select:focus]:[box-shadow:0_0_0_3px_#162032] max-[760px]:grid-cols-[repeat(2,1fr)] [.action-modal_&_label]:text-ink-2 [.action-modal_&_label]:text-[10px] [.action-modal_&_label]:tracking-[.1px] [.action-modal_&_input]:border-white/10 [.action-modal_&_input]:rounded-[9px] [.action-modal_&_input]:bg-surface-1 [.action-modal_&_input]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_input]:transition [.action-modal_&_select]:border-white/10 [.action-modal_&_select]:rounded-[9px] [.action-modal_&_select]:bg-surface-1 [.action-modal_&_select]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_select]:transition [.action-modal_&_input:hover]:border-accent/30 [.action-modal_&_select:hover]:border-accent/30 [.action-modal_&_input:focus]:border-accent/30 [.action-modal_&_input:focus]:[box-shadow:0_0_0_3px_#162032] [.action-modal_&_select:focus]:border-accent/30 [.action-modal_&_select:focus]:[box-shadow:0_0_0_3px_#162032] grid-cols-[minmax(0,1fr)_105px] max-[760px]:grid-cols-[1fr]" },
+              { className: "grid grid-cols-[repeat(2,1fr)] gap-3 [&.h-single]:grid-cols-[1fr] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-semibold [&_input]:w-full [&_input]:box-border [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[7px] [&_input]:bg-surface-1 [&_input]:text-ink-2 [&_input]:p-[9px] [&_input]:text-[11px] [&_input]:outline-none [&_select]:w-full [&_select]:box-border [&_select]:border [&_select]:border-white/10 [&_select]:rounded-[7px] [&_select]:bg-surface-1 [&_select]:text-ink-2 [&_select]:p-[9px] [&_select]:text-[11px] [&_select]:outline-none [&_input:focus]:border-accent/30 [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_select:focus]:border-accent/30 [&_select:focus]:[box-shadow:0_0_0_3px_#162032] max-[760px]:grid-cols-[repeat(2,1fr)] [.h-action-modal_&_label]:text-ink-2 [.h-action-modal_&_label]:text-[10px] [.h-action-modal_&_label]:tracking-[.1px] [.h-action-modal_&_input]:border-white/10 [.h-action-modal_&_input]:rounded-[9px] [.h-action-modal_&_input]:bg-surface-1 [.h-action-modal_&_input]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.h-action-modal_&_input]:transition [.h-action-modal_&_select]:border-white/10 [.h-action-modal_&_select]:rounded-[9px] [.h-action-modal_&_select]:bg-surface-1 [.h-action-modal_&_select]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.h-action-modal_&_select]:transition [.h-action-modal_&_input:hover]:border-accent/30 [.h-action-modal_&_select:hover]:border-accent/30 [.h-action-modal_&_input:focus]:border-accent/30 [.h-action-modal_&_input:focus]:[box-shadow:0_0_0_3px_#162032] [.h-action-modal_&_select:focus]:border-accent/30 [.h-action-modal_&_select:focus]:[box-shadow:0_0_0_3px_#162032] grid-cols-[minmax(0,1fr)_105px] max-[760px]:grid-cols-[1fr]" },
               React.createElement(
                 "label",
                 { className: "[grid-column:1]" },
@@ -730,14 +730,14 @@ Answer: B`,
             t.type === "multiple_choice"
               ? React.createElement(
                   "div",
-                  { className: "[.assessment-manager-editor_&]:mt-[3px] grid grid-cols-[1fr_1fr] [gap:10px_12px] mt-[3px] [&_label]:grid [&_label]:grid-cols-[23px_minmax(0,1fr)_20px] [&_label]:items-center [&_label]:gap-[7px] [&_input:not(.choice-radio)]:min-w-0 max-[760px]:grid-cols-[1fr]" },
+                  { className: "[.h-assessment-manager-editor_&]:mt-[3px] grid grid-cols-[1fr_1fr] [gap:10px_12px] mt-[3px] [&_label]:grid [&_label]:grid-cols-[23px_minmax(0,1fr)_20px] [&_label]:items-center [&_label]:gap-[7px] [&_input:not(.h-choice-radio)]:min-w-0 max-[760px]:grid-cols-[1fr]" },
                   t.choices.map((l, e) =>
                     React.createElement(
                       "label",
                       { key: L[e] },
                       React.createElement(
                         "span",
-                        { className: "[.student-portal-options_&]:w-[24px] [.student-portal-options_&]:h-[24px] [.student-choice-list_&]:w-[24px] [.student-choice-list_&]:h-[24px] grid place-items-center w-[23px] h-[23px] rounded-[7px] bg-surface-2 text-accent text-[9px] font-extrabold choice-letter" },
+                        { className: "[.h-student-portal-options_&]:w-[24px] [.h-student-portal-options_&]:h-[24px] [.h-student-choice-list_&]:w-[24px] [.h-student-choice-list_&]:h-[24px] grid place-items-center w-[23px] h-[23px] rounded-[7px] bg-surface-2 text-accent text-[9px] font-extrabold h-choice-letter" },
                         L[e],
                       ),
                       React.createElement("input", {
@@ -748,7 +748,7 @@ Answer: B`,
                         onChange: (s) => q(o, e, s.target.value),
                       }),
                       React.createElement("input", {
-                        className: "[.assessment-builder_&]:w-[15px] [.assessment-builder_&]:h-[15px] [.assessment-builder_&]:[accent-color:#00F0FF] choice-radio",
+                        className: "[.h-assessment-builder_&]:w-[15px] [.h-assessment-builder_&]:h-[15px] [.h-assessment-builder_&]:[accent-color:#00F0FF] h-choice-radio",
                         type: "radio",
                         name: `correct-answer-${o}`,
                         checked: t.correctAnswer === L[e],
@@ -875,12 +875,12 @@ Answer: B`,
       $.text &&
         React.createElement(
           "p",
-          { className: `mt-0 mx-0 mb-3 py-[9px] px-[11px] rounded-[7px] text-[10px] [&.error]:border [&.error]:border-white/10 [&.error]:bg-surface-2 [&.error]:text-rose-300 [&.success]:border [&.success]:border-white/10 [&.success]:bg-surface-2 [&.success]:text-emerald-400 ${$.status}`, role: "status" },
+          { className: `mt-0 mx-0 mb-3 py-[9px] px-[11px] rounded-[7px] text-[10px] [&.h-error]:border [&.h-error]:border-white/10 [&.h-error]:bg-surface-2 [&.h-error]:text-rose-300 [&.h-success]:border [&.h-success]:border-white/10 [&.h-success]:bg-surface-2 [&.h-success]:text-emerald-400 ${$.status}`, role: "status" },
           $.text,
         ),
       React.createElement(
         "div",
-        { className: "flex justify-end gap-2 mt-5.5 pt-[17px] border-t border-white/10 max-[760px]:flex-wrap max-[760px]:[&_button]:flex-1 [.assessment-builder_&]:mt-0.5" },
+        { className: "flex justify-end gap-2 mt-5.5 pt-[17px] border-t border-white/10 max-[760px]:flex-wrap max-[760px]:[&_button]:flex-1 [.h-assessment-builder_&]:mt-0.5" },
         React.createElement(
           "button",
           {
@@ -910,7 +910,7 @@ Answer: B`,
         React.createElement(
           "section",
           {
-            className: "w-[min(390px,100%)] pt-7 px-6.5 pb-6 border border-white/10 rounded-[18px] bg-surface-2 [box-shadow:0_25px_70px_rgba(0,0,0,0.38)] text-center [&_p]:mt-0 [&_p]:mx-0 [&_p]:mb-[7px] [&_p]:text-rose-300 [&_p]:text-[8px] [&_p]:font-extrabold [&_p]:tracking-[1.6px] [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[17px] [&>span]:block [&>span]:[margin:10px_auto_0] [&>span]:max-w-[300px] [&>span]:text-ink-3 [&>span]:text-[10px] [&>span]:leading-[1.6] [&>div:last-child]:flex [&>div:last-child]:justify-center [&>div:last-child]:gap-2 [&>div:last-child]:mt-5 assessment-confirm-dialog",
+            className: "w-[min(390px,100%)] pt-7 px-6.5 pb-6 border border-white/10 rounded-[18px] bg-surface-2 [box-shadow:0_25px_70px_rgba(0,0,0,0.38)] text-center [&_p]:mt-0 [&_p]:mx-0 [&_p]:mb-[7px] [&_p]:text-rose-300 [&_p]:text-[8px] [&_p]:font-extrabold [&_p]:tracking-[1.6px] [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[17px] [&>span]:block [&>span]:[margin:10px_auto_0] [&>span]:max-w-[300px] [&>span]:text-ink-3 [&>span]:text-[10px] [&>span]:leading-[1.6] [&>div:last-child]:flex [&>div:last-child]:justify-center [&>div:last-child]:gap-2 [&>div:last-child]:mt-5 h-assessment-confirm-dialog",
             role: "alertdialog",
             "aria-modal": "true",
             "aria-labelledby": "assessment-replace-title",
@@ -953,7 +953,7 @@ Answer: B`,
               "button",
               {
                 type: "button",
-                className: "inline-flex items-center justify-center gap-2 border-0 rounded-[10px] py-2.5 px-[15px] [background:linear-gradient(135deg,#162032,#0F172A)] text-ink text-[11px] font-bold [box-shadow:0_7px_15px_rgba(0,0,0,0.32)] cursor-pointer transition hover:[background:linear-gradient(135deg,#162032,#0F172A)] hover:[box-shadow:0_10px_20px_rgba(0,0,0,0.45)] hover:[transform:translateY(-1px)] disabled:cursor-not-allowed disabled:opacity-60 disabled:[transform:none] [.assessment-confirm-dialog_&]:min-w-[110px]",
+                className: "inline-flex items-center justify-center gap-2 border-0 rounded-[10px] py-2.5 px-[15px] [background:linear-gradient(135deg,#162032,#0F172A)] text-ink text-[11px] font-bold [box-shadow:0_7px_15px_rgba(0,0,0,0.32)] cursor-pointer transition hover:[background:linear-gradient(135deg,#162032,#0F172A)] hover:[box-shadow:0_10px_20px_rgba(0,0,0,0.45)] hover:[transform:translateY(-1px)] disabled:cursor-not-allowed disabled:opacity-60 disabled:[transform:none] [.h-assessment-confirm-dialog_&]:min-w-[110px]",
                 onClick: H,
                 disabled: C,
               },
@@ -974,7 +974,7 @@ Answer: B`,
         React.createElement(
           "section",
           {
-            className: "w-[min(390px,100%)] pt-7 px-6.5 pb-6 border border-white/10 rounded-[18px] bg-surface-2 [box-shadow:0_25px_70px_rgba(0,0,0,0.38)] text-center [&_p]:mt-0 [&_p]:mx-0 [&_p]:mb-[7px] [&_p]:text-rose-300 [&_p]:text-[8px] [&_p]:font-extrabold [&_p]:tracking-[1.6px] [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[17px] [&>span]:block [&>span]:[margin:10px_auto_0] [&>span]:max-w-[300px] [&>span]:text-ink-3 [&>span]:text-[10px] [&>span]:leading-[1.6] [&>div:last-child]:flex [&>div:last-child]:justify-center [&>div:last-child]:gap-2 [&>div:last-child]:mt-5 assessment-confirm-dialog",
+            className: "w-[min(390px,100%)] pt-7 px-6.5 pb-6 border border-white/10 rounded-[18px] bg-surface-2 [box-shadow:0_25px_70px_rgba(0,0,0,0.38)] text-center [&_p]:mt-0 [&_p]:mx-0 [&_p]:mb-[7px] [&_p]:text-rose-300 [&_p]:text-[8px] [&_p]:font-extrabold [&_p]:tracking-[1.6px] [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[17px] [&>span]:block [&>span]:[margin:10px_auto_0] [&>span]:max-w-[300px] [&>span]:text-ink-3 [&>span]:text-[10px] [&>span]:leading-[1.6] [&>div:last-child]:flex [&>div:last-child]:justify-center [&>div:last-child]:gap-2 [&>div:last-child]:mt-5 h-assessment-confirm-dialog",
             role: "alertdialog",
             "aria-modal": "true",
             "aria-labelledby": "assessment-score-overwrite-title",
@@ -1013,7 +1013,7 @@ Answer: B`,
               "button",
               {
                 type: "button",
-                className: "inline-flex items-center justify-center gap-2 border-0 rounded-[10px] py-2.5 px-[15px] [background:linear-gradient(135deg,#162032,#0F172A)] text-ink text-[11px] font-bold [box-shadow:0_7px_15px_rgba(0,0,0,0.32)] cursor-pointer transition hover:[background:linear-gradient(135deg,#162032,#0F172A)] hover:[box-shadow:0_10px_20px_rgba(0,0,0,0.45)] hover:[transform:translateY(-1px)] disabled:cursor-not-allowed disabled:opacity-60 disabled:[transform:none] [.assessment-confirm-dialog_&]:min-w-[110px]",
+                className: "inline-flex items-center justify-center gap-2 border-0 rounded-[10px] py-2.5 px-[15px] [background:linear-gradient(135deg,#162032,#0F172A)] text-ink text-[11px] font-bold [box-shadow:0_7px_15px_rgba(0,0,0,0.32)] cursor-pointer transition hover:[background:linear-gradient(135deg,#162032,#0F172A)] hover:[box-shadow:0_10px_20px_rgba(0,0,0,0.45)] hover:[transform:translateY(-1px)] disabled:cursor-not-allowed disabled:opacity-60 disabled:[transform:none] [.h-assessment-confirm-dialog_&]:min-w-[110px]",
                 onClick: X,
                 disabled: C,
               },
@@ -1250,7 +1250,7 @@ function le({
           { className: "grid grid-cols-[245px_minmax(0,1fr)] gap-4.5 min-h-[440px] max-[760px]:grid-cols-[1fr]" },
           React.createElement(
             "aside",
-            { className: "flex flex-col gap-[7px] p-3 border border-white/10 rounded-[13px] bg-surface-1 [&_button]:flex [&_button]:flex-col [&_button]:items-start [&_button]:gap-1 [&_button]:p-[11px] [&_button]:border [&_button]:border-transparent [&_button]:rounded-[9px] [&_button]:bg-transparent [&_button]:text-left [&_button]:cursor-pointer [&_button:hover]:border-accent/30 [&_button:hover]:bg-surface-1 [&_button:hover]:[box-shadow:0_3px_9px_rgba(0,240,255,0.03)] [&_button.selected]:border-accent/30 [&_button.selected]:bg-surface-1 [&_button.selected]:[box-shadow:0_3px_9px_rgba(0,240,255,0.03)] [&_button_strong]:overflow-hidden [&_button_strong]:w-full [&_button_strong]:text-ink-2 [&_button_strong]:text-[10px] [&_button_strong]:text-ellipsis [&_button_strong]:whitespace-nowrap [&_button_span]:text-ink-3 [&_button_span]:text-[9px] [&_button_small]:text-accent [&_button_small]:font-bold [&_button_small]:text-[8px] max-[760px]:max-h-[210px] max-[760px]:overflow-auto assessment-manager-list" },
+            { className: "flex flex-col gap-[7px] p-3 border border-white/10 rounded-[13px] bg-surface-1 [&_button]:flex [&_button]:flex-col [&_button]:items-start [&_button]:gap-1 [&_button]:p-[11px] [&_button]:border [&_button]:border-transparent [&_button]:rounded-[9px] [&_button]:bg-transparent [&_button]:text-left [&_button]:cursor-pointer [&_button:hover]:border-accent/30 [&_button:hover]:bg-surface-1 [&_button:hover]:[box-shadow:0_3px_9px_rgba(0,240,255,0.03)] [&_button.h-selected]:border-accent/30 [&_button.h-selected]:bg-surface-1 [&_button.h-selected]:[box-shadow:0_3px_9px_rgba(0,240,255,0.03)] [&_button_strong]:overflow-hidden [&_button_strong]:w-full [&_button_strong]:text-ink-2 [&_button_strong]:text-[10px] [&_button_strong]:text-ellipsis [&_button_strong]:whitespace-nowrap [&_button_span]:text-ink-3 [&_button_span]:text-[9px] [&_button_small]:text-accent [&_button_small]:font-bold [&_button_small]:text-[8px] max-[760px]:max-h-[210px] max-[760px]:overflow-auto h-assessment-manager-list" },
             React.createElement(
               "div",
               { className: "flex items-center justify-between pt-[3px] px-1 pb-[9px] text-accent text-[8px] font-extrabold tracking-[1px] [&_strong]:grid [&_strong]:place-items-center [&_strong]:min-w-[20px] [&_strong]:h-[20px] [&_strong]:rounded-[6px] [&_strong]:bg-surface-2 [&_strong]:text-accent [&_strong]:text-[9px]" },
@@ -1261,7 +1261,7 @@ function le({
               React.createElement(
                 "div",
                 {
-                  className: `flex items-stretch gap-[3px] [&>button:first-child]:flex-1 [&>button:first-child]:min-w-0 ${e.id === m ? "selected" : ""}`,
+                  className: `flex items-stretch gap-[3px] [&>button:first-child]:flex-1 [&>button:first-child]:min-w-0 ${e.id === m ? "h-selected" : ""}`,
                   key: e.id,
                 },
                 React.createElement(
@@ -1283,7 +1283,7 @@ function le({
                   "button",
                   {
                     type: "button",
-                    className: "[.assessment-manager-list_&]:grid [.assessment-manager-list_&]:place-items-center [.assessment-manager-list_&]:self-center [.assessment-manager-list_&]:w-[25px] [.assessment-manager-list_&]:h-[25px] [.assessment-manager-list_&]:p-0 [.assessment-manager-list_&]:border-0 [.assessment-manager-list_&]:rounded-[7px] [.assessment-manager-list_&]:bg-transparent [.assessment-manager-list_&]:text-rose-300 [.assessment-manager-list_&]:text-[17px] [.assessment-manager-list_&]:leading-[1] [.assessment-manager-list_&:hover]:bg-surface-2 [.assessment-manager-list_&:hover]:border-transparent [.assessment-manager-list_&:hover]:text-rose-300 [.assessment-manager-list_&:hover]:[box-shadow:none] [.assessment-manager-list_&:disabled]:cursor-not-allowed [.assessment-manager-list_&:disabled]:opacity-50",
+                    className: "[.h-assessment-manager-list_&]:grid [.h-assessment-manager-list_&]:place-items-center [.h-assessment-manager-list_&]:self-center [.h-assessment-manager-list_&]:w-[25px] [.h-assessment-manager-list_&]:h-[25px] [.h-assessment-manager-list_&]:p-0 [.h-assessment-manager-list_&]:border-0 [.h-assessment-manager-list_&]:rounded-[7px] [.h-assessment-manager-list_&]:bg-transparent [.h-assessment-manager-list_&]:text-rose-300 [.h-assessment-manager-list_&]:text-[17px] [.h-assessment-manager-list_&]:leading-[1] [.h-assessment-manager-list_&:hover]:bg-surface-2 [.h-assessment-manager-list_&:hover]:border-transparent [.h-assessment-manager-list_&:hover]:text-rose-300 [.h-assessment-manager-list_&:hover]:[box-shadow:none] [.h-assessment-manager-list_&:disabled]:cursor-not-allowed [.h-assessment-manager-list_&:disabled]:opacity-50",
                     "aria-label": `Delete ${e.title}`,
                     disabled: R === e.id,
                     onClick: (s) => o(s, e),
@@ -1296,7 +1296,7 @@ function le({
           i &&
             React.createElement(
               "form",
-              { className: "min-w-0 assessment-manager-editor", onSubmit: H },
+              { className: "min-w-0 h-assessment-manager-editor", onSubmit: H },
               React.createElement(
                 "div",
                 { className: "flex items-start justify-between gap-3 mb-[15px] [&_span]:text-accent [&_span]:text-[8px] [&_span]:font-extrabold [&_span]:tracking-[1.2px] [&_h3]:mt-[5px] [&_h3]:mx-0 [&_h3]:mb-0 [&_h3]:text-ink-2 [&_h3]:text-[15px] [&_code]:py-[7px] [&_code]:px-[9px] [&_code]:rounded-[7px] [&_code]:bg-surface-2 [&_code]:text-accent [&_code]:font-bold [&_code]:text-[9px] [&_code]:whitespace-nowrap max-[760px]:items-start max-[760px]:flex-col max-[760px]:[&_code]:self-end" },
@@ -1349,7 +1349,7 @@ function le({
               ),
               React.createElement(
                 "div",
-                { className: "grid grid-cols-[repeat(2,1fr)] gap-3 [&.single]:grid-cols-[1fr] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-semibold [&_input]:w-full [&_input]:box-border [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[7px] [&_input]:bg-surface-1 [&_input]:text-ink-2 [&_input]:p-[9px] [&_input]:text-[11px] [&_input]:outline-none [&_select]:w-full [&_select]:box-border [&_select]:border [&_select]:border-white/10 [&_select]:rounded-[7px] [&_select]:bg-surface-1 [&_select]:text-ink-2 [&_select]:p-[9px] [&_select]:text-[11px] [&_select]:outline-none [&_input:focus]:border-accent/30 [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_select:focus]:border-accent/30 [&_select:focus]:[box-shadow:0_0_0_3px_#162032] max-[760px]:grid-cols-[repeat(2,1fr)] [.action-modal_&_label]:text-ink-2 [.action-modal_&_label]:text-[10px] [.action-modal_&_label]:tracking-[.1px] [.action-modal_&_input]:border-white/10 [.action-modal_&_input]:rounded-[9px] [.action-modal_&_input]:bg-surface-1 [.action-modal_&_input]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_input]:transition [.action-modal_&_select]:border-white/10 [.action-modal_&_select]:rounded-[9px] [.action-modal_&_select]:bg-surface-1 [.action-modal_&_select]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_select]:transition [.action-modal_&_input:hover]:border-accent/30 [.action-modal_&_select:hover]:border-accent/30 [.action-modal_&_input:focus]:border-accent/30 [.action-modal_&_input:focus]:[box-shadow:0_0_0_3px_#162032] [.action-modal_&_select:focus]:border-accent/30 [.action-modal_&_select:focus]:[box-shadow:0_0_0_3px_#162032] grid-cols-[minmax(0,2fr)_minmax(130px,1fr)_minmax(130px,1fr)] max-[760px]:grid-cols-[1fr]" },
+                { className: "grid grid-cols-[repeat(2,1fr)] gap-3 [&.h-single]:grid-cols-[1fr] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-semibold [&_input]:w-full [&_input]:box-border [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[7px] [&_input]:bg-surface-1 [&_input]:text-ink-2 [&_input]:p-[9px] [&_input]:text-[11px] [&_input]:outline-none [&_select]:w-full [&_select]:box-border [&_select]:border [&_select]:border-white/10 [&_select]:rounded-[7px] [&_select]:bg-surface-1 [&_select]:text-ink-2 [&_select]:p-[9px] [&_select]:text-[11px] [&_select]:outline-none [&_input:focus]:border-accent/30 [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_select:focus]:border-accent/30 [&_select:focus]:[box-shadow:0_0_0_3px_#162032] max-[760px]:grid-cols-[repeat(2,1fr)] [.h-action-modal_&_label]:text-ink-2 [.h-action-modal_&_label]:text-[10px] [.h-action-modal_&_label]:tracking-[.1px] [.h-action-modal_&_input]:border-white/10 [.h-action-modal_&_input]:rounded-[9px] [.h-action-modal_&_input]:bg-surface-1 [.h-action-modal_&_input]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.h-action-modal_&_input]:transition [.h-action-modal_&_select]:border-white/10 [.h-action-modal_&_select]:rounded-[9px] [.h-action-modal_&_select]:bg-surface-1 [.h-action-modal_&_select]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.h-action-modal_&_select]:transition [.h-action-modal_&_input:hover]:border-accent/30 [.h-action-modal_&_select:hover]:border-accent/30 [.h-action-modal_&_input:focus]:border-accent/30 [.h-action-modal_&_input:focus]:[box-shadow:0_0_0_3px_#162032] [.h-action-modal_&_select:focus]:border-accent/30 [.h-action-modal_&_select:focus]:[box-shadow:0_0_0_3px_#162032] grid-cols-[minmax(0,2fr)_minmax(130px,1fr)_minmax(130px,1fr)] max-[760px]:grid-cols-[1fr]" },
                 React.createElement(
                   "label",
                   null,
@@ -1543,7 +1543,7 @@ function le({
                           { key: e.studentId },
                           React.createElement(
                             "div",
-                            { className: "flex items-center justify-between gap-3 py-2.5 px-[11px] border border-white/10 rounded-[9px] bg-surface-1 [&>div]:flex [&>div]:min-w-0 [&>div]:flex-col [&>div]:gap-[3px] [&_strong]:overflow-hidden [&_strong]:text-ink-2 [&_strong]:text-[10px] [&_strong]:text-ellipsis [&_strong]:whitespace-nowrap [&_small]:text-ink-3 [&_small]:text-[9px] assessment-retry-row" },
+                            { className: "flex items-center justify-between gap-3 py-2.5 px-[11px] border border-white/10 rounded-[9px] bg-surface-1 [&>div]:flex [&>div]:min-w-0 [&>div]:flex-col [&>div]:gap-[3px] [&_strong]:overflow-hidden [&_strong]:text-ink-2 [&_strong]:text-[10px] [&_strong]:text-ellipsis [&_strong]:whitespace-nowrap [&_small]:text-ink-3 [&_small]:text-[9px] h-assessment-retry-row" },
                             React.createElement(
                               "div",
                               null,
@@ -1566,7 +1566,7 @@ function le({
                                 "button",
                                 {
                                   type: "button",
-                                  className: "inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50",
+                                  className: "inline-flex items-center justify-center gap-1.5 rounded border border-accent/40 bg-transparent px-2.5 py-1 font-mono text-[9px] font-bold uppercase leading-tight tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50",
                                   disabled: !latest,
                                   onClick: () => Ve(e.studentId),
                                 },
@@ -1576,7 +1576,7 @@ function le({
                                 "button",
                                 {
                                   type: "button",
-                                  className: "inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50",
+                                  className: "inline-flex items-center justify-center gap-1.5 rounded border border-accent/40 bg-transparent px-2.5 py-1 font-mono text-[9px] font-bold uppercase leading-tight tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50",
                                   disabled: r === e.studentId,
                                   onClick: () => t(e),
                                 },
@@ -1592,7 +1592,7 @@ function le({
                               "div",
                               {
                                 className:
-                                  "mb-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3",
+                                  "mb-3 rounded-xl border border-white/10 bg-surface-2 px-3.5 py-3",
                               },
                               React.createElement(
                                 "div",
@@ -1604,7 +1604,7 @@ function le({
                                   "span",
                                   {
                                     className:
-                                      "text-[11px] font-bold uppercase tracking-wide text-slate-500",
+                                      "text-[11px] font-bold uppercase tracking-wide text-accent",
                                   },
                                   `Attempt ${latest.attempt_no}`,
                                   latest.status === "needs_review"
@@ -1613,14 +1613,14 @@ function le({
                                 ),
                                 React.createElement(
                                   "strong",
-                                  { className: "text-[13px] text-slate-900" },
+                                  { className: "text-[13px] text-ink" },
                                   `${Number(latest.score ?? 0).toFixed(2)} / ${Number(latest.max_score ?? 0).toFixed(2)}`,
                                 ),
                               ),
                               !(latest.answers ?? []).length &&
                                 React.createElement(
                                   "p",
-                                  { className: "m-0 text-xs text-slate-400" },
+                                  { className: "m-0 text-xs text-ink-3" },
                                   "No submitted answer data found for this attempt (it may not have synced yet).",
                                 ),
                               ...[...(b?.questions ?? [])]
@@ -1643,23 +1643,23 @@ function le({
                                         : "",
                                     statusColorClass =
                                       ansRow?.is_correct === true
-                                        ? "text-emerald-600"
+                                        ? "text-emerald-400"
                                         : ansRow?.is_correct === false
-                                          ? "text-rose-600"
-                                          : "text-slate-500";
+                                          ? "text-rose-400"
+                                          : "text-ink-3";
                                   return React.createElement(
                                     "div",
                                     {
                                       key: qq.id,
-                                      className: `py-2.5 ${idx === 0 ? "" : "border-t border-slate-200"}`,
+                                      className: `py-2.5 ${idx === 0 ? "" : "border-t border-white/10"}`,
                                     },
                                     React.createElement(
                                       "p",
-                                      { className: "mb-1 text-xs text-slate-600" },
+                                      { className: "mb-1 text-xs text-ink-3" },
                                       `Q${idx + 1}. `,
                                       React.createElement(
                                         "strong",
-                                        { className: "text-slate-900" },
+                                        { className: "text-ink" },
                                         qq.prompt,
                                       ),
                                     ),
@@ -1668,7 +1668,7 @@ function le({
                                           "p",
                                           {
                                             className:
-                                              "mb-1 text-[13px] text-slate-800",
+                                              "mb-1 text-[13px] text-ink-2",
                                           },
                                           "Answered: ",
                                           React.createElement(
@@ -1689,7 +1689,7 @@ function le({
                                           "pre",
                                           {
                                             className:
-                                              "mb-1 whitespace-pre-wrap break-words rounded-lg bg-slate-900 px-2.5 py-2 text-xs text-slate-200",
+                                              "mb-1 whitespace-pre-wrap break-words rounded-lg border border-white/10 bg-canvas px-2.5 py-2 text-xs text-slate-200",
                                           },
                                           answerText || "(no answer submitted)",
                                         ),
@@ -1802,11 +1802,11 @@ function le({
               ),
               React.createElement(
                 "div",
-                { className: "[.assessment-manager-editor_&]:max-h-[475px] [.assessment-manager-editor_&]:overflow-auto [.assessment-manager-editor_&]:pt-0.5 [.assessment-manager-editor_&]:px-[3px] [.assessment-manager-editor_&]:pb-[3px] max-[760px]:[.assessment-manager-editor_&]:max-h-[none] flex flex-col gap-[13px]" },
+                { className: "[.h-assessment-manager-editor_&]:max-h-[475px] [.h-assessment-manager-editor_&]:overflow-auto [.h-assessment-manager-editor_&]:pt-0.5 [.h-assessment-manager-editor_&]:px-[3px] [.h-assessment-manager-editor_&]:pb-[3px] max-[760px]:[.h-assessment-manager-editor_&]:max-h-[none] flex flex-col gap-[13px]" },
                 i.questions.map((e, s) =>
                   React.createElement(
                     "article",
-                    { className: "[.assessment-manager-editor_&]:[box-shadow:none] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-bold [&_label>span:not(.choice-letter)]:text-ink-3 [&_label>span:not(.choice-letter)]:font-medium p-[17px] border border-white/10 rounded-[14px] bg-surface-1 [box-shadow:0_5px_16px_rgba(0,240,255,0.02)]", key: s },
+                    { className: "[.h-assessment-manager-editor_&]:[box-shadow:none] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-bold [&_label>span:not(.h-choice-letter)]:text-ink-3 [&_label>span:not(.h-choice-letter)]:font-medium p-[17px] border border-white/10 rounded-[14px] bg-surface-1 [box-shadow:0_5px_16px_rgba(0,240,255,0.02)]", key: s },
                     React.createElement(
                       "div",
                       { className: "flex items-start justify-between gap-2.5 mb-[13px] [&_div]:flex [&_div]:flex-col [&_div]:gap-1 [&_span]:text-accent [&_span]:text-[8px] [&_span]:font-extrabold [&_span]:tracking-[1.3px] [&_strong]:text-ink-2 [&_strong]:text-[12px]" },
@@ -1839,13 +1839,13 @@ function le({
                     ),
                     React.createElement(
                       "div",
-                      { className: "flex gap-1.5 mb-3.5 [&_button]:border [&_button]:border-white/10 [&_button]:rounded-lg [&_button]:bg-surface-1 [&_button]:text-ink-3 [&_button]:py-[7px] [&_button]:px-2.5 [&_button]:text-[9px] [&_button]:font-bold [&_button]:cursor-pointer [&_button.active]:border-accent/30 [&_button.active]:bg-surface-2 [&_button.active]:text-accent" },
+                      { className: "flex gap-1.5 mb-3.5 [&_button]:border [&_button]:border-white/10 [&_button]:rounded-lg [&_button]:bg-surface-1 [&_button]:text-ink-3 [&_button]:py-[7px] [&_button]:px-2.5 [&_button]:text-[9px] [&_button]:font-bold [&_button]:cursor-pointer [&_button.h-active]:border-accent/30 [&_button.h-active]:bg-surface-2 [&_button.h-active]:text-accent" },
                       React.createElement(
                         "button",
                         {
                           type: "button",
                           className:
-                            e.type === "multiple_choice" ? "active" : "",
+                            e.type === "multiple_choice" ? "h-active" : "",
                           onClick: () => W(s, "multiple_choice"),
                         },
                         "Multiple choice",
@@ -1854,7 +1854,7 @@ function le({
                         "button",
                         {
                           type: "button",
-                          className: e.type === "coding" ? "active" : "",
+                          className: e.type === "coding" ? "h-active" : "",
                           onClick: () => W(s, "coding"),
                         },
                         "Coding",
@@ -1863,7 +1863,7 @@ function le({
                     React.createElement(
                       "div",
                       {
-                        className: "grid grid-cols-[repeat(2,1fr)] gap-3 [&.single]:grid-cols-[1fr] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-semibold [&_input]:w-full [&_input]:box-border [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[7px] [&_input]:bg-surface-1 [&_input]:text-ink-2 [&_input]:p-[9px] [&_input]:text-[11px] [&_input]:outline-none [&_select]:w-full [&_select]:box-border [&_select]:border [&_select]:border-white/10 [&_select]:rounded-[7px] [&_select]:bg-surface-1 [&_select]:text-ink-2 [&_select]:p-[9px] [&_select]:text-[11px] [&_select]:outline-none [&_input:focus]:border-accent/30 [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_select:focus]:border-accent/30 [&_select:focus]:[box-shadow:0_0_0_3px_#162032] max-[760px]:grid-cols-[repeat(2,1fr)] [.action-modal_&_label]:text-ink-2 [.action-modal_&_label]:text-[10px] [.action-modal_&_label]:tracking-[.1px] [.action-modal_&_input]:border-white/10 [.action-modal_&_input]:rounded-[9px] [.action-modal_&_input]:bg-surface-1 [.action-modal_&_input]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_input]:transition [.action-modal_&_select]:border-white/10 [.action-modal_&_select]:rounded-[9px] [.action-modal_&_select]:bg-surface-1 [.action-modal_&_select]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.action-modal_&_select]:transition [.action-modal_&_input:hover]:border-accent/30 [.action-modal_&_select:hover]:border-accent/30 [.action-modal_&_input:focus]:border-accent/30 [.action-modal_&_input:focus]:[box-shadow:0_0_0_3px_#162032] [.action-modal_&_select:focus]:border-accent/30 [.action-modal_&_select:focus]:[box-shadow:0_0_0_3px_#162032] grid-cols-[minmax(0,1fr)_105px] max-[760px]:grid-cols-[1fr]",
+                        className: "grid grid-cols-[repeat(2,1fr)] gap-3 [&.h-single]:grid-cols-[1fr] [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:font-semibold [&_input]:w-full [&_input]:box-border [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[7px] [&_input]:bg-surface-1 [&_input]:text-ink-2 [&_input]:p-[9px] [&_input]:text-[11px] [&_input]:outline-none [&_select]:w-full [&_select]:box-border [&_select]:border [&_select]:border-white/10 [&_select]:rounded-[7px] [&_select]:bg-surface-1 [&_select]:text-ink-2 [&_select]:p-[9px] [&_select]:text-[11px] [&_select]:outline-none [&_input:focus]:border-accent/30 [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_select:focus]:border-accent/30 [&_select:focus]:[box-shadow:0_0_0_3px_#162032] max-[760px]:grid-cols-[repeat(2,1fr)] [.h-action-modal_&_label]:text-ink-2 [.h-action-modal_&_label]:text-[10px] [.h-action-modal_&_label]:tracking-[.1px] [.h-action-modal_&_input]:border-white/10 [.h-action-modal_&_input]:rounded-[9px] [.h-action-modal_&_input]:bg-surface-1 [.h-action-modal_&_input]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.h-action-modal_&_input]:transition [.h-action-modal_&_select]:border-white/10 [.h-action-modal_&_select]:rounded-[9px] [.h-action-modal_&_select]:bg-surface-1 [.h-action-modal_&_select]:[box-shadow:0_2px_5px_rgba(0,240,255,0.01)] [.h-action-modal_&_select]:transition [.h-action-modal_&_input:hover]:border-accent/30 [.h-action-modal_&_select:hover]:border-accent/30 [.h-action-modal_&_input:focus]:border-accent/30 [.h-action-modal_&_input:focus]:[box-shadow:0_0_0_3px_#162032] [.h-action-modal_&_select:focus]:border-accent/30 [.h-action-modal_&_select:focus]:[box-shadow:0_0_0_3px_#162032] grid-cols-[minmax(0,1fr)_105px] max-[760px]:grid-cols-[1fr]",
                       },
                       React.createElement(
                         "label",
@@ -1894,14 +1894,14 @@ function le({
                     e.type === "multiple_choice"
                       ? React.createElement(
                           "div",
-                          { className: "[.assessment-manager-editor_&]:mt-[3px] grid grid-cols-[1fr_1fr] [gap:10px_12px] mt-[3px] [&_label]:grid [&_label]:grid-cols-[23px_minmax(0,1fr)_20px] [&_label]:items-center [&_label]:gap-[7px] [&_input:not(.choice-radio)]:min-w-0 max-[760px]:grid-cols-[1fr]" },
+                          { className: "[.h-assessment-manager-editor_&]:mt-[3px] grid grid-cols-[1fr_1fr] [gap:10px_12px] mt-[3px] [&_label]:grid [&_label]:grid-cols-[23px_minmax(0,1fr)_20px] [&_label]:items-center [&_label]:gap-[7px] [&_input:not(.h-choice-radio)]:min-w-0 max-[760px]:grid-cols-[1fr]" },
                           e.choices.map((a, c) =>
                             React.createElement(
                               "label",
                               { key: L[c] },
                               React.createElement(
                                 "span",
-                                { className: "[.student-portal-options_&]:w-[24px] [.student-portal-options_&]:h-[24px] [.student-choice-list_&]:w-[24px] [.student-choice-list_&]:h-[24px] grid place-items-center w-[23px] h-[23px] rounded-[7px] bg-surface-2 text-accent text-[9px] font-extrabold choice-letter" },
+                                { className: "[.h-student-portal-options_&]:w-[24px] [.h-student-portal-options_&]:h-[24px] [.h-student-choice-list_&]:w-[24px] [.h-student-choice-list_&]:h-[24px] grid place-items-center w-[23px] h-[23px] rounded-[7px] bg-surface-2 text-accent text-[9px] font-extrabold h-choice-letter" },
                                 L[c],
                               ),
                               React.createElement("input", {
@@ -1911,7 +1911,7 @@ function le({
                                 onChange: (f) => Y(s, c, f.target.value),
                               }),
                               React.createElement("input", {
-                                className: "[.assessment-builder_&]:w-[15px] [.assessment-builder_&]:h-[15px] [.assessment-builder_&]:[accent-color:#00F0FF] choice-radio",
+                                className: "[.h-assessment-builder_&]:w-[15px] [.h-assessment-builder_&]:h-[15px] [.h-assessment-builder_&]:[accent-color:#00F0FF] h-choice-radio",
                                 type: "radio",
                                 name: `edit-correct-${s}`,
                                 checked: e.correctAnswer === L[c],
@@ -2020,14 +2020,14 @@ function le({
                 React.createElement(
                   "p",
                   {
-                    className: `mt-0 mx-0 mb-3 py-[9px] px-[11px] rounded-[7px] text-[10px] [&.error]:border [&.error]:border-white/10 [&.error]:bg-surface-2 [&.error]:text-rose-300 [&.success]:border [&.success]:border-white/10 [&.success]:bg-surface-2 [&.success]:text-emerald-400 ${U.status}`,
+                    className: `mt-0 mx-0 mb-3 py-[9px] px-[11px] rounded-[7px] text-[10px] [&.h-error]:border [&.h-error]:border-white/10 [&.h-error]:bg-surface-2 [&.h-error]:text-rose-300 [&.h-success]:border [&.h-success]:border-white/10 [&.h-success]:bg-surface-2 [&.h-success]:text-emerald-400 ${U.status}`,
                     role: "status",
                   },
                   U.text,
                 ),
               React.createElement(
                 "div",
-                { className: "flex justify-end gap-2 mt-5.5 pt-[17px] border-t border-white/10 max-[760px]:flex-wrap max-[760px]:[&_button]:flex-1 [.assessment-builder_&]:mt-0.5" },
+                { className: "flex justify-end gap-2 mt-5.5 pt-[17px] border-t border-white/10 max-[760px]:flex-wrap max-[760px]:[&_button]:flex-1 [.h-assessment-builder_&]:mt-0.5" },
                 React.createElement(
                   "button",
                   {
@@ -2079,7 +2079,7 @@ function le({
             React.createElement(
               "section",
               {
-                className: "w-[min(390px,100%)] pt-7 px-6.5 pb-6 border border-white/10 rounded-[18px] bg-surface-2 [box-shadow:0_25px_70px_rgba(0,0,0,0.38)] text-center [&_p]:mt-0 [&_p]:mx-0 [&_p]:mb-[7px] [&_p]:text-rose-300 [&_p]:text-[8px] [&_p]:font-extrabold [&_p]:tracking-[1.6px] [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[17px] [&>span]:block [&>span]:[margin:10px_auto_0] [&>span]:max-w-[300px] [&>span]:text-ink-3 [&>span]:text-[10px] [&>span]:leading-[1.6] [&>div:last-child]:flex [&>div:last-child]:justify-center [&>div:last-child]:gap-2 [&>div:last-child]:mt-5 assessment-confirm-dialog",
+                className: "w-[min(390px,100%)] pt-7 px-6.5 pb-6 border border-white/10 rounded-[18px] bg-surface-2 [box-shadow:0_25px_70px_rgba(0,0,0,0.38)] text-center [&_p]:mt-0 [&_p]:mx-0 [&_p]:mb-[7px] [&_p]:text-rose-300 [&_p]:text-[8px] [&_p]:font-extrabold [&_p]:tracking-[1.6px] [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[17px] [&>span]:block [&>span]:[margin:10px_auto_0] [&>span]:max-w-[300px] [&>span]:text-ink-3 [&>span]:text-[10px] [&>span]:leading-[1.6] [&>div:last-child]:flex [&>div:last-child]:justify-center [&>div:last-child]:gap-2 [&>div:last-child]:mt-5 h-assessment-confirm-dialog",
                 role: "alertdialog",
                 "aria-modal": "true",
                 "aria-labelledby": "assessment-delete-title",
@@ -2116,7 +2116,7 @@ function le({
                 ),
                 React.createElement(
                   "button",
-                  { type: "button", className: "inline-flex items-center justify-center gap-2 border-0 rounded-[10px] py-2.5 px-[15px] [background:linear-gradient(135deg,#162032,#0F172A)] text-ink text-[11px] font-bold [box-shadow:0_7px_15px_rgba(0,0,0,0.32)] cursor-pointer transition hover:[background:linear-gradient(135deg,#162032,#0F172A)] hover:[box-shadow:0_10px_20px_rgba(0,0,0,0.45)] hover:[transform:translateY(-1px)] disabled:cursor-not-allowed disabled:opacity-60 disabled:[transform:none] [.assessment-confirm-dialog_&]:min-w-[110px]", onClick: l },
+                  { type: "button", className: "inline-flex items-center justify-center gap-2 border-0 rounded-[10px] py-2.5 px-[15px] [background:linear-gradient(135deg,#162032,#0F172A)] text-ink text-[11px] font-bold [box-shadow:0_7px_15px_rgba(0,0,0,0.32)] cursor-pointer transition hover:[background:linear-gradient(135deg,#162032,#0F172A)] hover:[box-shadow:0_10px_20px_rgba(0,0,0,0.45)] hover:[transform:translateY(-1px)] disabled:cursor-not-allowed disabled:opacity-60 disabled:[transform:none] [.h-assessment-confirm-dialog_&]:min-w-[110px]", onClick: l },
                   "Delete assessment",
                 ),
               ),
@@ -2134,7 +2134,7 @@ function le({
             React.createElement(
               "section",
               {
-                className: "w-[min(390px,100%)] pt-7 px-6.5 pb-6 border border-white/10 rounded-[18px] bg-surface-2 [box-shadow:0_25px_70px_rgba(0,0,0,0.38)] text-center [&_p]:mt-0 [&_p]:mx-0 [&_p]:mb-[7px] [&_p]:text-rose-300 [&_p]:text-[8px] [&_p]:font-extrabold [&_p]:tracking-[1.6px] [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[17px] [&>span]:block [&>span]:[margin:10px_auto_0] [&>span]:max-w-[300px] [&>span]:text-ink-3 [&>span]:text-[10px] [&>span]:leading-[1.6] [&>div:last-child]:flex [&>div:last-child]:justify-center [&>div:last-child]:gap-2 [&>div:last-child]:mt-5 assessment-confirm-dialog",
+                className: "w-[min(390px,100%)] pt-7 px-6.5 pb-6 border border-white/10 rounded-[18px] bg-surface-2 [box-shadow:0_25px_70px_rgba(0,0,0,0.38)] text-center [&_p]:mt-0 [&_p]:mx-0 [&_p]:mb-[7px] [&_p]:text-rose-300 [&_p]:text-[8px] [&_p]:font-extrabold [&_p]:tracking-[1.6px] [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[17px] [&>span]:block [&>span]:[margin:10px_auto_0] [&>span]:max-w-[300px] [&>span]:text-ink-3 [&>span]:text-[10px] [&>span]:leading-[1.6] [&>div:last-child]:flex [&>div:last-child]:justify-center [&>div:last-child]:gap-2 [&>div:last-child]:mt-5 h-assessment-confirm-dialog",
                 role: "alertdialog",
                 "aria-modal": "true",
                 "aria-labelledby": "assessment-manager-replace-title",
@@ -2177,7 +2177,7 @@ function le({
                   "button",
                   {
                     type: "button",
-                    className: "inline-flex items-center justify-center gap-2 border-0 rounded-[10px] py-2.5 px-[15px] [background:linear-gradient(135deg,#162032,#0F172A)] text-ink text-[11px] font-bold [box-shadow:0_7px_15px_rgba(0,0,0,0.32)] cursor-pointer transition hover:[background:linear-gradient(135deg,#162032,#0F172A)] hover:[box-shadow:0_10px_20px_rgba(0,0,0,0.45)] hover:[transform:translateY(-1px)] disabled:cursor-not-allowed disabled:opacity-60 disabled:[transform:none] [.assessment-confirm-dialog_&]:min-w-[110px]",
+                    className: "inline-flex items-center justify-center gap-2 border-0 rounded-[10px] py-2.5 px-[15px] [background:linear-gradient(135deg,#162032,#0F172A)] text-ink text-[11px] font-bold [box-shadow:0_7px_15px_rgba(0,0,0,0.32)] cursor-pointer transition hover:[background:linear-gradient(135deg,#162032,#0F172A)] hover:[box-shadow:0_10px_20px_rgba(0,0,0,0.45)] hover:[transform:translateY(-1px)] disabled:cursor-not-allowed disabled:opacity-60 disabled:[transform:none] [.h-assessment-confirm-dialog_&]:min-w-[110px]",
                     onClick: X,
                     disabled: y,
                   },
@@ -2192,10 +2192,10 @@ function le({
         { title: "Manage Assessments", section: g, onClose: d },
         React.createElement(
           "div",
-          { className: "grid [justify-items:center] py-12.5 px-5 border border-dashed border-accent/30 rounded-[13px] bg-surface-2 text-center [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[14px] [&_p]:mt-[7px] [&_p]:mx-0 [&_p]:mb-0 [&_p]:text-ink-3 [&_p]:text-[10px] student-viewer-empty" },
+          { className: "grid [justify-items:center] py-12.5 px-5 border border-dashed border-accent/30 rounded-[13px] bg-surface-2 text-center [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[14px] [&_p]:mt-[7px] [&_p]:mx-0 [&_p]:mb-0 [&_p]:text-ink-3 [&_p]:text-[10px] h-student-viewer-empty" },
           React.createElement(
             "span",
-            { className: "[.student-viewer-empty_&]:mb-2.5 grid place-items-center w-[34px] h-[34px] rounded-[11px] bg-surface-2 text-accent text-[18px]" },
+            { className: "[.h-student-viewer-empty_&]:mb-2.5 grid place-items-center w-[34px] h-[34px] rounded-[11px] bg-surface-2 text-accent text-[18px]" },
             "\u2726",
           ),
           React.createElement("h3", null, "No assessments created yet"),
@@ -2358,14 +2358,14 @@ function ce({
                 r.question_type === "multiple_choice"
                   ? React.createElement(
                       "div",
-                      { className: "grid grid-cols-[1fr_1fr] gap-[9px] [&_label]:grid [&_label]:grid-cols-[15px_24px_minmax(0,1fr)] [&_label]:items-center [&_label]:gap-2 [&_label]:p-2.5 [&_label]:border [&_label]:border-white/10 [&_label]:rounded-[9px] [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:cursor-pointer [&_label]:transition [&_label:hover]:border-accent/30 [&_label:hover]:bg-surface-1 [&_label:hover]:text-accent [&_label.selected]:border-accent/30 [&_label.selected]:bg-surface-1 [&_label.selected]:text-accent [&_input]:[accent-color:#00F0FF] max-[760px]:grid-cols-[1fr] student-choice-list" },
+                      { className: "grid grid-cols-[1fr_1fr] gap-[9px] [&_label]:grid [&_label]:grid-cols-[15px_24px_minmax(0,1fr)] [&_label]:items-center [&_label]:gap-2 [&_label]:p-2.5 [&_label]:border [&_label]:border-white/10 [&_label]:rounded-[9px] [&_label]:text-ink-2 [&_label]:text-[10px] [&_label]:cursor-pointer [&_label]:transition [&_label:hover]:border-accent/30 [&_label:hover]:bg-surface-1 [&_label:hover]:text-accent [&_label.h-selected]:border-accent/30 [&_label.h-selected]:bg-surface-1 [&_label.h-selected]:text-accent [&_input]:[accent-color:#00F0FF] max-[760px]:grid-cols-[1fr] h-student-choice-list" },
                       (Array.isArray(r.choices) ? r.choices : []).map(
                         (k, P) => {
                           const b = L[P];
                           return React.createElement(
                             "label",
                             {
-                              className: i[r.id] === b ? "selected" : "",
+                              className: i[r.id] === b ? "h-selected" : "",
                               key: b,
                             },
                             React.createElement("input", {
@@ -2378,7 +2378,7 @@ function ce({
                             }),
                             React.createElement(
                               "span",
-                              { className: "[.student-portal-options_&]:w-[24px] [.student-portal-options_&]:h-[24px] [.student-choice-list_&]:w-[24px] [.student-choice-list_&]:h-[24px] grid place-items-center w-[23px] h-[23px] rounded-[7px] bg-surface-2 text-accent text-[9px] font-extrabold choice-letter" },
+                              { className: "[.h-student-portal-options_&]:w-[24px] [.h-student-portal-options_&]:h-[24px] [.h-student-choice-list_&]:w-[24px] [.h-student-choice-list_&]:h-[24px] grid place-items-center w-[23px] h-[23px] rounded-[7px] bg-surface-2 text-accent text-[9px] font-extrabold h-choice-letter" },
                               b,
                             ),
                             React.createElement("span", null, k),
@@ -2420,12 +2420,12 @@ function ce({
           R.text &&
             React.createElement(
               "p",
-              { className: `mt-0 mx-0 mb-3 py-[9px] px-[11px] rounded-[7px] text-[10px] [&.error]:border [&.error]:border-white/10 [&.error]:bg-surface-2 [&.error]:text-rose-300 [&.success]:border [&.success]:border-white/10 [&.success]:bg-surface-2 [&.success]:text-emerald-400 ${R.status}`, role: "status" },
+              { className: `mt-0 mx-0 mb-3 py-[9px] px-[11px] rounded-[7px] text-[10px] [&.h-error]:border [&.h-error]:border-white/10 [&.h-error]:bg-surface-2 [&.h-error]:text-rose-300 [&.h-success]:border [&.h-success]:border-white/10 [&.h-success]:bg-surface-2 [&.h-success]:text-emerald-400 ${R.status}`, role: "status" },
               R.text,
             ),
           React.createElement(
             "div",
-            { className: "flex justify-end gap-2 mt-5.5 pt-[17px] border-t border-white/10 max-[760px]:flex-wrap max-[760px]:[&_button]:flex-1 [.assessment-builder_&]:mt-0.5" },
+            { className: "flex justify-end gap-2 mt-5.5 pt-[17px] border-t border-white/10 max-[760px]:flex-wrap max-[760px]:[&_button]:flex-1 [.h-assessment-builder_&]:mt-0.5" },
             React.createElement(
               "button",
               {
@@ -2449,10 +2449,10 @@ function ce({
         )
       : React.createElement(
           "div",
-          { className: "grid [justify-items:center] py-12.5 px-5 border border-dashed border-accent/30 rounded-[13px] bg-surface-2 text-center [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[14px] [&_p]:mt-[7px] [&_p]:mx-0 [&_p]:mb-0 [&_p]:text-ink-3 [&_p]:text-[10px] student-viewer-empty" },
+          { className: "grid [justify-items:center] py-12.5 px-5 border border-dashed border-accent/30 rounded-[13px] bg-surface-2 text-center [&_h3]:m-0 [&_h3]:text-ink-2 [&_h3]:text-[14px] [&_p]:mt-[7px] [&_p]:mx-0 [&_p]:mb-0 [&_p]:text-ink-3 [&_p]:text-[10px] h-student-viewer-empty" },
           React.createElement(
             "span",
-            { className: "[.student-viewer-empty_&]:mb-2.5 grid place-items-center w-[34px] h-[34px] rounded-[11px] bg-surface-2 text-accent text-[18px]" },
+            { className: "[.h-student-viewer-empty_&]:mb-2.5 grid place-items-center w-[34px] h-[34px] rounded-[11px] bg-surface-2 text-accent text-[18px]" },
             "\u2726",
           ),
           React.createElement("h3", null, "No assessments available"),

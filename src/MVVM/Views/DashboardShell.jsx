@@ -241,39 +241,33 @@ export default function DashboardShell() {
           />
         )}
 
-        {/* ---------------- Sidebar ---------------- */}
+               {/* ---------------- Sidebar ---------------- */}
         <aside
-          className={`fixed inset-y-0 left-0 z-30 flex w-64 flex-col justify-between border-r border-accent/15 bg-surface-1 shadow-2xl transition-transform duration-200 lg:translate-x-0 print:hidden ${
+          className={`fixed inset-y-0 left-0 z-30 flex w-64 flex-col justify-between border-r border-accent/15 bg-linear-to-b from-surface-1 via-surface-1 to-canvas shadow-2xl transition-transform duration-200 lg:translate-x-0 print:hidden ${
             e.mobileNav ? "translate-x-0" : "-translate-x-full"
           }`}
         >
           <div className="min-h-0 overflow-y-auto">
-            <div
-              className="relative flex items-center justify-center overflow-hidden border-b border-slate-800/80 px-6 py-6"
-              style={{ minHeight: `${logoBrandHeight}px` }}
-            >
-              <div className="pointer-events-none absolute -left-12 -top-12 size-28 rounded-full bg-accent/10 blur-2xl" />
+            {/* Logo */}
+            <div className="relative flex items-center justify-center overflow-hidden px-4 pb-3 pt-5">
+              <div className="pointer-events-none absolute left-1/2 top-1/2 size-44 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/5 blur-3xl" />
               <img
-                className="relative object-contain drop-shadow-[0_0_8px_rgba(0,240,255,0.25)]"
+                className="relative h-auto w-full max-w-[210px] object-contain"
                 src={branding.logo}
                 alt={branding.appName}
-                style={{
-                  width: `${branding.logoWidth}px`,
-                  height: `${branding.logoHeight}px`,
-                  maxWidth: "100%",
-                  marginTop: `${branding.logoMarginTop}px`,
-                  marginRight: `${branding.logoMarginRight}px`,
-                  marginBottom: `${branding.logoMarginBottom}px`,
-                  marginLeft: `${branding.logoMarginLeft}px`,
-                }}
               />
+              <div className="pointer-events-none absolute inset-x-6 bottom-0 h-px bg-linear-to-r from-transparent via-accent/30 to-transparent" />
             </div>
 
-            <div className="px-4 py-6">
-              <p className="mb-3 px-3 font-mono text-[11px] font-bold uppercase tracking-wider text-ink-3">
-                Workspace
-              </p>
-              <nav aria-label="Workspace navigation" className="space-y-1.5">
+            {/* Menu */}
+            <div className="px-3 py-3">
+              <div className="mb-2 flex items-center gap-3 px-3">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink-3">
+                  Workspace
+                </p>
+                <span className="h-px flex-1 bg-white/10" />
+              </div>
+              <nav aria-label="Workspace navigation" className="space-y-0.5">
                 {J.map((s) => {
                   const isActive = e.active === s.id;
                   return (
@@ -286,26 +280,40 @@ export default function DashboardShell() {
                         e.setMobileNav(false);
                         navigate(`/dashboard/${s.id}`);
                       }}
-                      className={`group flex w-full items-center gap-3 border text-left font-medium transition-all ${
+                      className={`group relative flex w-full items-center gap-2.5 overflow-hidden rounded-lg border px-2.5 py-1.5 text-left font-medium transition-all duration-200 ${
                         isActive
-                          ? "rounded-[22px] border-[#43357b]/50 bg-[#2b2250] px-4 py-3 text-[#c4b5fd] shadow-[inset_6px_0_0_0_#a855f7,0_4px_14px_rgba(0,0,0,0.25)]"
-                          : "rounded-xl border-transparent px-3.5 py-2.5 text-ink-2 hover:border-accent/20 hover:bg-slate-800/60 hover:text-accent"
+                          ? "border-accent/30 bg-linear-to-r from-accent/20 via-accent/10 to-transparent text-accent shadow-[0_0_18px_rgba(0,240,255,0.12)]"
+                          : "border-transparent text-ink-2 hover:translate-x-0.5 hover:border-white/10 hover:bg-white/5 hover:text-ink"
                       }`}
                     >
+                      {isActive && (
+                        <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-accent shadow-[0_0_10px_rgba(0,240,255,0.8)]" />
+                      )}
                       <span
-                        className={`shrink-0 transition-colors ${
+                        className={`grid size-7 shrink-0 place-items-center rounded-md transition-colors ${
                           isActive
-                            ? "ml-1.5 text-[#a855f7]"
+                            ? "bg-accent/15 text-accent"
                             : "text-ink-3 group-hover:text-accent"
                         }`}
                       >
-                        <G name={s.icon} size={20} />
+                        <G name={s.icon} size={16} />
                       </span>
                       <span
-                        className={isActive ? "text-sm font-semibold" : "text-sm"}
+                        className={`flex-1 text-[13px] ${isActive ? "font-semibold" : ""}`}
                       >
                         {s.label}
                       </span>
+                      {s.id === "classes" && e.sections.length > 0 && (
+                        <span
+                          className={`rounded-full px-2 py-0.5 font-mono text-[10px] font-bold ${
+                            isActive
+                              ? "bg-accent/20 text-accent"
+                              : "bg-white/5 text-ink-3 group-hover:text-accent"
+                          }`}
+                        >
+                          {e.sections.length}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -313,30 +321,75 @@ export default function DashboardShell() {
             </div>
           </div>
 
-          <div className="border-t border-slate-800/80 p-4">
+          <div className="p-4 pt-3">
+            {/* Status card */}
+            <div className="mb-3 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-3">
+              <span className="relative grid size-2.5 place-items-center">
+                <span
+                  className={`absolute inline-flex size-full rounded-full opacity-60 ${
+                    e.connectionStatus === "live"
+                      ? "animate-ping bg-emerald-400"
+                      : "bg-amber-400"
+                  }`}
+                />
+                <span
+                  className={`relative inline-flex size-2 rounded-full ${
+                    e.connectionStatus === "live"
+                      ? "bg-emerald-400"
+                      : "bg-amber-400"
+                  }`}
+                />
+              </span>
+              <div className="min-w-0 leading-tight">
+                <p className="text-xs font-semibold text-ink">
+                  {e.connectionStatus === "live"
+                    ? "Online"
+                    : e.connectionStatus === "offline"
+                      ? "Offline mode"
+                      : "Connecting…"}
+                </p>
+                <p className="text-[10px] text-ink-3">
+                  {e.sections.length} class{e.sections.length === 1 ? "" : "es"} loaded
+                </p>
+              </div>
+            </div>
+
+            {/* Settings */}
             <button
               type="button"
               onClick={() => h(true)}
-              className="mb-3 flex w-full items-center gap-3 px-3 py-2 text-xs font-medium text-ink-2 transition-colors hover:text-accent"
+              className="mb-2 flex w-full items-center gap-3 rounded-xl px-3.5 py-2 text-xs font-medium text-ink-2 transition-colors hover:bg-white/5 hover:text-accent"
             >
               <G name="settings" size={16} />
               <span>Settings</span>
             </button>
 
-            <div className="flex items-center justify-between gap-2 rounded-xl border border-accent/20 bg-surface-2 p-2.5 shadow-sm">
+            {/* Profile card */}
+            <div className="flex items-center justify-between gap-2 rounded-xl border border-accent/20 bg-linear-to-br from-surface-2 to-surface-1 p-2.5 shadow-[0_6px_18px_rgba(0,0,0,0.25)]">
               <div className="flex min-w-0 items-center gap-2.5">
-                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-linear-to-tr from-accent to-[#0D82FF] font-mono text-xs font-black text-canvas shadow-sm shadow-accent/30">
-                  {x || "T"}
+                <span className="relative shrink-0">
+                  {k.avatarUrl ? (
+                    <img
+                      src={k.avatarUrl}
+                      alt=""
+                      className="size-9 rounded-full object-cover ring-2 ring-accent/30"
+                    />
+                  ) : (
+                    <span className="grid size-9 place-items-center rounded-full bg-linear-to-tr from-accent to-[#0D82FF] font-mono text-xs font-black text-canvas ring-2 ring-accent/30">
+                      {x || "T"}
+                    </span>
+                  )}
+                  <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-surface-2 bg-emerald-400" />
                 </span>
                 <div className="min-w-0">
                   <h4 className="truncate text-xs font-bold text-ink" title={O}>
                     {O}
                   </h4>
                   <p
-                    className="truncate text-[10px] text-ink-2"
+                    className="truncate text-[10px] text-ink-3"
                     title={n?.email || "Teacher account"}
                   >
-                    {n?.email || "Teacher account"}
+                    {k.position}
                   </p>
                 </div>
               </div>
@@ -345,7 +398,7 @@ export default function DashboardShell() {
                 onClick={W}
                 title="Log out"
                 aria-label="Log out"
-                className="shrink-0 rounded p-1.5 text-ink-2 transition-colors hover:text-red-400"
+                className="shrink-0 rounded-lg p-1.5 text-ink-3 transition-colors hover:bg-red-500/10 hover:text-red-400"
               >
                 <G name="logout" size={16} />
               </button>

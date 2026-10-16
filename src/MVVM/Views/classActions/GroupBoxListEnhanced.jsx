@@ -50,7 +50,7 @@ export function GroupBoxListEnhanced({
   };
   return (
     <>
-      <div className="flex items-center justify-between gap-5 mb-4.5 py-4.5 px-5 border border-white/10 rounded-[15px] bg-surface-2 [&_h3]:mt-[5px] [&_h3]:mx-0 [&_h3]:mb-0 [&_h3]:text-ink-2 [&_h3]:text-[15px] [&_p]:mt-[5px] [&_p]:mx-0 [&_p]:mb-0 [&_p]:text-ink-3 [&_p]:text-[10px] max-[600px]:items-stretch max-[600px]:flex-col group-list-intro">
+      <div className="flex items-center justify-between gap-5 mb-4.5 py-4.5 px-5 border border-white/10 rounded-[15px] bg-surface-2 [&_h3]:mt-[5px] [&_h3]:mx-0 [&_h3]:mb-0 [&_h3]:text-ink-2 [&_h3]:text-[15px] [&_p]:mt-[5px] [&_p]:mx-0 [&_p]:mb-0 [&_p]:text-ink-3 [&_p]:text-[10px] max-[600px]:items-stretch max-[600px]:flex-col h-group-list-intro">
         <div>
           <span className="text-accent text-[8px] font-extrabold tracking-[1.5px]">GROUP WORKSPACE</span>
           <h3>Organize, rename, and score your activities</h3>
@@ -60,7 +60,7 @@ export function GroupBoxListEnhanced({
           + New grouping
         </button>
       </div>
-      {error && <p className="mt-0 mx-0 mb-3 py-[9px] px-[11px] rounded-[7px] text-[10px] [&.error]:border [&.error]:border-white/10 [&.error]:bg-surface-2 [&.error]:text-rose-300 [&.success]:border [&.success]:border-white/10 [&.success]:bg-surface-2 [&.success]:text-emerald-400 error" role="status">{error}</p>}
+      {error && <p className="mt-0 mx-0 mb-3 py-[9px] px-[11px] rounded-[7px] text-[10px] [&.h-error]:border [&.h-error]:border-white/10 [&.h-error]:bg-surface-2 [&.h-error]:text-rose-300 [&.h-success]:border [&.h-success]:border-white/10 [&.h-success]:bg-surface-2 [&.h-success]:text-emerald-400 h-error" role="status">{error}</p>}
       {sorted.length ? (
         <div className="grid flex-col gap-3.5 grid-cols-[repeat(2,_minmax(0,_1fr))] max-[820px]:grid-cols-[1fr]">
           {sorted.map((saved) => {
@@ -101,7 +101,7 @@ export function GroupBoxListEnhanced({
                     </>
                   )}
                 </div>
-                <div className="flex items-center justify-end flex-wrap gap-2 [margin-top:auto] pt-[15px] border-t border-white/10 max-[600px]:justify-start group-box-actions">
+                <div className="flex items-center justify-end flex-wrap gap-2 [margin-top:auto] pt-[15px] border-t border-white/10 max-[600px]:justify-start h-group-box-actions">
                   {isEditing ? (
                     <>
                       <button type="button" className="inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50" onClick={cancelEdit} disabled={isSaving}>Cancel</button>
@@ -115,7 +115,7 @@ export function GroupBoxListEnhanced({
                   <button type="button" className="inline-flex items-center justify-center gap-2 rounded border border-rose-400/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-rose-300 transition hover:border-rose-400 hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-50" disabled={deletingId === saved.id || isSaving} onClick={() => onDeleteGroup(saved.id)}>
                     {deletingId === saved.id ? "Removing..." : "Delete"}
                   </button>
-                  <button type="button" className="[.group-box-actions_&]:py-[9px] [.group-box-actions_&]:px-3 [.group-box-actions_&]:text-[10px] inline-flex items-center gap-2.5 border border-accent rounded-lg bg-accent text-[11px] font-bold [box-shadow:0_5px_12px_rgba(0,240,255,0.09)] transition [margin-left:auto] text-canvas hover:bg-accent hover:[box-shadow:0_8px_17px_rgba(0,240,255,0.12)] hover:[transform:translateY(-1px)] [&_span]:text-[14px] [&_span]:leading-[1] disabled:cursor-not-allowed disabled:opacity-55 disabled:[transform:none] max-[600px]:ml-0" onClick={() => onOpenBox(saved)} disabled={isEditing || isSaving}>
+                  <button type="button" className="[.h-group-box-actions_&]:py-[9px] [.h-group-box-actions_&]:px-3 [.h-group-box-actions_&]:text-[10px] inline-flex items-center gap-2.5 border border-accent rounded-lg bg-accent text-[11px] font-bold [box-shadow:0_5px_12px_rgba(0,240,255,0.09)] transition [margin-left:auto] text-canvas hover:bg-accent hover:[box-shadow:0_8px_17px_rgba(0,240,255,0.12)] hover:[transform:translateY(-1px)] [&_span]:text-[14px] [&_span]:leading-[1] disabled:cursor-not-allowed disabled:opacity-55 disabled:[transform:none] max-[600px]:ml-0" onClick={() => onOpenBox(saved)} disabled={isEditing || isSaving}>
                     Score activity <span aria-hidden="true">-&gt;</span>
                   </button>
                 </div>

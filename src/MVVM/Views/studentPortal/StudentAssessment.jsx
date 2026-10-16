@@ -423,7 +423,7 @@ export default function H({
                   React.createElement("div", {
                     className: `mt-4 overflow-x-auto rounded-xl border border-slate-800 bg-[#0b0f17] p-5 text-sm leading-relaxed text-slate-100
                       [&_table]:my-3 [&_table]:w-full [&_table]:border-collapse [&_table]:overflow-hidden [&_table]:rounded-lg [&_table]:border [&_table]:border-slate-800
-                      [&_th]:border [&_th]:border-slate-800 [&_th]:bg-[#030712] [&_th]:p-3 [&_th]:text-left [&_th]:font-bold [&_th]:!text-black
+                      [&_th]:border [&_th]:border-slate-800 [&_th]:bg-[#030712] [&_th]:p-3 [&_th]:text-left [&_th]:font-bold [&_th]:!text-ink-2
                       [&_td]:border [&_td]:border-slate-800 [&_td]:bg-[#0b0f17] [&_td]:p-3 [&_td]:text-slate-200
                       [&_p]:my-1.5 [&_a]:text-cyan-400 [&_a]:underline [&_img]:max-w-full [&_img]:rounded-lg`,
                     dangerouslySetInnerHTML: { __html: d.instructions },
@@ -703,7 +703,7 @@ export default function H({
                   React.createElement(
                     "div",
                     {
-                      className: `rounded-xl border p-4 text-xs font-bold ${x.status === "error" ? "border-rose-500/50 bg-rose-950/60 text-rose-200" : "border-emerald-500/50 bg-emerald-950/60 text-emerald-200"}`,
+                      className: `rounded-xl border p-4 text-xs font-bold ${x.status === "h-error" ? "border-rose-500/50 bg-rose-950/60 text-rose-200" : "border-emerald-500/50 bg-emerald-950/60 text-emerald-200"}`,
                       role: "status",
                     },
                     x.text,

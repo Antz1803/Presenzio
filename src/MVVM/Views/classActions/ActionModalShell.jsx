@@ -1,6 +1,6 @@
 const SIZES = {
   default: "w-[min(620px,100%)]",
-  wide: "w-[min(900px,calc(100vw-2rem))] [&:has(.grade-sheet-preview)]:w-[min(1040px,calc(100vw-2rem))]",
+  wide: "w-[min(900px,calc(100vw-2rem))] [&:has(.h-grade-sheet-preview)]:w-[min(1040px,calc(100vw-2rem))]",
 };
 
 export function ModalShell({
@@ -17,10 +17,10 @@ export function ModalShell({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      {/* `action-modal` / `action-modal-<size>` stay as hook classes: other
-          components target them with [.action-modal_&]: variants. */}
+      {/* `h-action-modal` / `h-action-modal-<size>` are hook classes: other
+          components target them with [.h-action-modal_&]: variants. */}
       <section
-        className={`action-modal action-modal-${size} flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-xl border border-accent/35 border-b-accent-2/20 bg-surface-3 shadow-modal ${SIZES[size] || SIZES.default}`}
+        className={`h-action-modal h-action-modal-${size} flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-xl border border-accent/35 border-b-accent-2/20 bg-surface-3 shadow-modal ${SIZES[size] || SIZES.default}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="action-modal-title"

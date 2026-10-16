@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 function sanitizePastedHtml(html) {
   const container = document.createElement("div");
   container.innerHTML = html;
@@ -14,15 +15,149 @@ function sanitizePastedHtml(html) {
 }
 function buildTableHtml(rows, columns) {
   const cell = () =>
-    `<td style="border:1px solid #cbd5e1;padding:6px 8px;min-width:60px;">&nbsp;</td>`;
+    `<td style="border:1px solid rgba(148,163,184,0.45);padding:6px 8px;min-width:60px;">&nbsp;</td>`;
   const headerCell = (index) =>
-    `<th style="border:1px solid #cbd5e1;padding:6px 8px;background:#f1f5f9;text-align:left;">Column ${index + 1}</th>`;
+    `<th style="border:1px solid rgba(148,163,184,0.45);padding:6px 8px;background:rgba(148,163,184,0.16);text-align:left;">Column ${index + 1}</th>`;
   const headerRow = `<tr>${Array.from({ length: columns }, (_, index) => headerCell(index)).join("")}</tr>`;
   const bodyRows = Array.from(
     { length: Math.max(rows - 1, 1) },
     () => `<tr>${Array.from({ length: columns }, () => cell()).join("")}</tr>`,
   ).join("");
   return `<table style="border-collapse:collapse;width:100%;margin:8px 0;">${headerRow}${bodyRows}</table><p><br></p>`;
+}
+const clampSize = (value, min, max) =>
+  Math.min(Math.max(Number.isFinite(value) ? value : min, min), max);
+function TableSizeDialog({ onConfirm, onCancel }) {
+  const [rows, setRows] = useState(3);
+  const [columns, setColumns] = useState(3);
+  const previewRows = Math.min(rows, 6);
+  const previewColumns = Math.min(columns, 8);
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onCancel]);
+  const stepper = (label, value, setValue, max) => (
+    <label className="flex flex-col gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-3">
+      {label}
+      <div className="flex h-10 items-stretch overflow-hidden rounded-lg border border-white/10 bg-surface-2 transition focus-within:border-accent/60">
+        <button
+          type="button"
+          aria-label={`Decrease ${label}`}
+          onClick={() => setValue(clampSize(value - 1, 1, max))}
+          className="w-9 text-lg text-ink-2 transition hover:bg-accent/10 hover:text-accent"
+        >
+          −
+        </button>
+        <input
+          type="number"
+          min={1}
+          max={max}
+          value={value}
+          onChange={(event) =>
+            setValue(clampSize(Number(event.target.value), 1, max))
+          }
+          className="w-full min-w-0 bg-transparent text-center text-sm font-bold text-ink outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        />
+        <button
+          type="button"
+          aria-label={`Increase ${label}`}
+          onClick={() => setValue(clampSize(value + 1, 1, max))}
+          className="w-9 text-lg text-ink-2 transition hover:bg-accent/10 hover:text-accent"
+        >
+          +
+        </button>
+      </div>
+    </label>
+  );
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] grid place-items-center bg-black/60 p-4 backdrop-blur-sm"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onCancel();
+      }}
+    >
+      <form
+        role="dialog"
+        aria-modal="true"
+        aria-label="Insert table"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onConfirm(rows, columns);
+        }}
+        className="w-[min(360px,100%)] overflow-hidden rounded-2xl border border-accent/30 bg-surface-1 shadow-[0_24px_60px_rgba(0,0,0,0.55),0_0_0_1px_rgba(0,240,255,0.06)]"
+      >
+        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
+          <span className="grid h-9 w-9 place-items-center rounded-lg bg-accent/10 text-accent">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+            </svg>
+          </span>
+          <div>
+            <h3 className="text-sm font-bold text-ink">Insert table</h3>
+            <p className="text-[11px] text-ink-3">Choose the table size</p>
+          </div>
+        </div>
+        <div className="space-y-4 px-5 py-4">
+          <div className="grid grid-cols-2 gap-3">
+            {stepper("Rows", rows, setRows, 20)}
+            {stepper("Columns", columns, setColumns, 10)}
+          </div>
+          <div
+            aria-hidden="true"
+            className="grid gap-1 rounded-lg border border-white/5 bg-surface-2/60 p-3"
+            style={{
+              gridTemplateColumns: `repeat(${previewColumns}, minmax(0, 1fr))`,
+            }}
+          >
+            {Array.from({ length: previewRows * previewColumns }, (_, index) => (
+              <span
+                key={index}
+                className={`h-3.5 rounded-sm border ${
+                  index < previewColumns
+                    ? "border-accent/50 bg-accent/25"
+                    : "border-white/10 bg-white/5"
+                }`}
+              />
+            ))}
+          </div>
+          <p className="text-center text-[11px] text-ink-3">
+            {rows} × {columns} table · first row is the header
+          </p>
+        </div>
+        <div className="flex justify-end gap-2 border-t border-white/10 bg-surface-2/40 px-5 py-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded border border-white/10 px-3.5 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-ink-2 transition hover:bg-white/5"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            autoFocus
+            className="rounded bg-accent px-3.5 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-canvas transition hover:shadow-halo active:scale-[0.98]"
+          >
+            Insert
+          </button>
+        </div>
+      </form>
+    </div>,
+    document.body,
+  );
 }
 function RichTextEditor({
   value,
@@ -33,6 +168,8 @@ function RichTextEditor({
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [tableDialogOpen, setTableDialogOpen] = useState(false);
+  const savedRangeRef = useRef(null);
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== (value || "")) {
       editorRef.current.innerHTML = value || "";
@@ -50,20 +187,28 @@ function RichTextEditor({
     [emitChange],
   );
   const insertTable = () => {
-    const dimensions = window.prompt(
-      "Table size as rows x columns (e.g. 3x4):",
-      "3x3",
-    );
-    if (!dimensions) return;
-    const match = dimensions.match(/^\s*(\d+)\s*[xƒ]\s*(\d+)\s*$/i);
-    if (!match) {
-      setError("Enter the table size like 3x4.");
-      return;
-    }
-    const rows = Math.min(Math.max(Number(match[1]), 1), 20);
-    const columns = Math.min(Math.max(Number(match[2]), 1), 10);
+    const selection = window.getSelection();
+    savedRangeRef.current =
+      selection?.rangeCount && editorRef.current?.contains(selection.anchorNode)
+        ? selection.getRangeAt(0).cloneRange()
+        : null;
     setError("");
-    runCommand("insertHTML", buildTableHtml(rows, columns));
+    setTableDialogOpen(true);
+  };
+  const confirmTable = (rows, columns) => {
+    setTableDialogOpen(false);
+    const editor = editorRef.current;
+    editor?.focus();
+    const range = savedRangeRef.current;
+    if (range) {
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+    runCommand(
+      "insertHTML",
+      buildTableHtml(clampSize(rows, 1, 20), clampSize(columns, 1, 10)),
+    );
   };
   const uploadImageFile = useCallback(
     async (file) => {
@@ -113,102 +258,94 @@ function RichTextEditor({
     event.target.value = "";
     if (file) void uploadImageFile(file);
   };
-  const toolbarButtonStyle = {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "4px",
-    border: "1px solid #cbd5e1",
-    borderRadius: "6px",
-    background: "#fff",
-    padding: "4px 10px",
-    fontSize: "13px",
-    cursor: "pointer",
-    color: "#334155",
+  const toolbarButton =
+    "inline-flex h-8 min-w-8 items-center justify-center gap-1.5 rounded border border-white/10 bg-surface-2 px-2.5 text-xs font-medium text-ink-2 transition hover:border-accent/40 hover:bg-accent/10 hover:text-accent disabled:cursor-not-allowed disabled:opacity-50";
+  const keepFocus = (event) => event.preventDefault();
+  const iconProps = {
+    width: 14,
+    height: 14,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": true,
   };
   return (
-    <div
-      className="rich-text-editor"
-      style={{
-        border: "1px solid #cbd5e1",
-        borderRadius: "8px",
-        overflow: "hidden",
-      }}
-    >
+    <div className="overflow-hidden rounded-lg border border-ink-3/30 bg-surface-1 transition focus-within:border-accent focus-within:shadow-focus">
       <div
-        className="rich-text-toolbar"
         role="toolbar"
         aria-label="Formatting"
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "6px",
-          padding: "8px",
-          background: "#f8fafc",
-          borderBottom: "1px solid #e2e8f0",
-        }}
+        className="flex flex-wrap items-center gap-1.5 border-b border-white/5 bg-surface-2/70 p-2"
       >
         <button
           type="button"
-          style={toolbarButtonStyle}
-          onMouseDown={(event) => event.preventDefault()}
+          className={`${toolbarButton} font-bold`}
+          onMouseDown={keepFocus}
           onClick={() => runCommand("bold")}
           title="Bold"
         >
-          <strong>B</strong>
+          B
         </button>
         <button
           type="button"
-          style={toolbarButtonStyle}
-          onMouseDown={(event) => event.preventDefault()}
+          className={`${toolbarButton} italic`}
+          onMouseDown={keepFocus}
           onClick={() => runCommand("italic")}
           title="Italic"
         >
-          <em>I</em>
+          I
         </button>
         <button
           type="button"
-          style={toolbarButtonStyle}
-          onMouseDown={(event) => event.preventDefault()}
+          className={`${toolbarButton} underline`}
+          onMouseDown={keepFocus}
           onClick={() => runCommand("underline")}
           title="Underline"
         >
-          <span style={{ textDecoration: "underline" }}>U</span>
+          U
         </button>
-        <span
-          className="rich-text-toolbar-divider"
-          style={{ width: "1px", background: "#e2e8f0", margin: "0 2px" }}
-        />
+        <span className="mx-1 h-5 w-px bg-white/10" />
         <button
           type="button"
-          style={toolbarButtonStyle}
-          onMouseDown={(event) => event.preventDefault()}
+          className={toolbarButton}
+          onMouseDown={keepFocus}
           onClick={insertTable}
           title="Insert table"
         >
-          📊 Table
+          <svg {...iconProps}>
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+          </svg>
+          Table
         </button>
         <button
           type="button"
-          style={toolbarButtonStyle}
-          onMouseDown={(event) => event.preventDefault()}
+          className={toolbarButton}
+          onMouseDown={keepFocus}
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
           title="Insert screenshot"
         >
-          {uploading ? "Uploading..." : "📸 Screenshot"}
+          <svg {...iconProps}>
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <path d="m21 15-5-5L5 21" />
+          </svg>
+          {uploading ? "Uploading..." : "Screenshot"}
         </button>
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          className="rich-text-file-input"
           onChange={handleFileInputChange}
-          style={{ display: "none" }}
+          className="hidden"
         />
       </div>
+
       <div
         ref={editorRef}
-        className="rich-text-surface"
         contentEditable
         role="textbox"
         aria-multiline="true"
@@ -218,39 +355,24 @@ function RichTextEditor({
         onBlur={emitChange}
         onPaste={handlePaste}
         suppressContentEditableWarning
-        style={{
-          minHeight: "120px",
-          padding: "10px 12px",
-          fontSize: "14px",
-          lineHeight: 1.5,
-          outline: "none",
-        }}
+        className="min-h-[120px] px-3.5 py-3 text-sm leading-6 text-ink outline-none empty:before:pointer-events-none empty:before:text-ink-3 empty:before:content-[attr(data-placeholder)] [&_img]:my-2 [&_img]:max-w-full [&_img]:rounded-md [&_table]:my-2 [&_table]:w-full [&_table]:border-collapse"
       />
+
+      {tableDialogOpen && (
+        <TableSizeDialog
+          onConfirm={confirmTable}
+          onCancel={() => setTableDialogOpen(false)}
+        />
+      )}
       {error && (
         <p
-          className="rich-text-error"
           role="status"
-          style={{
-            margin: 0,
-            padding: "6px 12px",
-            background: "#fef2f2",
-            color: "#b91c1c",
-            fontSize: "12px",
-          }}
+          className="border-t border-rose-400/20 bg-rose-500/10 px-3.5 py-2 text-xs font-medium text-rose-300"
         >
           {error}
         </p>
       )}
-      <p
-        className="rich-text-hint"
-        style={{
-          margin: 0,
-          padding: "6px 12px",
-          fontSize: "12px",
-          color: "#64748b",
-          borderTop: "1px solid #e2e8f0",
-        }}
-      >
+      <p className="border-t border-white/5 bg-surface-2/40 px-3.5 py-2 text-[11px] text-ink-3">
         Paste a screenshot directly, or use the Screenshot button. Tables are
         editable inline.
       </p>

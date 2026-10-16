@@ -5,9 +5,29 @@ import {
   useState as a,
 } from "react";
 import { useDashboardViewModel as de } from "../../ViewModels/useDashboardViewModel";
+// The student portal has no account session, so the dashboard loader never
+// reports "live" for it. Reflect the browser's own connectivity instead.
+function useBrowserConnectionStatus() {
+  const [online, setOnline] = a(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
+  q(() => {
+    const goOnline = () => setOnline(true);
+    const goOffline = () => setOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+  return online ? "live" : "offline";
+}
+
 export function useStudentAssessmentSession() {
+  const connectionStatus = useBrowserConnectionStatus();
   const K = de({ accountScoped: !1 }),
-    { submitAssessment: I, loadStudentAssessment: $, connectionStatus: T } = K,
+    { submitAssessment: I, loadStudentAssessment: $ } = K,
     [L, U] = a(""),
     [N, Y] = a(""),
     [o, y] = a(null),
@@ -241,7 +261,7 @@ export function useStudentAssessmentSession() {
     ae = p[k],
     ce = p.filter((e) => String(w[e.id] ?? "").trim()).length;
   return {
-    connectionStatus: T,
+    connectionStatus,
     accessKey: L,
     setAccessKey: U,
     studentNumber: N,

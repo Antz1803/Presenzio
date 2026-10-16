@@ -1,22 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
-const buttonStyle = {
-  border: "1px solid #c7d2fe",
-  borderRadius: 10,
-  padding: "8px 13px",
-  background: "#ffffff",
-  color: "#4338ca",
-  fontSize: 12,
-  fontWeight: 700,
-  cursor: "pointer",
-};
-const primaryButtonStyle = {
-  ...buttonStyle,
-  borderColor: "#6366f1",
-  background: "#4f46e5",
-  color: "#ffffff",
-};
+
+const BTN_OUTLINE =
+  "inline-flex items-center justify-center gap-1.5 rounded border border-accent/40 bg-transparent px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50";
+const BTN_PRIMARY =
+  "inline-flex items-center justify-center gap-1.5 rounded bg-accent px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-canvas transition hover:shadow-halo active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50";
 
 function resizeImage(fileOrUrl) {
   return new Promise((resolve, reject) => {
@@ -33,6 +22,17 @@ function resizeImage(fileOrUrl) {
     image.src = typeof fileOrUrl === "string" ? fileOrUrl : URL.createObjectURL(fileOrUrl);
   });
 }
+
+const iconProps = {
+  width: 14,
+  height: 14,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+};
 
 export function StudentPhotoPicker({ value = "", onChange, disabled = false }) {
   const fileInputRef = useRef(null);
@@ -111,46 +111,64 @@ export function StudentPhotoPicker({ value = "", onChange, disabled = false }) {
   };
 
   return (
-    <div className="student-photo-picker">
-      {value ? (
-        <img
-          src={value}
-          alt="Student preview"
-          style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 12 }}
-        />
-      ) : (
-        <div
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: 12,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "#e0e7ff",
-            color: "#4f46e5",
-            fontWeight: 700,
-          }}
-        >
-          ?
-        </div>
-      )}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+    <div className="flex flex-col items-center gap-3">
+      {/* Preview */}
+      <div
+        className={`relative grid size-28 place-items-center overflow-hidden rounded-xl ${
+          value
+            ? "border border-accent/40 shadow-glow"
+            : "border border-dashed border-ink-3/50 bg-surface-1"
+        }`}
+      >
+        {value ? (
+          <img
+            src={value}
+            alt="Student preview"
+            className="size-full object-cover"
+          />
+        ) : (
+          <svg
+            viewBox="0 0 24 24"
+            width="44"
+            height="44"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-ink-3"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7" />
+          </svg>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex w-full flex-wrap justify-center gap-2">
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled}
-          style={buttonStyle}
+          className={BTN_OUTLINE}
         >
-          Choose photo
+          <svg {...iconProps} aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+          </svg>
+          {value ? "Replace" : "Upload"}
         </button>
         <button
           type="button"
           onClick={openCamera}
           disabled={disabled || cameraOpen}
-          style={primaryButtonStyle}
+          className={BTN_PRIMARY}
         >
-          Take selfie
+          <svg {...iconProps} aria-hidden="true">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+            <circle cx="12" cy="13" r="4" />
+          </svg>
+          Selfie
         </button>
         <input
           ref={fileInputRef}
@@ -158,26 +176,42 @@ export function StudentPhotoPicker({ value = "", onChange, disabled = false }) {
           accept="image/*"
           onChange={handleFile}
           disabled={disabled}
-          style={{ display: "none" }}
+          className="hidden"
         />
       </div>
-      {error && <p className="action-error">{error}</p>}
+
+      {value ? (
+        <button
+          type="button"
+          onClick={() => onChange?.("")}
+          disabled={disabled}
+          className="text-[11px] font-medium text-ink-3 transition hover:text-rose-400 disabled:opacity-50"
+        >
+          Remove photo
+        </button>
+      ) : (
+        <p className="text-center text-[11px] text-ink-3">
+          JPG or PNG, up to 2 MB
+        </p>
+      )}
+
+      {error && (
+        <p
+          role="alert"
+          className="w-full rounded border border-rose-400/30 bg-rose-500/10 p-2.5 text-center text-[11px] font-medium text-rose-300"
+        >
+          {error}
+        </p>
+      )}
+
       {cameraOpen && (
         <div
           role="dialog"
           aria-label="Take student selfie"
-          style={{
-            marginTop: 14,
-            padding: 14,
-            width: "min(100%, 548px)",
-            maxWidth: "100%",
-            boxSizing: "border-box",
-            borderRadius: 16,
-            background: "linear-gradient(145deg, #111827, #1e1b4b)",
-            boxShadow: "0 12px 30px rgba(15, 23, 42, 0.18)",
-          }}
+          className="w-full rounded-xl border border-accent/30 bg-surface-1 p-3.5 shadow-modal"
         >
-          <div style={{ color: "#e0e7ff", fontSize: 12, fontWeight: 700, marginBottom: 10 }}>
+          <div className="mb-2.5 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-wider text-accent">
+            <span className="size-1.5 animate-pulse rounded-full bg-rose-500" />
             Camera preview
           </div>
           <video
@@ -185,26 +219,13 @@ export function StudentPhotoPicker({ value = "", onChange, disabled = false }) {
             autoPlay
             playsInline
             muted
-            style={{
-              display: "block",
-              width: "100%",
-              maxWidth: "none",
-              aspectRatio: "4 / 3",
-              objectFit: "cover",
-              borderRadius: 12,
-              background: "#020617",
-              transform: "scaleX(-1)",
-            }}
+            className="block aspect-[4/3] w-full -scale-x-100 rounded-lg bg-canvas object-cover"
           />
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-            <button type="button" onClick={capturePhoto} style={primaryButtonStyle}>
+          <div className="mt-3 flex justify-center gap-2">
+            <button type="button" onClick={capturePhoto} className={BTN_PRIMARY}>
               Capture photo
             </button>
-            <button
-              type="button"
-              onClick={stopCamera}
-              style={{ ...buttonStyle, color: "#e0e7ff", background: "transparent", borderColor: "#818cf8" }}
-            >
+            <button type="button" onClick={stopCamera} className={BTN_OUTLINE}>
               Cancel
             </button>
           </div>

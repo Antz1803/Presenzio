@@ -286,7 +286,7 @@ function w({
     { className: "min-w-0" },
     React.createElement(
       "div",
-      { className: "flex items-center justify-between gap-3 mt-[-3px] mx-0 mb-4 py-[7px] px-[9px] border border-white/10 rounded-xl bg-surface-2 max-[760px]:items-stretch max-[760px]:flex-col record-score-toolbar" },
+      { className: "flex items-center justify-between gap-3 mt-[-3px] mx-0 mb-4 py-[7px] px-[9px] border border-white/10 rounded-xl bg-surface-2 max-[760px]:items-stretch max-[760px]:flex-col h-record-score-toolbar" },
       React.createElement(
         "label",
         { className: "flex items-center gap-1.5 shrink-0 text-ink-3 text-[9px] font-bold whitespace-nowrap [&_input]:box-border [&_input]:w-[145px] [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[7px] [&_input]:bg-surface-1 [&_input]:text-ink-2 [&_input]:py-2 [&_input]:px-[9px] [&_input]:text-[10px] [&_input]:outline-none [&_input:focus]:border-accent/30 [&_input:focus]:[box-shadow:0_0_0_3px_#162032] max-[760px]:w-full max-[760px]:[&_input]:flex-1 max-[760px]:[&_input]:w-[auto]" },
@@ -302,13 +302,13 @@ function w({
       ),
       React.createElement(
         "div",
-        { className: "flex gap-6.5 py-0 px-5 border-b border-white/10 [&_button]:border-0 [&_button]:border-b-2 [&_button]:border-transparent [&_button]:[background:none] [&_button]:text-ink-3 [&_button]:py-3 [&_button]:px-0 [&_button]:text-[10px] [&_button.active]:text-accent [&_button.active]:border-b-accent [&_button.active]:font-semibold [&_span]:text-ink-3 [&_span]:bg-surface-2 [&_span]:rounded-[10px] [&_span]:py-0.5 [&_span]:px-[5px] [&_span]:ml-[5px] [&_span]:text-[8px] max-[760px]:gap-4.5 max-[760px]:overflow-x-auto [.record-score-toolbar_&]:p-0 [.record-score-toolbar_&]:border-b-0 [.record-score-toolbar_&]:gap-4.5 [.record-score-toolbar_&]:overflow-x-auto [.record-score-toolbar_&]:bg-transparent [.record-score-toolbar_&_button]:py-2 [.record-score-toolbar_&_button]:px-0 [.record-score-toolbar_&_button]:text-[10px] [.record-score-toolbar_&_button]:whitespace-nowrap [.record-score-toolbar_&_button]:rounded-lg [.record-score-toolbar_&_button]:transition [.record-score-toolbar_&_button:hover]:text-accent [.record-score-toolbar_&_button:hover]:bg-surface-2 [.record-score-toolbar_&_button.active]:bg-surface-1 [.record-score-toolbar_&_button.active]:[box-shadow:0_3px_9px_rgba(0,240,255,0.05)] [.record-score-toolbar_&_button.active]:text-accent" },
+        { className: "flex gap-6.5 py-0 px-5 border-b border-white/10 [&_button]:border-0 [&_button]:border-b-2 [&_button]:border-transparent [&_button]:[background:none] [&_button]:text-ink-3 [&_button]:py-3 [&_button]:px-0 [&_button]:text-[10px] [&_button.h-active]:text-accent [&_button.h-active]:border-b-accent [&_button.h-active]:font-semibold [&_span]:text-ink-3 [&_span]:bg-surface-2 [&_span]:rounded-[10px] [&_span]:py-0.5 [&_span]:px-[5px] [&_span]:ml-[5px] [&_span]:text-[8px] max-[760px]:gap-4.5 max-[760px]:overflow-x-auto [.h-record-score-toolbar_&]:p-0 [.h-record-score-toolbar_&]:border-b-0 [.h-record-score-toolbar_&]:gap-4.5 [.h-record-score-toolbar_&]:overflow-x-auto [.h-record-score-toolbar_&]:bg-transparent [.h-record-score-toolbar_&_button]:py-2 [.h-record-score-toolbar_&_button]:px-0 [.h-record-score-toolbar_&_button]:text-[10px] [.h-record-score-toolbar_&_button]:whitespace-nowrap [.h-record-score-toolbar_&_button]:rounded-lg [.h-record-score-toolbar_&_button]:transition [.h-record-score-toolbar_&_button:hover]:text-accent [.h-record-score-toolbar_&_button:hover]:bg-surface-2 [.h-record-score-toolbar_&_button.h-active]:bg-surface-1 [.h-record-score-toolbar_&_button.h-active]:[box-shadow:0_3px_9px_rgba(0,240,255,0.05)] [.h-record-score-toolbar_&_button.h-active]:text-accent" },
         C.map((e) =>
           React.createElement(
             "button",
             {
               key: e.key,
-              className: n === e.key ? "active" : "",
+              className: n === e.key ? "h-active" : "",
               onClick: () => R(e.key),
               disabled: N,
             },
@@ -342,12 +342,12 @@ function w({
     A.text &&
       React.createElement(
         "p",
-        { className: `mt-0 mx-0 mb-3 py-[9px] px-[11px] rounded-[7px] text-[10px] [&.error]:border [&.error]:border-white/10 [&.error]:bg-surface-2 [&.error]:text-rose-300 [&.success]:border [&.success]:border-white/10 [&.success]:bg-surface-2 [&.success]:text-emerald-400 ${A.status}`, role: "status" },
+        { className: `mt-0 mx-0 mb-3 py-[9px] px-[11px] rounded-[7px] text-[10px] [&.h-error]:border [&.h-error]:border-white/10 [&.h-error]:bg-surface-2 [&.h-error]:text-rose-300 [&.h-success]:border [&.h-success]:border-white/10 [&.h-success]:bg-surface-2 [&.h-success]:text-emerald-400 ${A.status}`, role: "status" },
         A.text,
       ),
     React.createElement(
       "div",
-      { className: "overflow-x-auto [&_table]:[border-collapse:collapse] [&_table]:w-full [&_table]:min-w-[660px] [&_table]:text-left [&_th]:text-ink-3 [&_th]:bg-surface-2 [&_th]:text-[9px] [&_th]:font-semibold [&_th]:tracking-[.6px] [&_th]:py-[11px] [&_th]:px-5 [&_th]:border-b [&_th]:border-white/10 [&_th]:border-b-white/10 [&_td]:text-ink-2 [&_td]:text-[10px] [&_td]:py-3.5 [&_td]:px-5 [&_td]:border-b [&_td]:border-white/10 [&_td]:whitespace-nowrap [&_td]:border-b-white/10 [&_tbody_tr:last-child_td]:border-b-0 [&_tbody_tr:hover]:bg-surface-1 [.action-modal_&_th]:bg-surface-2 [.action-modal_&_th]:text-ink-3 [.action-modal_&_th]:border-b-white/10 [.action-modal_&_th]:text-[9px] [.action-modal_&_th]:tracking-[.8px] [.action-modal_&_td]:text-ink-2 [.action-modal_&_td]:border-b-white/10 [.action-modal_&_tbody_tr:nth-child(even)]:bg-surface-1 [.action-modal_&_tbody_tr:hover]:bg-surface-2 max-h-[390px] border border-white/10 rounded-lg [&_table]:min-w-[700px] [&_th]:bg-surface-1 [&_td]:py-[11px] [&_td]:px-3 [&_input]:w-[45px] [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[6px] [&_input]:py-[7px] [&_input]:px-1 [&_input]:text-center [&_input]:text-ink-2 [&_input]:text-[10px] [&_input:focus]:border-accent/30 [&_input:focus]:outline-none [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_th>span]:block [&_th>label]:block [&_th>label]:mt-1 [&_th>label]:text-ink-3 [&_th>label]:text-[9px] [&_th>label]:font-medium [&_th:not(.record-student-col)]:min-w-[72px] [&_th:not(.record-student-col)]:text-center [.action-modal-wide_&]:max-h-[none] [.action-modal-wide_&]:overflow-x-auto [.action-modal-wide_&]:[overflow-y:hidden] max-[760px]:[.action-modal-wide_&]:max-h-[calc(100vh_-_245px)] [.action-modal-wide_&_table]:h-[auto] [.action-modal_&]:border-white/10 [.action-modal_&]:rounded-xl [.action-modal_&]:[box-shadow:0_5px_15px_rgba(0,240,255,0.02)] record-score-table" },
+      { className: "overflow-x-auto [&_table]:[border-collapse:collapse] [&_table]:w-full [&_table]:min-w-[660px] [&_table]:text-left [&_th]:text-ink-3 [&_th]:bg-surface-2 [&_th]:text-[9px] [&_th]:font-semibold [&_th]:tracking-[.6px] [&_th]:py-[11px] [&_th]:px-5 [&_th]:border-b [&_th]:border-white/10 [&_th]:border-b-white/10 [&_td]:text-ink-2 [&_td]:text-[10px] [&_td]:py-3.5 [&_td]:px-5 [&_td]:border-b [&_td]:border-white/10 [&_td]:whitespace-nowrap [&_td]:border-b-white/10 [&_tbody_tr:last-child_td]:border-b-0 [&_tbody_tr:hover]:bg-surface-1 [.h-action-modal_&_th]:bg-surface-2 [.h-action-modal_&_th]:text-ink-3 [.h-action-modal_&_th]:border-b-white/10 [.h-action-modal_&_th]:text-[9px] [.h-action-modal_&_th]:tracking-[.8px] [.h-action-modal_&_td]:text-ink-2 [.h-action-modal_&_td]:border-b-white/10 [.h-action-modal_&_tbody_tr:nth-child(even)]:bg-surface-1 [.h-action-modal_&_tbody_tr:hover]:bg-surface-2 max-h-[390px] border border-white/10 rounded-lg [&_table]:min-w-[700px] [&_th]:bg-surface-1 [&_td]:py-[11px] [&_td]:px-3 [&_input]:w-[45px] [&_input]:border [&_input]:border-white/10 [&_input]:rounded-[6px] [&_input]:py-[7px] [&_input]:px-1 [&_input]:text-center [&_input]:text-ink-2 [&_input]:text-[10px] [&_input:focus]:border-accent/30 [&_input:focus]:outline-none [&_input:focus]:[box-shadow:0_0_0_3px_#162032] [&_th>span]:block [&_th>label]:block [&_th>label]:mt-1 [&_th>label]:text-ink-3 [&_th>label]:text-[9px] [&_th>label]:font-medium [&_th:not(.h-record-student-col)]:min-w-[72px] [&_th:not(.h-record-student-col)]:text-center [.h-action-modal-wide_&]:max-h-[none] [.h-action-modal-wide_&]:overflow-x-auto [.h-action-modal-wide_&]:[overflow-y:hidden] max-[760px]:[.h-action-modal-wide_&]:max-h-[calc(100vh_-_245px)] [.h-action-modal-wide_&_table]:h-[auto] [.h-action-modal_&]:border-white/10 [.h-action-modal_&]:rounded-xl [.h-action-modal_&]:[box-shadow:0_5px_15px_rgba(0,240,255,0.02)] h-record-score-table" },
       React.createElement(
         "table",
         null,
@@ -359,7 +359,7 @@ function w({
             null,
             React.createElement(
               "th",
-              { className: "min-w-[180px] record-student-col" },
+              { className: "min-w-[180px] h-record-student-col" },
               React.createElement(
                 "div",
                 { className: "flex items-center justify-between gap-2" },
@@ -390,7 +390,7 @@ function w({
                   React.createElement("span", null, o, " /"),
                   React.createElement("input", {
                     name: `max-score-${c.key}-${a}`,
-                    className: "[.record-score-table_&]:w-[34px] [.record-score-table_&]:py-[3px] [.record-score-table_&]:px-0.5 [.record-score-table_&]:border [.record-score-table_&]:border-white/10 [.record-score-table_&]:bg-surface-1 [.record-score-table_&]:text-accent [.record-score-table_&]:text-[9px] [.record-score-table_&]:font-bold [.record-score-table_&]:box-border [.record-score-table_&]:m-0 [.record-score-table_&]:rounded [.record-score-table_&]:text-center [.record-score-table_&:focus]:border-accent/30 [.record-score-table_&:focus]:[box-shadow:0_0_0_2px_#162032]",
+                    className: "[.h-record-score-table_&]:w-[34px] [.h-record-score-table_&]:py-[3px] [.h-record-score-table_&]:px-0.5 [.h-record-score-table_&]:border [.h-record-score-table_&]:border-white/10 [.h-record-score-table_&]:bg-surface-1 [.h-record-score-table_&]:text-accent [.h-record-score-table_&]:text-[9px] [.h-record-score-table_&]:font-bold [.h-record-score-table_&]:box-border [.h-record-score-table_&]:m-0 [.h-record-score-table_&]:rounded [.h-record-score-table_&]:text-center [.h-record-score-table_&:focus]:border-accent/30 [.h-record-score-table_&:focus]:[box-shadow:0_0_0_2px_#162032]",
                     "aria-label": c.label + " " + a + " maximum score",
                     type: "number",
                     min: "1",
@@ -419,10 +419,10 @@ function w({
                 null,
                 React.createElement(
                   "div",
-                  { className: "flex items-center gap-[9px] text-ink-2 font-semibold [.record-score-table_&>span:nth-child(2)]:min-w-0 [.record-score-table_&>span:nth-child(2)]:overflow-hidden [.record-score-table_&>span:nth-child(2)]:text-ellipsis [.grades-table_&]:gap-[9px] [.grades-table_&>span:last-child]:flex [.grades-table_&>span:last-child]:flex-col [.grades-table_&>span:last-child]:gap-[3px] [.grades-table_&_b]:text-ink-2 [.grades-table_&_b]:text-[10px] [.grades-table_&_small]:text-ink-3 [.grades-table_&_small]:text-[9px] [.record-summary-table_&]:gap-[9px] [.record-summary-table_&>span:last-child]:flex [.record-summary-table_&>span:last-child]:flex-col [.record-summary-table_&>span:last-child]:gap-[3px] [.record-summary-table_&_b]:text-ink-2 [.record-summary-table_&_b]:text-[10px] [.record-summary-table_&_small]:text-ink-3 [.record-summary-table_&_small]:text-[9px]" },
+                  { className: "flex items-center gap-[9px] text-ink-2 font-semibold [.h-record-score-table_&>span:nth-child(2)]:min-w-0 [.h-record-score-table_&>span:nth-child(2)]:overflow-hidden [.h-record-score-table_&>span:nth-child(2)]:text-ellipsis [.h-grades-table_&]:gap-[9px] [.h-grades-table_&>span:last-child]:flex [.h-grades-table_&>span:last-child]:flex-col [.h-grades-table_&>span:last-child]:gap-[3px] [.h-grades-table_&_b]:text-ink-2 [.h-grades-table_&_b]:text-[10px] [.h-grades-table_&_small]:text-ink-3 [.h-grades-table_&_small]:text-[9px] [.h-record-summary-table_&]:gap-[9px] [.h-record-summary-table_&>span:last-child]:flex [.h-record-summary-table_&>span:last-child]:flex-col [.h-record-summary-table_&>span:last-child]:gap-[3px] [.h-record-summary-table_&_b]:text-ink-2 [.h-record-summary-table_&_b]:text-[10px] [.h-record-summary-table_&_small]:text-ink-3 [.h-record-summary-table_&_small]:text-[9px]" },
                   React.createElement(
                     "span",
-                    { className: "grid place-items-center w-[28px] h-[28px] rounded-[9px] bg-surface-2 text-accent text-[9px] font-bold [.action-modal_&]:[box-shadow:0_0_0_3px_#162032]" },
+                    { className: "grid place-items-center w-[28px] h-[28px] rounded-[9px] bg-surface-2 text-accent text-[9px] font-bold [.h-action-modal_&]:[box-shadow:0_0_0_3px_#162032]" },
                     e.initials,
                   ),
                   React.createElement("span", null, e.name),
@@ -491,7 +491,7 @@ function w({
     ),
     React.createElement(
       "div",
-      { className: "flex justify-end gap-2 mt-5.5 pt-[17px] border-t border-white/10 max-[760px]:flex-wrap max-[760px]:[&_button]:flex-1 [.assessment-builder_&]:mt-0.5" },
+      { className: "flex justify-end gap-2 mt-5.5 pt-[17px] border-t border-white/10 max-[760px]:flex-wrap max-[760px]:[&_button]:flex-1 [.h-assessment-builder_&]:mt-0.5" },
       React.createElement(
         "button",
         { className: "inline-flex items-center justify-center gap-2 rounded border border-accent/40 bg-transparent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-accent transition hover:border-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-50", onClick: h },

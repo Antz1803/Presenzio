@@ -1,6 +1,6 @@
 import { createContext, createElement, useContext, useEffect, useMemo, useState } from "react";
 import { onValue, ref, runTransaction, update } from "firebase/database";
-import fallbackLogo from "../assets/Logo.png";
+import fallbackLogo from "../assets/LogoLight.png";
 import { db } from "./Firebase";
 
 export const DEFAULT_BRANDING = {
