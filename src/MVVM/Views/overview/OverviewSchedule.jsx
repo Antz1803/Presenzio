@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "../DashboardShared";
 import {
   buildWeeklySchedule,
@@ -104,12 +105,179 @@ const STATUS_STYLES = {
   completed: "border-white/10 bg-surface-3 text-ink-2 font-semibold",
 };
 
+function SchedulePrintView({ viewMode, sections, todaySections, onClose }) {
+  const { entries, timeSlots } = useMemo(
+    () => buildWeeklySchedule(sections),
+    [sections],
+  );
+
+  useEffect(() => {
+    const styleId = "schedule-print-style";
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.textContent = `
+        @page { margin: 12mm; }
+        @media print {
+          body > *:not(#schedule-print-portal) { display: none !important; }
+          #schedule-print-portal { display: block !important; position: static !important; }
+          #schedule-print-portal .schedule-print-toolbar { display: none !important; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    const previousTitle = document.title;
+    document.title = viewMode === "weekly" ? "Weekly Schedule" : "Today's Schedule";
+    const printTimer = window.setTimeout(() => window.print(), 200);
+    const handleAfterPrint = () => {
+      document.title = previousTitle;
+      onClose();
+    };
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => {
+      window.clearTimeout(printTimer);
+      document.title = previousTitle;
+      window.removeEventListener("afterprint", handleAfterPrint);
+    };
+  }, [onClose, viewMode]);
+
+  const today = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date());
+
+  return createPortal(
+    <div
+      id="schedule-print-portal"
+      className="fixed inset-0 z-[999] overflow-y-auto bg-white p-6 text-slate-900 print:static print:p-0"
+    >
+      <div className="schedule-print-toolbar mb-5 flex items-center justify-between border-b border-slate-200 pb-4">
+        <span className="text-sm font-semibold text-slate-600">Print preview</span>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600"
+            onClick={onClose}
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white"
+            onClick={() => window.print()}
+          >
+            Print
+          </button>
+        </div>
+      </div>
+      <header className="mb-6 border-b-2 border-slate-900 pb-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+          Schedule
+        </p>
+        <h1 className="mt-1 text-2xl font-bold">
+          {viewMode === "weekly" ? "Weekly Schedule" : "Today's Schedule"}
+        </h1>
+        <p className="mt-1 text-xs text-slate-500">Printed {today}</p>
+      </header>
+
+      {viewMode === "weekly" ? (
+        <table className="w-full border-collapse text-left text-xs">
+          <thead>
+            <tr>
+              <th className="border border-slate-300 bg-slate-100 p-2 font-bold uppercase tracking-wide text-slate-600">
+                Time
+              </th>
+              {weekdayLabels.map((label) => (
+                <th
+                  key={label}
+                  className="border border-slate-300 bg-slate-100 p-2 text-center font-bold uppercase tracking-wide text-slate-600"
+                >
+                  {label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {timeSlots.map((timeSlot) => (
+              <tr key={timeSlot}>
+                <td className="whitespace-nowrap border border-slate-300 p-2 font-semibold text-slate-600">
+                  {formatClassTime(timeSlot)}
+                </td>
+                {weekdayLabels.map((_, dayIndex) => {
+                  const cellEntries = entries.filter(
+                    (entry) =>
+                      entry.timeStart === timeSlot && entry.dayIndex === dayIndex,
+                  );
+                  return (
+                    <td key={dayIndex} className="border border-slate-300 p-2 align-top">
+                      {cellEntries.map((entry, index) => (
+                        <div
+                          key={`${entry.id}-${dayIndex}-${timeSlot}-${index}`}
+                          className="mb-1 rounded border border-slate-300 p-1.5 last:mb-0"
+                        >
+                          <strong className="block text-[11px]">{entry.subjectCode}</strong>
+                          {entry.subjectName && (
+                            <span className="block text-[10px] text-slate-500">
+                              {entry.subjectName}
+                            </span>
+                          )}
+                          <span className="mt-1 block text-[10px] text-slate-600">
+                            Sec. {entry.sectionName} · {entry.room}
+                          </span>
+                        </div>
+                      ))}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <div className="space-y-2">
+          {todaySections.length ? (
+            todaySections.map((item, index) => {
+              const meta = getSectionMeta(item);
+              return (
+                <div
+                  key={item.id || `${meta.code}-${index}`}
+                  className="flex items-center justify-between border-b border-slate-300 py-3"
+                >
+                  <div>
+                    <strong className="text-sm">{meta.code}</strong>
+                    {meta.name && <p className="text-xs text-slate-500">{meta.name}</p>}
+                  </div>
+                  <div className="text-right text-xs text-slate-600">
+                    <p className="font-semibold">
+                      {formatClassTime(item.time_start)} – {formatClassTime(item.time_end)}
+                    </p>
+                    <p>Sec. {meta.sec} · {meta.room}</p>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <p className="py-8 text-center text-sm text-slate-500">
+              No classes scheduled for today.
+            </p>
+          )}
+        </div>
+      )}
+    </div>,
+    document.body,
+  );
+}
+
 export function CompactTodayScheduleSection({
   sections,
   onOpenClassOptions,
   onOpenAction,
 }) {
   const [viewMode, setViewMode] = useState("today");
+  const [printView, setPrintView] = useState(null);
   const [currentMinutes, setCurrentMinutes] = useState(
     () => new Date().getHours() * 60 + new Date().getMinutes(),
   );
@@ -167,21 +335,30 @@ export function CompactTodayScheduleSection({
             {viewMode === "today" ? "Today's Agenda" : "Weekly Schedule"}
           </h2>
         </div>
-        <div className="flex rounded-md border border-slate-700/50 bg-surface-2 p-0.5">
-          {["today", "weekly"].map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              className={`rounded px-2.5 py-0.5 text-[11px] capitalize transition ${
-                viewMode === mode
-                  ? "bg-linear-to-r from-accent to-accent-4 font-bold text-canvas shadow-md shadow-accent/30"
-                  : "font-medium text-ink-2 hover:text-ink"
-              }`}
-              onClick={() => setViewMode(mode)}
-            >
-              {mode}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="rounded-md border border-accent/50 bg-accent px-3 py-1.5 text-[11px] font-bold text-canvas shadow-md shadow-accent/20 transition hover:shadow-glow"
+            onClick={() => setPrintView(viewMode)}
+          >
+            Print
+          </button>
+          <div className="flex rounded-md border border-slate-700/50 bg-surface-2 p-0.5">
+            {["today", "weekly"].map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className={`rounded px-2.5 py-0.5 text-[11px] capitalize transition ${
+                  viewMode === mode
+                    ? "bg-linear-to-r from-accent to-accent-4 font-bold text-canvas shadow-md shadow-accent/30"
+                    : "font-medium text-ink-2 hover:text-ink"
+                }`}
+                onClick={() => setViewMode(mode)}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -271,6 +448,14 @@ export function CompactTodayScheduleSection({
             })
           )}
         </div>
+      )}
+      {printView && (
+        <SchedulePrintView
+          viewMode={printView}
+          sections={sections}
+          todaySections={todaySections}
+          onClose={() => setPrintView(null)}
+        />
       )}
     </section>
   );

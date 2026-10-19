@@ -86,6 +86,14 @@ const canPreview = (material) => {
   return type.startsWith("image/") || type === "application/pdf" || type === "text/plain";
 };
 
+function previewKind(material) {
+  const type = material.contentType || "";
+  if (type.startsWith("image/")) return "image";
+  if (type === "application/pdf") return "pdf";
+  if (type === "text/plain") return "text";
+  return "unsupported";
+}
+
 async function dataUrlToBlob(dataUrl) {
   const response = await fetch(dataUrl);
   return response.blob();
@@ -118,6 +126,57 @@ function Dialog({ title, onClose, children }) {
   );
 }
 
+function FilePreviewDialog({ preview, onClose }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 p-4 backdrop-blur-xl"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <section
+        className="flex max-h-[calc(100vh-2rem)] w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-accent/35 border-b-accent-2/20 bg-surface-3 shadow-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Preview ${preview.material.name}`}
+      >
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-white/5 bg-surface-2/60 px-5 py-4">
+          <div className="min-w-0">
+            <p className={EYEBROW}>File preview</p>
+            <h3 className="truncate font-display text-base font-semibold tracking-tight text-ink" title={preview.material.name}>
+              {preview.material.name}
+            </h3>
+          </div>
+          <button className={BTN_GHOST} type="button" onClick={onClose}>
+            Close
+          </button>
+        </header>
+        <div className="min-h-0 flex-1 overflow-auto bg-slate-950/40 p-4">
+          {preview.kind === "image" && (
+            <div className="grid min-h-[50vh] place-items-center">
+              <img
+                src={preview.url}
+                alt={preview.material.name}
+                className="max-h-[calc(100vh-10rem)] max-w-full rounded-lg object-contain shadow-2xl"
+              />
+            </div>
+          )}
+          {preview.kind === "pdf" && (
+            <iframe
+              src={preview.url}
+              title={`Preview ${preview.material.name}`}
+              className="h-[calc(100vh-10rem)] min-h-[520px] w-full rounded-lg bg-white"
+            />
+          )}
+          {preview.kind === "text" && (
+            <pre className="min-h-[50vh] whitespace-pre-wrap break-words rounded-lg bg-slate-950 p-5 font-mono text-sm leading-6 text-slate-200">
+              {preview.text}
+            </pre>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function MaterialsView() {
   const { user } = useAuth();
   const userId = user?.id;
@@ -137,6 +196,8 @@ export default function MaterialsView() {
   const [sort, setSort] = useState("newest");
 
   const [dialog, setDialog] = useState(null); // { kind, target }
+  const [preview, setPreview] = useState(null);
+  const previewUrlRef = useRef(null);
   const [inputValue, setInputValue] = useState("");
   const [dialogError, setDialogError] = useState("");
   const [dialogBusy, setDialogBusy] = useState(false);
@@ -252,6 +313,14 @@ export default function MaterialsView() {
     if (!dialogBusy) setDialog(null);
   }, [dialogBusy]);
 
+  const closePreview = useCallback(() => {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    previewUrlRef.current = null;
+    setPreview(null);
+  }, []);
+
+  useEffect(() => closePreview, [closePreview]);
+
   const submitDialog = async (event) => {
     event.preventDefault();
     if (!dialog || !userId) return;
@@ -346,20 +415,22 @@ export default function MaterialsView() {
     }
   };
 
-  const handleOpen = async (material) => {
-    // Open the tab synchronously so the popup blocker allows it.
-    const tab = window.open("", "_blank");
+  const handlePreview = async (material) => {
     setBusyId(material.id);
     try {
       const raw = await dataUrlToBlob(await getMaterialDataUrl(userId, material.id));
-      const blob = new Blob([raw], { type: material.contentType || raw.type });
-      const url = URL.createObjectURL(blob);
-      if (tab) tab.location.href = url;
-      else window.location.assign(url);
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      const type = material.contentType || raw.type;
+      const kind = previewKind(material);
+      closePreview();
+      if (kind === "text") {
+        setPreview({ material, kind, text: await raw.text() });
+        return;
+      }
+      const url = URL.createObjectURL(new Blob([raw], { type }));
+      previewUrlRef.current = url;
+      setPreview({ material, kind, url });
     } catch (error) {
-      tab?.close();
-      setStatus({ type: "error", message: error?.message || "The file could not be opened." });
+      setStatus({ type: "error", message: error?.message || "The file could not be previewed." });
     } finally {
       setBusyId(null);
     }
@@ -553,8 +624,8 @@ export default function MaterialsView() {
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">
                       {canPreview(material) ? (
-                        <button className={`${BTN_GHOST} sm:w-[88px]`} type="button" disabled={busy} onClick={() => void handleOpen(material)}>
-                          <Icon name="external" size={13} /> Open
+                        <button className={`${BTN_GHOST} sm:w-[88px]`} type="button" disabled={busy} onClick={() => void handlePreview(material)}>
+                          <Icon name="file" size={13} /> View
                         </button>
                       ) : (
                         <span className="hidden w-[88px] sm:block" aria-hidden="true" />
@@ -574,6 +645,8 @@ export default function MaterialsView() {
           )}
         </article>
       </section>
+
+      {preview && <FilePreviewDialog preview={preview} onClose={closePreview} />}
 
       {dialog && (
         <Dialog

@@ -1,6 +1,7 @@
 const SIZES = {
   default: "w-[min(620px,100%)]",
   wide: "w-[min(900px,calc(100vw-2rem))] [&:has(.h-grade-sheet-preview)]:w-[min(1040px,calc(100vw-2rem))]",
+  extraWide: "w-[min(1400px,calc(100vw-2rem))]",
 };
 
 export function ModalShell({

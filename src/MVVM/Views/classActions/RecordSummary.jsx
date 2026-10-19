@@ -44,7 +44,7 @@ export function RecordSummary({
       title="Record Summary"
       section={section}
       onClose={onClose}
-      size="wide"
+      size="extraWide"
     >
       <div className="flex items-center justify-between gap-3 mb-4 py-[7px] px-[9px] border border-white/10 rounded-xl bg-surface-2 max-[760px]:items-stretch max-[760px]:flex-col max-[760px]:[&_.h-saved-indicator]:self-end h-record-summary-toolbar">
         <div className="flex gap-1 bg-surface-2 rounded-[7px] p-[3px] [&_button]:border-0 [&_button]:py-[7px] [&_button]:px-3 [&_button]:[background:none] [&_button]:rounded-[5px] [&_button]:text-ink-3 [&_button]:text-[10px] [&_button.h-active]:bg-surface-1 [&_button.h-active]:text-accent [&_button.h-active]:[box-shadow:0_2px_5px_rgba(0,0,0,0.13)] [&_button.h-active]:font-semibold [.h-record-summary-toolbar_&]:overflow-x-auto [.h-record-summary-toolbar_&]:bg-transparent [.h-record-summary-toolbar_&_button]:rounded-lg [.h-record-summary-toolbar_&_button]:transition [.h-record-summary-toolbar_&_button:hover]:text-accent [.h-record-summary-toolbar_&_button:hover]:bg-surface-2 [.h-record-summary-toolbar_&_button.h-active]:bg-surface-1 [.h-record-summary-toolbar_&_button.h-active]:[box-shadow:0_3px_9px_rgba(0,240,255,0.05)] [.h-record-summary-toolbar_&_button.h-active]:text-accent" role="tablist">
