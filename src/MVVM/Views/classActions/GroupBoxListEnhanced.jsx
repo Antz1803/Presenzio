@@ -67,6 +67,8 @@ export function GroupBoxListEnhanced({
             const count = Object.keys(saved.assignments || {}).length;
             const type = assessmentCategories.find((item) => item.key === saved.category)?.label;
             const period = assessmentPeriods.find((item) => item.key === saved.period)?.label;
+            const maxScore = Number(saved.maxScore);
+            const hasMaxScore = Number.isFinite(maxScore) && maxScore > 0;
             const isEditing = editingId === saved.id;
             const isSaving = savingId === saved.id;
             return (
@@ -97,9 +99,10 @@ export function GroupBoxListEnhanced({
                   {type && period && (
                     <>
                       <i /> <span>{type}</span><i /> <span>{period}</span><i />
-                      <span>{categoryItemPrefixes[saved.category] ?? "Q"}{saved.itemNo}</span>
+                      <span>{categoryItemPrefixes[saved.category] ?? "Q"}{saved.itemNo}</span><i />
                     </>
                   )}
+                  <span>Max score: {hasMaxScore ? maxScore : "—"}</span>
                 </div>
                 <div className="flex items-center justify-end flex-wrap gap-2 [margin-top:auto] pt-[15px] border-t border-white/10 max-[600px]:justify-start h-group-box-actions">
                   {isEditing ? (
