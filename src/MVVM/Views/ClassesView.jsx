@@ -445,7 +445,24 @@ export default function ClassesView({
         working: false,
         error: false,
         cancelled: false,
-        message: `${result.total} Excel file${result.total === 1 ? "" : "s"} synced.`,
+        message: (() => {
+          const removed = (result.results ?? []).reduce(
+            (total, item) => total + (item.removedOrphanedScores || 0),
+            0,
+          );
+          const removedNames = [...new Set(
+            (result.results ?? []).flatMap(
+              (item) => item.removedOrphanedStudentNames ?? [],
+            ),
+          )];
+          return `${result.total} Excel file${result.total === 1 ? "" : "s"} synced.${
+            removed
+              ? ` Removed ${removed} stale score record${removed === 1 ? "" : "s"}${
+                  removedNames.length ? ` for ${removedNames.join(", ")}` : ""
+                }.`
+              : ""
+          }`;
+        })(),
       });
     } catch (error) {
       setSyncAllState((current) => ({

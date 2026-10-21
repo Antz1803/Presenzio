@@ -128,6 +128,41 @@ export function updateSection(uid, sid, changes) {
   );
 }
 
+// Scores can outlive an enrollment when a student is transferred or removed.
+// They cannot be represented in the grade-sheet template because the template
+// only has rows for the section's current enrollment list.
+export async function removeOrphanedAssessmentScores(uid, sid, enrollmentIds = []) {
+  const validEnrollmentIds = new Set(enrollmentIds.map((id) => String(id)));
+  const [scores, allEnrollments, students] = await Promise.all([
+    read(uid, sec(sid, "scores")),
+    read(uid, "enrollments"),
+    read(uid, "students"),
+  ]);
+  const studentNameByEnrollmentId = new Map();
+  Object.values(allEnrollments ?? {}).forEach((sectionEnrollments) => {
+    Object.entries(sectionEnrollments ?? {}).forEach(([enrollmentId, enrollment]) => {
+      const student = students?.[enrollment?.student_id];
+      studentNameByEnrollmentId.set(
+        String(enrollmentId),
+        student?.full_name || student?.name || "Unknown student",
+      );
+    });
+  });
+  const orphaned = Object.entries(scores ?? {}).filter(
+    ([, score]) => !validEnrollmentIds.has(String(score?.enrollment_id)),
+  );
+  const updates = Object.fromEntries(
+    orphaned.map(([id]) => [sec(sid, `scores/${id}`), null]),
+  );
+  if (!Object.keys(updates).length) return [];
+  await patch(uid, updates);
+  return orphaned.map(([, score]) => ({
+    enrollmentId: String(score?.enrollment_id || ""),
+    studentName:
+      studentNameByEnrollmentId.get(String(score?.enrollment_id)) || "Unknown student",
+  }));
+}
+
 export async function deleteSection(uid, sid) {
   const [all, assessments] = await Promise.all([
     read(uid, "enrollments"),

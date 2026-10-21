@@ -2,6 +2,11 @@ import { useCallback } from "react";
 import { db } from "../../../lib/Firebase";
 import * as store from "../../../lib/accountDb";
 import { syncGradeSheetToExcel } from "../syncGradeSheetToExcelPreservingTemplate";
+import {
+  readExcelHandle,
+  requestExcelWritePermission,
+  writeExcelHandle,
+} from "../excelFileHandleStorage";
 
 export function useTransferActions(context) {
   const {
@@ -65,16 +70,28 @@ export function useTransferActions(context) {
     if (!fresh?.live || fresh.sectionId !== section.id) {
       throw new Error("The latest class records could not be loaded for Excel sync.");
     }
+    const removedOrphanedScores = await store.removeOrphanedAssessmentScores(
+      accountId,
+      section.id,
+      fresh.students.map((student) => student.id),
+    );
+    const synced = removedOrphanedScores
+      ? await loadLiveData(section.id)
+      : fresh;
+    if (!synced?.live || synced.sectionId !== section.id) {
+      throw new Error("The latest class records could not be reloaded after cleanup.");
+    }
     await syncGradeSheetToExcel({
-      section: fresh.section,
+      section: synced.section,
       instructor: { name: instructorName },
-      students: fresh.students,
-      assessmentScores: fresh.assessmentScores,
-      assessmentDefinitions: fresh.assessmentDefinitions,
-      attendanceSessions: fresh.attendanceSessions,
-      gradingPeriods: fresh.periods,
+      students: synced.students,
+      assessmentScores: synced.assessmentScores,
+      assessmentDefinitions: synced.assessmentDefinitions,
+      attendanceSessions: synced.attendanceSessions,
+      gradingPeriods: synced.periods,
     });
-  }, [browserIsOffline, instructorName, loadLiveData, section]);
+    return { removedOrphanedScores: removedOrphanedScores.length };
+  }, [accountId, browserIsOffline, instructorName, loadLiveData, section]);
 
   const syncAllToExcel = useCallback(
     async ({ onProgress } = {}) => {
@@ -86,7 +103,16 @@ export function useTransferActions(context) {
       let directoryHandle = null;
       if (typeof window !== "undefined" && "showDirectoryPicker" in window) {
         try {
-          directoryHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+          const savedDirectoryHandle = await readExcelHandle("directory");
+          if (
+            savedDirectoryHandle &&
+            (await requestExcelWritePermission(savedDirectoryHandle))
+          ) {
+            directoryHandle = savedDirectoryHandle;
+          } else {
+            directoryHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+            await writeExcelHandle("directory", directoryHandle);
+          }
         } catch (error) {
           if (error?.name === "AbortError") return { cancelled: true, total: 0, results: [] };
           throw error;
@@ -106,18 +132,40 @@ export function useTransferActions(context) {
             throw new Error("The latest class records could not be loaded.");
           }
 
+          const removedOrphanedScores = await store.removeOrphanedAssessmentScores(
+            accountId,
+            classSection.id,
+            fresh.students.map((student) => student.id),
+          );
+          const synced = removedOrphanedScores
+            ? await loadLiveData(classSection.id)
+            : fresh;
+          if (!synced?.live || synced.sectionId !== classSection.id) {
+            throw new Error("The latest class records could not be reloaded after cleanup.");
+          }
+
           await syncGradeSheetToExcel({
-            section: fresh.section,
+            section: synced.section,
             instructor: { name: instructorName },
-            students: fresh.students,
-            assessmentScores: fresh.assessmentScores,
-            assessmentDefinitions: fresh.assessmentDefinitions,
-            attendanceSessions: fresh.attendanceSessions,
-            gradingPeriods: fresh.periods,
-            useFilePicker: false,
+            students: synced.students,
+            assessmentScores: synced.assessmentScores,
+            assessmentDefinitions: synced.assessmentDefinitions,
+            attendanceSessions: synced.attendanceSessions,
+            gradingPeriods: synced.periods,
+            // If directory access is unavailable, use the save picker so the
+            // user can select the existing workbook instead of triggering a
+            // browser download that gets renamed to "(1)".
+            useFilePicker: !directoryHandle,
             directoryHandle,
           });
-          results.push({ section: classSection, ok: true });
+          results.push({
+            section: classSection,
+            ok: true,
+            removedOrphanedScores: removedOrphanedScores.length,
+            removedOrphanedStudentNames: removedOrphanedScores.map(
+              (item) => item.studentName,
+            ),
+          });
         } catch (error) {
           results.push({ section: classSection, ok: false, error });
         }
@@ -134,8 +182,13 @@ export function useTransferActions(context) {
       const failed = results.filter((result) => !result.ok);
       if (failed.length) {
         const failedNames = failed
-          .map((result) => result.section.subject_code || result.section.subject_title || result.section.id)
-          .join(", ");
+          .map((result) => {
+            const name =
+              result.section.subject_code || result.section.subject_title || result.section.id;
+            const reason = result.error?.message || "unknown error";
+            return `${name} (${reason})`;
+          })
+          .join("; ");
         const error = new Error(
           `${results.length - failed.length} of ${results.length} class files synced. Failed: ${failedNames}.`,
         );
@@ -146,6 +199,7 @@ export function useTransferActions(context) {
       return { total: results.length, results };
     },
     [
+      accountId,
       browserIsOffline,
       currentSectionId,
       instructorName,

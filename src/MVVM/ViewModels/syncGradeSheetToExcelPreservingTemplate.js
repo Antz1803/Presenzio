@@ -1,4 +1,9 @@
 import * as XLSX from "xlsx";
+import {
+  readExcelHandle,
+  requestExcelWritePermission,
+  writeExcelHandle,
+} from "./excelFileHandleStorage";
 import * as CFB from "cfb";
 import {
   getPeriodGradingWeightPercentages,
@@ -532,8 +537,25 @@ function validateExportSnapshot({
     );
   });
   if (invalidScores.length) {
+    const studentNameById = new Map(
+      students.map((student) => [
+        String(student.id),
+        student.name || student.full_name || "Unknown student",
+      ]),
+    );
+    const details = invalidScores
+      .slice(0, 3)
+      .map((row) => {
+        const periodCode = periodCodeForRow(row, periodsById) || "missing period";
+        const category = row.category || "missing category";
+        const itemNo = row.item_no ?? "missing item";
+        const enrollment = row.enrollment_id || "missing student";
+        const studentName = studentNameById.get(String(enrollment));
+        return `${periodCode}/${category} #${itemNo} (${studentName || `unknown student; enrollment ${enrollment}`})`;
+      })
+      .join(", ");
     throw new Error(
-      `Excel sync stopped: ${invalidScores.length} assessment record(s) cannot be mapped to the template.`,
+      `Excel sync stopped: ${invalidScores.length} assessment record(s) cannot be mapped to the template: ${details}.`,
     );
   }
 
@@ -1022,6 +1044,15 @@ export async function syncGradeSheetToExcel({
     return;
   }
 
+  const savedFileKey = `file:${section?.id || filename}`;
+  const savedFileHandle = await readExcelHandle(savedFileKey);
+  if (savedFileHandle && (await requestExcelWritePermission(savedFileHandle))) {
+    const writable = await savedFileHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    return;
+  }
+
   if (
     useFilePicker &&
     typeof window !== "undefined" &&
@@ -1039,6 +1070,7 @@ export async function syncGradeSheetToExcel({
           },
         ],
       });
+      await writeExcelHandle(savedFileKey, fileHandle);
       const writable = await fileHandle.createWritable();
       await writable.write(blob);
       await writable.close();
