@@ -182,6 +182,7 @@ export function GradeSettings({ gradingPeriods, section, instructor, onSave, onC
       await onSave({
         dateRanges,
         weightSettings: toNumericWeights(weightSettings),
+        dean: savedDean,
       });
       setMessage({
         status: "success",

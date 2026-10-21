@@ -67,8 +67,10 @@ export function useSetupActions(context) {
   );
 
   const saveGradingPeriods = useCallback(
-    async ({ dateRanges = {}, weightSettings = {} } = {}) => {
+    async ({ dateRanges = {}, weightSettings = {}, dean = "" } = {}) => {
       if (!db) throw new Error("Firebase is not configured.");
+
+      const deanValue = String(dean ?? "").trim() || null;
 
       const invalidPeriod = Object.entries(dateRanges).find(([, dates]) => {
         const hasStart = Boolean(dates.start);
@@ -104,6 +106,10 @@ export function useSetupActions(context) {
       });
       if (browserIsOffline() || !db) {
         await queueOfflineChange("save-grading-periods", { rows });
+        await queueOfflineChange("update-section", {
+          sectionId: currentSectionId,
+          changes: { dean: deanValue },
+        });
         setGradingPeriods((current) =>
           current.map((currentPeriod) => {
             const next = rows.find((row) => row.code === currentPeriod.code);
@@ -117,9 +123,20 @@ export function useSetupActions(context) {
               : currentPeriod;
           }),
         );
+        setSections((current) =>
+          current.map((item) =>
+            item.id === currentSectionId ? { ...item, dean: deanValue } : item,
+          ),
+        );
+        setSection((current) =>
+          current?.id === currentSectionId
+            ? { ...current, dean: deanValue }
+            : current,
+        );
         return;
       }
       await store.saveGradingPeriods(accountId, rows);
+      await store.updateSection(accountId, currentSectionId, { dean: deanValue });
       await store.realignSessionPeriods(accountId, currentSectionId, rows);
       await loadLiveData(currentSectionId);
     },
