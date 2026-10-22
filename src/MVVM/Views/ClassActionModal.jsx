@@ -320,7 +320,7 @@ export default function K({
                     : e === "attendance-list"
                       ? React.createElement(
                           r,
-                          { title: s[e], section: i, onClose: t, size: "wide" },
+                          { title: s[e], section: i, onClose: t, size: "extraWide" },
                           React.createElement(L, {
                             students: n,
                             attendanceSessions: d,
