@@ -89,7 +89,7 @@ export function buildRoster({
           ? attendanceRate < 80
             ? "At risk"
             : "On track"
-          : enrollment.status.toUpperCase(),
+          : String(enrollment.status).replace(/_/g, " ").toUpperCase(),
     };
   });
 

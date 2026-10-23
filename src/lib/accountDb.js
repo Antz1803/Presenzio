@@ -535,7 +535,7 @@ export async function publishPublicAssessment(uid, sid, aid) {
   Object.entries(enrollments ?? {}).forEach(([enrollmentId, enrollment]) => {
     const studentId = enrollment?.student_id;
     const student = studentsMap?.[studentId];
-    if (!studentId || !student || enrollment?.status === "inactive") return;
+    if (!studentId || !student || (enrollment?.status && enrollment.status !== "active")) return;
     students[studentId] = {
       id: studentId,
       enrollmentId,

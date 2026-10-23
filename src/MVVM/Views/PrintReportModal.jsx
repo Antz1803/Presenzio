@@ -10,7 +10,7 @@ import {
   getGradeRemark as E,
 } from "./classActions/actionUtils";
 import { getStoredDean } from "../Models/deanStorage";
-import M from "../../assets/LogoDark.png";
+import { resolvePrintLogos } from "../../lib/printLogos";
 if (typeof document < "u" && !document.getElementById("print-page-style")) {
   const e = document.createElement("style");
   ((e.id = "print-page-style"),
@@ -24,6 +24,23 @@ if (typeof document < "u" && !document.getElementById("print-page-style")) {
   `),
     document.head.appendChild(e));
 }
+// A zero page margin makes the browser leave out its own date / title / address
+// header and footer. The spacing is added back here: the header and footer rows
+// of a table repeat on every printed page.
+const PRINT_CSS = `
+  @page { margin: 0; }
+`;
+
+function PageFrame({ children }) {
+  return (
+    <table className="w-full border-collapse">
+      <thead className="hidden print:table-header-group"><tr><td><div className="h-[12mm]" /></td></tr></thead>
+      <tfoot className="hidden print:table-footer-group"><tr><td><div className="h-[12mm]" /></td></tr></tfoot>
+      <tbody><tr><td className="align-top">{children}</td></tr></tbody>
+    </table>
+  );
+}
+
 const n =
     "border border-slate-300 bg-slate-100 px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-wide text-slate-600",
   b = "border border-slate-300 px-2 py-1.5 text-center text-xs text-slate-700",
@@ -361,6 +378,10 @@ export default function _({
   printLogoRightUrl: rightLogo,
   onClose: o,
 }) {
+  const logos = k(
+    () => resolvePrintLogos({ printLogoLeftUrl: leftLogo, printLogoRightUrl: rightLogo }),
+    [leftLogo, rightLogo],
+  );
   const isGradeSheet = ["prelim", "midterm", "semifinal", "final"].includes(e);
   const signatureInstructor =
     teacherName || a?.teacher_name || a?.instructor?.name || "Instructor";
@@ -392,15 +413,19 @@ export default function _({
   );
   w(() => {
     const l = document.title;
+    const printStyle = document.createElement("style");
+    printStyle.textContent = PRINT_CSS;
+    document.head.appendChild(printStyle);
     document.title = "Smart Student Attendance Monitoring System";
     const p = setTimeout(() => window.print(), 200),
       N = () => {
-        ((document.title = l), o());
+        (printStyle.remove(), (document.title = l), o());
       };
     return (
       window.addEventListener("afterprint", N),
       () => {
         (clearTimeout(p),
+          printStyle.remove(),
           (document.title = l),
           window.removeEventListener("afterprint", N));
       }
@@ -458,19 +483,27 @@ export default function _({
         "div",
         {
           className:
-            "mx-auto max-w-5xl bg-white p-8 print:max-w-none print:p-4",
+            "mx-auto max-w-5xl bg-white p-8 print:max-w-none print:px-[12mm] print:py-0",
         },
+        React.createElement(
+          PageFrame,
+          null,
         React.createElement(
           "header",
           {
             className:
               "mb-6 flex items-center gap-4 border-b border-slate-200 pb-4 break-after-avoid",
           },
-          React.createElement("img", {
-            src: leftLogo || M,
-            alt: "Left report logo",
-            className: "h-20 w-20 shrink-0 object-contain print:h-24 print:w-24",
-          }),
+          logos.left
+            ? React.createElement("img", {
+                src: logos.left,
+                alt: "Left report logo",
+                className: "h-20 w-20 shrink-0 object-contain print:h-24 print:w-24",
+              })
+            : React.createElement("div", {
+                className: "h-20 w-20 shrink-0 print:h-24 print:w-24",
+                "aria-hidden": "true",
+              }),
           React.createElement(
             "div",
             { className: "flex-1 text-center" },
@@ -504,9 +537,9 @@ export default function _({
                 f(d.end_date),
               ),
           ),
-          rightLogo
+          logos.right
             ? React.createElement("img", {
-                src: rightLogo,
+                src: logos.right,
                 alt: "Right report logo",
                 className: "h-20 w-20 shrink-0 object-contain print:h-24 print:w-24",
               })
@@ -574,6 +607,7 @@ export default function _({
               "Dean",
             ),
           ),
+        ),
         ),
       ),
     ),

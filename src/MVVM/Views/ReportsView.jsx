@@ -1,6 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { lazy, Suspense, useState, useRef, useEffect } from "react";
 import { useAuth } from "../../auth/useAuth";
 import { Icon } from "./DashboardShared";
+
+import PrintLogoPicker from "./PrintLogoPicker";
+const SemesterReports = lazy(() => import("./semesterReports/SemesterReports"));
 
 const FOCUS = "focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2";
 const BTN_PRIMARY = `inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-canvas transition-all duration-150 hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`;
@@ -241,11 +244,13 @@ export default function ReportsView({
               Reports
             </h1>
             <p className="mt-0.5 text-xs text-ink-2">
-              Generate official class records and monthly attendance reports.
+              Generate class records, attendance reports, and semester-end reports.
             </p>
           </div>
         </div>
       </header>
+
+      <PrintLogoPicker />
 
       {/* Class Selector Panel — relative z-30 prevents clipping behind cards below */}
       <section className={`${PANEL} relative z-30`}>
@@ -312,6 +317,11 @@ export default function ReportsView({
           </button>
         </ReportCard>
       </section>
+
+      {/* Semester-end reports (monitoring, accomplishments, activities) */}
+      <Suspense fallback={null}>
+        <SemesterReports />
+      </Suspense>
 
       {/* History Section */}
       <section className={`${PANEL} relative z-10`} aria-labelledby="recent-reports-title">
